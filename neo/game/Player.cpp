@@ -6787,9 +6787,13 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 		physicsObj.SetKnockBack( idMath::ClampInt( 50, 200, knockback * 2 ) );
 	}
 
+	float scale = g_damageScale.GetFloat();
 	// give feedback on the player view and audibly when armor is helping
 	if ( armorSave ) {
-		inventory.armor -= armorSave;
+		int scaledArmorSave = armorSave * scale * 0.6f;
+		int remainingArmor = inventory.armor - scaledArmorSave;
+		inventory.armor = remainingArmor > 0 ? remainingArmor : 0;
+		//common->Printf("%d armor depleted\n", scaledArmorSave);
 
 		if ( gameLocal.time > lastArmorPulse + 200 ) {
 			StartSound( "snd_hitArmor", SND_CHANNEL_ITEM, 0, false, NULL );
@@ -6827,7 +6831,6 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 	if ( damage > 0 ) {
 
 		if ( !gameLocal.isMultiplayer ) {
-			float scale = g_damageScale.GetFloat();
 			if ( g_useDynamicProtection.GetBool() && g_skill.GetInteger() < 2 ) {
 				if ( gameLocal.time > lastDmgTime + 500 && scale > 0.25f ) {
 					scale -= 0.05f;
