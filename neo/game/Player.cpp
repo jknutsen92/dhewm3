@@ -82,6 +82,8 @@ const idEventDef EV_Player_DisableWeapon( "disableWeapon" );
 const idEventDef EV_Player_GetCurrentWeapon( "getCurrentWeapon", NULL, 's' );
 const idEventDef EV_Player_GetPreviousWeapon( "getPreviousWeapon", NULL, 's' );
 const idEventDef EV_Player_SelectWeapon( "selectWeapon", "s" );
+const idEventDef EV_Player_GiveItem("giveItem", "s");
+const idEventDef EV_Player_AddArmor("addArmor", "d");
 const idEventDef EV_Player_GetWeaponEntity( "getWeaponEntity", NULL, 'e' );
 const idEventDef EV_Player_OpenPDA( "openPDA" );
 const idEventDef EV_Player_InPDA( "inPDA", NULL, 'd' );
@@ -102,6 +104,8 @@ CLASS_DECLARATION( idActor, idPlayer )
 	EVENT( EV_Player_GetCurrentWeapon,		idPlayer::Event_GetCurrentWeapon )
 	EVENT( EV_Player_GetPreviousWeapon,		idPlayer::Event_GetPreviousWeapon )
 	EVENT( EV_Player_SelectWeapon,			idPlayer::Event_SelectWeapon )
+	EVENT( EV_Player_GiveItem,				idPlayer::Event_GiveItem)
+	EVENT( EV_Player_AddArmor,				idPlayer::Event_AddArmor)
 	EVENT( EV_Player_GetWeaponEntity,		idPlayer::Event_GetWeaponEntity )
 	EVENT( EV_Player_OpenPDA,				idPlayer::Event_OpenPDA )
 	EVENT( EV_Player_InPDA,					idPlayer::Event_InPDA )
@@ -5593,6 +5597,10 @@ void idPlayer::PerformImpulse( int impulse ) {
 			PrevWeapon();
 			break;
 		}
+		case IMPULSE_16: {								// smolspacer
+			SelectWeapon( 13, false );
+			break;
+		}
 		case IMPULSE_17: {
 			if ( gameLocal.isClient || entityNumber == gameLocal.localClientNum ) {
 				gameLocal.mpGame.ToggleReady();
@@ -7720,6 +7728,25 @@ void idPlayer::Event_SelectWeapon( const char *weaponName ) {
 
 	UpdateHudWeapon();
 }
+
+// smolspacer
+void idPlayer::Event_GiveItem( const char* itemName) {
+	GiveItem(itemName);
+}
+
+// smolspacer
+void idPlayer::Event_AddArmor( int amount ) {
+	if ( inventory.armor + amount > inventory.maxarmor ) {
+		inventory.armor = inventory.maxarmor;
+	}
+	else if ( inventory.armor + amount < 0) {
+		inventory.armor = 0;
+	}
+	else {
+		inventory.armor += amount;
+	}
+}
+
 
 /*
 ==================

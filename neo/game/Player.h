@@ -56,6 +56,8 @@ extern const idEventDef EV_Player_EnableWeapon;
 extern const idEventDef EV_Player_DisableWeapon;
 extern const idEventDef EV_Player_ExitTeleporter;
 extern const idEventDef EV_Player_SelectWeapon;
+extern const idEventDef EV_Player_GiveItem;
+extern const idEventDef EV_Player_AddArmor;
 extern const idEventDef EV_SpectatorTouch;
 
 const float THIRD_PERSON_FOCUS_DISTANCE	= 512.0f;
@@ -686,6 +688,8 @@ private:
 	void					Event_GetCurrentWeapon( void );
 	void					Event_GetPreviousWeapon( void );
 	void					Event_SelectWeapon( const char *weaponName );
+	void					Event_GiveItem( const char* itemName );
+	void					Event_AddArmor( int amount );
 	void					Event_GetWeaponEntity( void );
 	void					Event_OpenPDA( void );
 	void					Event_PDAAvailable( void );

@@ -57,6 +57,8 @@ const idEventDef EV_Weapon_Next( "nextWeapon" );
 const idEventDef EV_Weapon_State( "weaponState", "sd" );
 const idEventDef EV_Weapon_UseAmmo( "useAmmo", "d" );
 const idEventDef EV_Weapon_AddToClip( "addToClip", "d" );
+const idEventDef EV_Weapon_SetClip( "setClip", "d", 0);
+const idEventDef EV_Weapon_GetLastMeleeTarget("getLastMeleeTarget", NULL, 'e');
 const idEventDef EV_Weapon_AmmoInClip( "ammoInClip", NULL, 'f' );
 const idEventDef EV_Weapon_AmmoAvailable( "ammoAvailable", NULL, 'f' );
 const idEventDef EV_Weapon_TotalAmmoCount( "totalAmmoCount", NULL, 'f' );
@@ -94,6 +96,8 @@ CLASS_DECLARATION( idAnimatedEntity, idWeapon )
 	EVENT( EV_Weapon_WeaponLowering,			idWeapon::Event_WeaponLowering )
 	EVENT( EV_Weapon_UseAmmo,					idWeapon::Event_UseAmmo )
 	EVENT( EV_Weapon_AddToClip,					idWeapon::Event_AddToClip )
+	EVENT( EV_Weapon_SetClip,					idWeapon::Event_SetClip)
+	EVENT (EV_Weapon_GetLastMeleeTarget,		idWeapon::Event_GetLastMeleeTarget)
 	EVENT( EV_Weapon_AmmoInClip,				idWeapon::Event_AmmoInClip )
 	EVENT( EV_Weapon_AmmoAvailable,				idWeapon::Event_AmmoAvailable )
 	EVENT( EV_Weapon_TotalAmmoCount,			idWeapon::Event_TotalAmmoCount )
@@ -155,6 +159,8 @@ idWeapon::idWeapon() {
 	brassDelay				= 0;
 
 	allowDrop				= true;
+
+	lastMeleeTarget			= NULL;
 
 	Clear();
 
@@ -2522,6 +2528,15 @@ void idWeapon::Event_AddToClip( int amount ) {
 	}
 }
 
+// smolspacer
+void idWeapon::Event_SetClip( int amount ) {
+	ammoClip = amount;
+}
+
+void idWeapon::Event_GetLastMeleeTarget() {
+	idThread::ReturnEntity(lastMeleeTarget);
+}
+
 /*
 ===============
 idWeapon::Event_AmmoInClip
@@ -3053,6 +3068,7 @@ void idWeapon::Event_Melee( void ) {
 				meleeDef->dict.GetVector( "kickDir", "0 0 0", kickDir );
 				globalKickDir = muzzleAxis * kickDir;
 				ent->Damage( owner, owner, globalKickDir, meleeDefName, owner->PowerUpModifier( MELEE_DAMAGE ), tr.c.id );
+				lastMeleeTarget = ent;
 				hit = true;
 			}
 

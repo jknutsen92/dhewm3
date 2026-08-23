@@ -6630,7 +6630,7 @@ void idPlayer::PerformImpulse( int impulse ) {
 		ClientSendEvent( EVENT_IMPULSE, &msg );
 	}
 
-	if ( impulse >= IMPULSE_0 && impulse <= IMPULSE_12 ) {
+	if ( impulse >= IMPULSE_0 && impulse <= IMPULSE_12) {
 		SelectWeapon( impulse, false );
 		return;
 	}
@@ -6647,6 +6647,9 @@ void idPlayer::PerformImpulse( int impulse ) {
 		case IMPULSE_15: {
 			PrevWeapon();
 			break;
+		}
+		case IMPULSE_16: {					// smolspacer
+			SelectWeapon( 1, false );
 		}
 		case IMPULSE_17: {
 			if ( gameLocal.isClient || entityNumber == gameLocal.localClientNum ) {

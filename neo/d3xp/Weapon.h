@@ -174,6 +174,7 @@ public:
 	ammo_t					GetAmmoType( void ) const;
 	int						AmmoAvailable( void ) const;
 	int						AmmoInClip( void ) const;
+	void 					SetClip( int ) const;
 	void					ResetAmmoClip( void );
 	int						ClipSize( void ) const;
 	int						LowAmmo( void ) const;
@@ -373,6 +374,7 @@ private:
 	void					Event_WeaponLowering( void );
 	void					Event_UseAmmo( int amount );
 	void					Event_AddToClip( int amount );
+	void					Event_SetClip( int amount );
 	void					Event_AmmoInClip( void );
 	void					Event_AmmoAvailable( void );
 	void					Event_TotalAmmoCount( void );
