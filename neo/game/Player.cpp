@@ -84,6 +84,8 @@ const idEventDef EV_Player_GetPreviousWeapon( "getPreviousWeapon", NULL, 's' );
 const idEventDef EV_Player_SelectWeapon( "selectWeapon", "s" );
 const idEventDef EV_Player_GiveItem("giveItem", "s");
 const idEventDef EV_Player_AddArmor("addArmor", "d");
+const idEventDef EV_Player_GetArmor("getArmor", NULL, 'f');
+const idEventDef EV_Player_GetMaxArmor("getMaxArmor", NULL, 'f');
 const idEventDef EV_Player_GetWeaponEntity( "getWeaponEntity", NULL, 'e' );
 const idEventDef EV_Player_OpenPDA( "openPDA" );
 const idEventDef EV_Player_InPDA( "inPDA", NULL, 'd' );
@@ -106,6 +108,8 @@ CLASS_DECLARATION( idActor, idPlayer )
 	EVENT( EV_Player_SelectWeapon,			idPlayer::Event_SelectWeapon )
 	EVENT( EV_Player_GiveItem,				idPlayer::Event_GiveItem)
 	EVENT( EV_Player_AddArmor,				idPlayer::Event_AddArmor)
+	EVENT( EV_Player_GetArmor,				idPlayer::Event_GetArmor)
+	EVENT( EV_Player_GetMaxArmor,			idPlayer::Event_GetMaxArmor)
 	EVENT( EV_Player_GetWeaponEntity,		idPlayer::Event_GetWeaponEntity )
 	EVENT( EV_Player_OpenPDA,				idPlayer::Event_OpenPDA )
 	EVENT( EV_Player_InPDA,					idPlayer::Event_InPDA )
@@ -1594,9 +1598,9 @@ void idPlayer::Spawn( void ) {
 				g_damageScale.SetFloat( 1.0f );
 			}
 		} else {
-			g_damageScale.SetFloat( 1.0f );
-			g_armorProtection.SetFloat( ( g_skill.GetInteger() < 2 ) ? 0.4f : 0.2f );
-
+			// smolspacer - remove this annoying shit
+			//g_damageScale.SetFloat( 1.0f );		
+			//g_armorProtection.SetFloat( ( g_skill.GetInteger() < 2 ) ? 0.4f : 0.2f );
 			if ( g_skill.GetInteger() == 3 ) {
 				healthTake = true;
 				nextHealthTake = gameLocal.time + g_healthTakeTime.GetInteger() * 1000;
@@ -7747,6 +7751,15 @@ void idPlayer::Event_AddArmor( int amount ) {
 	}
 }
 
+// smolspacer
+void idPlayer::Event_GetArmor() {
+	idThread::ReturnFloat(inventory.armor);
+}
+
+// smolspacer
+void idPlayer::Event_GetMaxArmor() {
+	idThread::ReturnFloat(inventory.maxarmor);
+}
 
 /*
 ==================

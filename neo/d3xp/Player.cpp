@@ -1914,18 +1914,19 @@ void idPlayer::Spawn( void ) {
 			}
 			if ( g_useDynamicProtection.GetBool() ) {
 #ifdef _D3XP
-				new_g_damageScale = 1.0f;
+				//new_g_damageScale = 1.0f;
 #else
-				g_damageScale.SetFloat( 1.0f );
+				//g_damageScale.SetFloat( 1.0f );
 #endif
 			}
 		} else {
 #ifdef _D3XP
-			new_g_damageScale = 1.0f;
+			// smolspacer - remove this annoying shit
+			//new_g_damageScale = 1.0f;
 #else
-			g_damageScale.SetFloat( 1.0f );
+			//g_damageScale.SetFloat( 1.0f );
 #endif
-			g_armorProtection.SetFloat( ( g_skill.GetInteger() < 2 ) ? 0.4f : 0.2f );
+			//g_armorProtection.SetFloat( ( g_skill.GetInteger() < 2 ) ? 0.4f : 0.2f );
 
 			if ( g_skill.GetInteger() == 3 ) {
 				healthTake = true;
