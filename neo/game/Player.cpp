@@ -6796,12 +6796,12 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 	}
 
 	float scale = g_damageScale.GetFloat();
+	float stripScale = g_armorStripScale.GetFloat();
 	// give feedback on the player view and audibly when armor is helping
 	if ( armorSave ) {
-		int scaledArmorSave = armorSave * scale * 0.6f;
+		int scaledArmorSave = armorSave * stripScale;
 		int remainingArmor = inventory.armor - scaledArmorSave;
 		inventory.armor = remainingArmor > 0 ? remainingArmor : 0;
-		//common->Printf("%d armor depleted\n", scaledArmorSave);
 
 		if ( gameLocal.time > lastArmorPulse + 200 ) {
 			StartSound( "snd_hitArmor", SND_CHANNEL_ITEM, 0, false, NULL );
