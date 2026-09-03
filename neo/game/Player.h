@@ -190,6 +190,7 @@ public:
 	int						HasAmmo( ammo_t type, int amount );
 	bool					UseAmmo( ammo_t type, int amount );
 	int						HasAmmo( const char *weapon_classname );			// looks up the ammo information for the weapon class first
+	bool 					HasWeapon( int weapon_classname );					// smolspacer - checks if inventory has the weapon
 
 	void					UpdateArmor( void );
 

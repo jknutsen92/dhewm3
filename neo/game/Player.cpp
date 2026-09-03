@@ -40,6 +40,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "Camera.h"
 #include "Fx.h"
 #include "Misc.h"
+#include <cstdio>
 
 const int ASYNC_PLAYER_INV_AMMO_BITS = idMath::BitsForInteger( 999 );	// 9 bits to cover the range [0, 999]
 const int ASYNC_PLAYER_INV_CLIP_BITS = -7;								// -7 bits to cover the range [-1, 60]
@@ -934,6 +935,11 @@ bool idInventory::UseAmmo( ammo_t type, int amount ) {
 	}
 
 	return true;
+}
+
+// smolspacer
+bool idInventory::HasWeapon(int index) {
+	return weapons & (1 << index);
 }
 
 /*
@@ -2875,6 +2881,7 @@ idPlayer::Give
 */
 bool idPlayer::Give( const char *statname, const char *value ) {
 	int amount;
+	bool success;
 
 	if ( AI_DEAD ) {
 		return false;
@@ -2919,7 +2926,15 @@ bool idPlayer::Give( const char *statname, const char *value ) {
 			airTics = pm_airTics.GetInteger();
 		}
 	} else {
-		return inventory.Give( this, spawnArgs, statname, value, &idealWeapon, true );
+		success = inventory.Give( this, spawnArgs, statname, value, &idealWeapon, true );
+		if (!idStr::Icmp(statname, "weapon")) {
+			if (!idStr::Icmp(value, "weapon_pistol") || !idStr::Icmp(value, "weapon_flashlight")) {
+				if (inventory.HasWeapon(1) && inventory.HasWeapon(11) && !inventory.HasWeapon(13)) {
+					inventory.Give(this, spawnArgs, "weapon", "weapon_pistol_flashlight", &idealWeapon, true);
+				}
+			}
+		}
+		return success;
 	}
 	return true;
 }
