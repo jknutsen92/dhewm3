@@ -66,6 +66,8 @@ extern idCVar	g_armorProtection;
 extern idCVar	g_armorProtectionMP;
 extern idCVar	g_damageScale;
 extern idCVar   g_armorStripScale;
+extern idCVar   g_maxAmmoScale;
+extern idCVar   g_itemValueScale;
 extern idCVar	g_useDynamicProtection;
 extern idCVar	g_healthTakeTime;
 extern idCVar	g_healthTakeAmt;

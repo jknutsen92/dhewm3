@@ -659,7 +659,7 @@ idInventory::AmmoIndexForAmmoClass
 ==============
 */
 int idInventory::MaxAmmoForAmmoClass( idPlayer *owner, const char *ammo_classname ) const {
-	return owner->spawnArgs.GetInt( va( "max_%s", ammo_classname ), "0" );
+	return owner->spawnArgs.GetInt( va( "max_%s", ammo_classname ), "0" ) * g_maxAmmoScale.GetFloat();		// smolspacer
 }
 
 /*
@@ -758,7 +758,7 @@ bool idInventory::Give( idPlayer *owner, const idDict &spawnArgs, const char *st
 		if ( ammo[ i ] >= max ) {
 			return false;
 		}
-		amount = atoi( value );
+		amount = atoi( value ) * g_itemValueScale.GetFloat();
 		if ( amount ) {
 			ammo[ i ] += amount;
 			if ( ( max > 0 ) && ( ammo[ i ] > max ) ) {
@@ -775,7 +775,7 @@ bool idInventory::Give( idPlayer *owner, const idDict &spawnArgs, const char *st
 		if ( armor >= maxarmor ) {
 			return false;	// can't hold any more, so leave the item
 		}
-		amount = atoi( value );
+		amount = atoi( value ) * g_itemValueScale.GetFloat();
 		if ( amount ) {
 			armor += amount;
 			if ( armor > maxarmor ) {
@@ -2891,7 +2891,7 @@ bool idPlayer::Give( const char *statname, const char *value ) {
 		if ( health >= inventory.maxHealth ) {
 			return false;
 		}
-		amount = atoi( value );
+		amount = atoi( value ) * g_itemValueScale.GetFloat();
 		if ( amount ) {
 			health += amount;
 			if ( health > inventory.maxHealth ) {
@@ -2926,6 +2926,7 @@ bool idPlayer::Give( const char *statname, const char *value ) {
 			airTics = pm_airTics.GetInteger();
 		}
 	} else {
+		// smolspacer
 		success = inventory.Give( this, spawnArgs, statname, value, &idealWeapon, true );
 		if (!idStr::Icmp(statname, "weapon")) {
 			if (!idStr::Icmp(value, "weapon_pistol") || !idStr::Icmp(value, "weapon_flashlight")) {
@@ -6815,10 +6816,9 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 	}
 
 	float scale = g_damageScale.GetFloat();
-	float stripScale = g_armorStripScale.GetFloat();
 	// give feedback on the player view and audibly when armor is helping
 	if ( armorSave ) {
-		int scaledArmorSave = armorSave * stripScale;
+		int scaledArmorSave = armorSave * g_armorStripScale.GetFloat();
 		int remainingArmor = inventory.armor - scaledArmorSave;
 		inventory.armor = remainingArmor > 0 ? remainingArmor : 0;
 
