@@ -2182,6 +2182,27 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 	int	damage = damageDef->GetInt( "damage" ) * damageScale;
 	damage = GetDamageForLocation( damage, location );
 
+	// smolspacer
+	if (spawnArgs.GetBool("headshot_weakness")) {
+		const char* damageGroup = GetDamageGroup(location);
+		int scaledHeadshotDamage = 0;
+		if (!idStr::Icmp(damageGroup, "head")) {
+			// Lookup the snd_headshot from the entity def
+			idStr headshotSound = spawnArgs.GetString("snd_headshot");
+			// Play the headshot sound shader
+			StartSoundShader(declManager->FindSound(headshotSound), SND_CHANNEL_ANY, 0, false, nullptr);
+
+			// If the inflictor is a pistol bullet, apply extra headshot damage multiplier
+			if (!idStr::Icmp(inflictor->GetEntityDefName(), "projectile_bullet_pistol")) {
+				scaledHeadshotDamage = damage * g_pistolHeadshotScale.GetFloat();
+				if (g_debugDamage.GetBool()) {
+					printf("base pistol dmg: %d, bonus scaling: %d\n", damage, scaledHeadshotDamage);
+				}
+				damage = scaledHeadshotDamage;
+			}
+		}
+	}
+
 	// inform the attacker that they hit someone
 	attacker->DamageFeedback( this, inflictor, damage );
 	if ( damage > 0 ) {
