@@ -2183,7 +2183,7 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 	damage = GetDamageForLocation( damage, location );
 
 	// smolspacer
-	if (spawnArgs.GetBool("headshot_weakness")) {
+	if (spawnArgs.GetBool("headshot_weakness") && inflictor->spawnArgs.GetBool("weakpoint_bonus")) {
 		const char* damageGroup = GetDamageGroup(location);
 		int scaledHeadshotDamage = 0;
 		if (!idStr::Icmp(damageGroup, "head")) {
