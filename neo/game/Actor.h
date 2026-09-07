@@ -272,6 +272,8 @@ protected:
 							// copies animation from body to head joints
 	void					CopyJointsFromBodyToHead( void );
 
+	idStr					GetHeadshotSoundShader(idEntity* inflictor);
+
 private:
 	void					SyncAnimChannels( int channel, int syncToChannel, int blendFrames );
 	void					FinishSetup( void );

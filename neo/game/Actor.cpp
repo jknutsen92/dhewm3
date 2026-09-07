@@ -2180,31 +2180,34 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 	}
 
 	int	damage = damageDef->GetInt( "damage" ) * damageScale;
-	damage = GetDamageForLocation( damage, location );
 
 	// smolspacer
-	if (spawnArgs.GetBool("headshot_weakness") && inflictor->spawnArgs.GetBool("weakpoint_bonus")) {
-		const char* damageGroup = GetDamageGroup(location);
-		int scaledHeadshotDamage = 0;
-		if (!idStr::Icmp(damageGroup, "head")) {
-			// Lookup the snd_headshot from the entity def
-			idStr headshotSound = spawnArgs.GetString("snd_headshot");
-			// Play the headshot sound shader
-			StartSoundShader(declManager->FindSound(headshotSound), SND_CHANNEL_ANY, 0, false, nullptr);
+	const char* damageGroup = GetDamageGroup(location);
+	int initialDamage = damage;
+	if (idStr::Icmp(damageGroup, "head")) {						// If not a headshot
+		damage = GetDamageForLocation( damage, location );		// calculate zone damage as normal
+		if (g_debugDamage.GetBool()) {
+			printf("Target %s - base dmg: %d, location scale: %d\n", (const char*)this->name, initialDamage, damage);
+		}
+	}
+	else if (spawnArgs.GetBool("headshot_weakness") && inflictor->spawnArgs.GetBool("weakpoint_bonus")) {
+		// Lookup the snd_headshot from the entity def
+		idStr headshotSound = GetHeadshotSoundShader(inflictor);
+		// Play the headshot sound shader
+		StartSoundShader(declManager->FindSound(headshotSound), SND_CHANNEL_ANY, 0, false, nullptr);
 
-			// If the inflictor is a pistol bullet, apply extra headshot damage multiplier
-			if (!idStr::Icmp(inflictor->GetEntityDefName(), "projectile_bullet_pistol")) {
-				scaledHeadshotDamage = damage * g_pistolHeadshotScale.GetFloat();
-				if (g_debugDamage.GetBool()) {
-					printf("base pistol dmg: %d, bonus scaling: %d\n", damage, scaledHeadshotDamage);
-				}
-				damage = scaledHeadshotDamage;
-			}
+		// Apply damage scaling based on damage_scale head monster spawn args and weakpoint_bonus on the projectile
+		float dmgHeadZoneBonus = this->spawnArgs.GetFloat("damage_scale head");
+		float dmgWeaponBonus = inflictor->spawnArgs.GetFloat("weakpoint_bonus");
+		damage = (int)ceil(dmgWeaponBonus * dmgHeadZoneBonus * damage);
+		if (g_debugDamage.GetBool()) {
+			printf("Headshot %s - base dmg: %d, head scale: %f, weap scale: %f, final dmg: %d\n", (const char*)this->name, initialDamage, dmgHeadZoneBonus, dmgWeaponBonus, damage);
 		}
 	}
 
-	// inform the attacker that they hit someone
+	// inform the attacker that they hit someone - TODO: Change this to yellow if this is a headshot
 	attacker->DamageFeedback( this, inflictor, damage );
+
 	if ( damage > 0 ) {
 		health -= damage;
 		if ( health <= 0 ) {
@@ -2228,6 +2231,13 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 			BecomeActive( TH_PHYSICS );
 		}
 	}
+}
+
+
+// smolspacer
+idStr idActor::GetHeadshotSoundShader(idEntity* inflictor) {
+	// TODO: Compare the projectile type to the list of the monster's sound effects
+	return spawnArgs.GetString("snd_headshot");
 }
 
 /*
