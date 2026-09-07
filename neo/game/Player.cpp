@@ -6625,11 +6625,11 @@ idPlayer::DamageFeedback
 callback function for when another entity received damage from this entity.  damage can be adjusted and returned to the caller.
 ================
 */
-void idPlayer::DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage ) {
+void idPlayer::DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, bool isHeadshot ) {
 	assert( !gameLocal.isClient );
 	damage *= PowerUpModifier( BERSERK );
 	if ( damage && ( victim != this ) && victim->IsType( idActor::Type ) ) {
-		SetLastHitTime( gameLocal.time );
+		SetLastHitTime( gameLocal.time, isHeadshot );
 	}
 }
 
@@ -7480,7 +7480,7 @@ void idPlayer::AddProjectileHits( int count ) {
 idPlayer::SetLastHitTime
 =============
 */
-void idPlayer::SetLastHitTime( int time ) {
+void idPlayer::SetLastHitTime( int time, bool isHeadshot ) {
 	idPlayer *aimed = NULL;
 
 	if ( time && lastHitTime != time ) {
@@ -7496,6 +7496,7 @@ void idPlayer::SetLastHitTime( int time ) {
 		StartSound( "snd_hit_feedback", SND_CHANNEL_ANY, SSF_PRIVATE_SOUND, false, NULL );
 	}
 	if ( cursor ) {
+		cursor->SetStateBool("headshot", isHeadshot);
 		cursor->HandleNamedEvent( "hitTime" );
 	}
 	if ( hud ) {

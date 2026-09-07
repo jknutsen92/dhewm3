@@ -2183,6 +2183,7 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 
 	// smolspacer
 	const char* damageGroup = GetDamageGroup(location);
+	bool isHeadshot = false;
 	int initialDamage = damage;
 	if (idStr::Icmp(damageGroup, "head")) {						// If not a headshot
 		damage = GetDamageForLocation( damage, location );		// calculate zone damage as normal
@@ -2200,13 +2201,14 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 		float dmgHeadZoneBonus = this->spawnArgs.GetFloat("damage_scale head");
 		float dmgWeaponBonus = inflictor->spawnArgs.GetFloat("weakpoint_bonus");
 		damage = (int)ceil(dmgWeaponBonus * dmgHeadZoneBonus * damage);
+		isHeadshot = true;
 		if (g_debugDamage.GetBool()) {
 			printf("Headshot %s - base dmg: %d, head scale: %f, weap scale: %f, final dmg: %d\n", (const char*)this->name, initialDamage, dmgHeadZoneBonus, dmgWeaponBonus, damage);
 		}
 	}
 
 	// inform the attacker that they hit someone - TODO: Change this to yellow if this is a headshot
-	attacker->DamageFeedback( this, inflictor, damage );
+	attacker->DamageFeedback( this, inflictor, damage, isHeadshot );
 
 	if ( damage > 0 ) {
 		health -= damage;
@@ -2236,8 +2238,24 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 
 // smolspacer
 idStr idActor::GetHeadshotSoundShader(idEntity* inflictor) {
-	// TODO: Compare the projectile type to the list of the monster's sound effects
-	return spawnArgs.GetString("snd_headshot");
+	const char* projectileName = inflictor->GetEntityDefName();
+	if (!idStr::Icmp(projectileName, "projectile_bullet_pistol")) {
+		return spawnArgs.GetString("snd_headshot_pistol");
+	}
+	if (!idStr::Icmp(projectileName, "projectile_bullet_shotgun")) {
+		return spawnArgs.GetString("snd_headshot_shotgun");
+	}
+	if (!idStr::Icmp(projectileName, "projectile_bullet_machinegun")) {
+		return spawnArgs.GetString("snd_headshot_machinegun");
+	}
+	if (!idStr::Icmp(projectileName, "projectile_chaingunbullet")) {
+		return spawnArgs.GetString("snd_headshot_pistol");
+	}
+	if (!idStr::Icmp(projectileName, "projectile_rocket")) {
+		return spawnArgs.GetString("snd_headshot_rocket");
+	}
+	common->Error("No sound shader for %s", projectileName);
+	return "";
 }
 
 /*
