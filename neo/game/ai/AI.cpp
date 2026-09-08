@@ -3304,7 +3304,7 @@ const idDeclParticle *idAI::SpawnParticlesOnJoint( particleEmitter_t &pe, const 
 idAI::Killed
 =====================
 */
-void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location ) {
+void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat ) {
 	idAngles ang;
 	const char *modelDeath;
 
@@ -3326,6 +3326,11 @@ void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const id
 		AI_PAIN = true;
 		AI_DAMAGE = true;
 		return;
+	}
+
+	if (isOverheat) {
+		StartSoundShader(declManager->FindSound("plasma_heat_blast"), SND_CHANNEL_ANY, 0, false, nullptr);
+		SpawnParticles("bigexplosion");
 	}
 
 	// stop all voice sounds

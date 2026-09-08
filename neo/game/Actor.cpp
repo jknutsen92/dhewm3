@@ -26,6 +26,7 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
+#include "Game_local.h"
 #include "sys/platform.h"
 #include "gamesys/SysCvar.h"
 #include "script/Script_Thread.h"
@@ -445,6 +446,9 @@ idActor::idActor( void ) {
 	allowPain			= false;
 	allowEyeFocus		= false;
 
+	heat 				= 0;
+	heatDecayRate		= 0;
+
 	waitState			= "";
 
 	blink_anim			= 0;
@@ -626,6 +630,8 @@ void idActor::Spawn( void ) {
 	}
 
 	finalBoss = spawnArgs.GetBool( "finalBoss" );
+
+	heatDecayRate = spawnArgs.GetFloat("heat_decay_rate");
 
 	FinishSetup();
 }
@@ -2013,6 +2019,14 @@ idActor::UpdateAnimState
 =====================
 */
 void idActor::UpdateAnimState( void ) {
+	// smolspacer - heat decay
+	float deltaTime = float(gameLocal.time - gameLocal.previousTime) / 1000.0;
+	if (heat > 0) {
+		heat -= heatDecayRate * deltaTime;
+		if (heat < 0) {
+			heat = 0;
+		}
+	}
 	headAnim.UpdateState();
 	torsoAnim.UpdateState();
 	legsAnim.UpdateState();
@@ -2232,6 +2246,20 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 			// physics is turned off by calling af.Rest()
 			BecomeActive( TH_PHYSICS );
 		}
+	}
+
+	// smolspace - handle heat
+	int mass = spawnArgs.GetInt("mass");
+	float maxHeat = (int)ceil(g_massHeatScaled.GetFloat() * mass);
+	int projectileHeat = inflictor->spawnArgs.GetInt("heat");
+	heat += projectileHeat;
+	if (g_debugDamage.GetBool()) {
+		printf("Target %s (%dKg) current heat: %f/%f - projectile heat: %d\n", (const char*)name, mass, heat, maxHeat, projectileHeat);
+	}
+	if (heat > maxHeat) {
+		printf("%s killed by overheat\n", (const char*)name);
+		Killed( inflictor, attacker, damage, dir, location, true );
+		Gib( dir, damageDefName );
 	}
 }
 

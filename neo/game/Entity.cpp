@@ -3077,7 +3077,7 @@ Called whenever an entity's health is reduced to 0 or less.
 This is a virtual function that subclasses are expected to implement.
 ============
 */
-void idEntity::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location ) {
+void idEntity::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat ) {
 }
 
 

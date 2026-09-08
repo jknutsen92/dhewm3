@@ -128,7 +128,7 @@ idCVar g_armorProtection(			"g_armorProtection",		"0.3",			CVAR_GAME | CVAR_FLOA
 idCVar g_armorStripScale(			"g_armorStripScale",		"1.5",			CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, "controls how much armor each point of damage removes from inventory");
 idCVar g_maxAmmoScale(				"g_maxAmmoScale",			"1.0",			CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, "multiplies the base value of max ammo inventory limits for players");
 idCVar g_itemValueScale(			"g_itemValueScale",			"1.0",			CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, "multiplies the base value of health/armor/ammo pickups");
-//idCVar g_pistolHeadshotScale(		"g_pistolHeadshotScale",	"1.5",			CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, "extra multiplier for pistol headshots");
+idCVar g_massHeatScaled(			"g_massHeatScale",			"1.0",			CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, "scales a character's maximum heat by their mass amount for plasmagun");
 idCVar g_armorProtectionMP(			"g_armorProtectionMP",		"0.6",			CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, "armor takes this percentage of damage in mp" );
 idCVar g_useDynamicProtection(		"g_useDynamicProtection",	"1",			CVAR_GAME | CVAR_BOOL | CVAR_ARCHIVE, "scale damage and armor dynamically to keep the player alive more often" );
 idCVar g_healthTakeTime(			"g_healthTakeTime",			"5",			CVAR_GAME | CVAR_INTEGER | CVAR_ARCHIVE, "how often to take health in nightmare mode" );

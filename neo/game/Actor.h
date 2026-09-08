@@ -212,6 +212,9 @@ public:
 protected:
 	friend class			idAnimState;
 
+	float 					heat;
+	float					heatDecayRate;
+
 	float					fovDot;				// cos( fovDegrees )
 	idVec3					eyeOffset;			// offset of eye relative to physics origin
 	idVec3					modelOffset;		// offset of visual model relative to the physics origin

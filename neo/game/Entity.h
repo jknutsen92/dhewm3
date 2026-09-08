@@ -310,7 +310,7 @@ public:
 							// notifies this entity that it is in pain
 	virtual bool			Pain( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location );
 							// notifies this entity that is has been killed
-	virtual void			Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location );
+	virtual void			Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat = false );
 
 	// scripting
 	virtual bool			ShouldConstructScriptObjectAtSpawn( void ) const;

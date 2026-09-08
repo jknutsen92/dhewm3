@@ -555,7 +555,7 @@ void idDamagable::BecomeBroken( idEntity *activator ) {
 idDamagable::Killed
 ================
 */
-void idDamagable::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location ) {
+void idDamagable::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat ) {
 	if ( gameLocal.time < nextTriggerTime ) {
 		health += damage;
 		return;

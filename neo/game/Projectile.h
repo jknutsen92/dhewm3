@@ -62,7 +62,7 @@ public :
 	idEntity *				GetOwner( void ) const;
 
 	virtual void			Think( void );
-	virtual void			Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location );
+	virtual void			Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat = false );
 	virtual bool			Collide( const trace_t &collision, const idVec3 &velocity );
 	virtual void			Explode( const trace_t &collision, idEntity *ignore );
 	void					Fizzle( void );
@@ -252,7 +252,7 @@ public :
 	void					Create( idEntity *owner, const idVec3 &start, const idMat3 &axis );
 	void					Launch( void );
 	void					Think( void );
-	void					Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location );
+	void					Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat = false );
 	void					Explode( void );
 	void					Fizzle( void );
 	virtual bool			Collide( const trace_t &collision, const idVec3 &velocity );

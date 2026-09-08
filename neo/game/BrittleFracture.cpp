@@ -985,7 +985,7 @@ bool idBrittleFracture::IsBroken( void ) const {
 idBrittleFracture::Killed
 ================
 */
-void idBrittleFracture::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location ) {
+void idBrittleFracture::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat ) {
 	if ( !disableFracture ) {
 		ActivateTargets( this );
 		Break();
