@@ -212,8 +212,10 @@ public:
 protected:
 	friend class			idAnimState;
 
-	float 					heat;
-	float					heatDecayRate;
+	// smolspacer
+	bool 					isPlasmaHeatable;	// Whether this entity can be heated with the plasmagun
+	float 					heat;				// How much heat this entity currently has
+	float					heatDecayRate;		// How much heat per second the entity sheds
 
 	float					fovDot;				// cos( fovDegrees )
 	idVec3					eyeOffset;			// offset of eye relative to physics origin

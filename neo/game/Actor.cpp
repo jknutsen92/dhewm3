@@ -632,6 +632,7 @@ void idActor::Spawn( void ) {
 	finalBoss = spawnArgs.GetBool( "finalBoss" );
 
 	heatDecayRate = spawnArgs.GetFloat("heat_decay_rate");
+	isPlasmaHeatable = spawnArgs.GetBool("plasma_heatable");
 
 	FinishSetup();
 }
@@ -2020,11 +2021,13 @@ idActor::UpdateAnimState
 */
 void idActor::UpdateAnimState( void ) {
 	// smolspacer - heat decay
-	float deltaTime = float(gameLocal.time - gameLocal.previousTime) / 1000.0;
-	if (heat > 0) {
-		heat -= heatDecayRate * deltaTime;
-		if (heat < 0) {
-			heat = 0;
+	if (isPlasmaHeatable) {
+		float deltaTime = float(gameLocal.time - gameLocal.previousTime) / 1000.0;
+		if (heat > 0) {
+			heat -= heatDecayRate * deltaTime;
+			if (heat < 0) {
+				heat = 0;
+			}
 		}
 	}
 	headAnim.UpdateState();
@@ -2247,19 +2250,23 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 			BecomeActive( TH_PHYSICS );
 		}
 	}
-
+	
 	// smolspace - handle heat
-	int mass = spawnArgs.GetInt("mass");
-	float maxHeat = (int)ceil(g_massHeatScaled.GetFloat() * mass);
-	int projectileHeat = inflictor->spawnArgs.GetInt("heat");
-	heat += projectileHeat;
-	if (g_debugDamage.GetBool()) {
-		printf("Target %s (%dKg) current heat: %f/%f - projectile heat: %d\n", (const char*)name, mass, heat, maxHeat, projectileHeat);
-	}
-	if (heat > maxHeat) {
-		printf("%s killed by overheat\n", (const char*)name);
-		Killed( inflictor, attacker, damage, dir, location, true );
-		Gib( dir, damageDefName );
+	if (isPlasmaHeatable) {
+		int mass = spawnArgs.GetInt("mass");
+		float maxHeat = (int)ceil(g_massHeatScaled.GetFloat() * mass);
+		int projectileHeat = inflictor->spawnArgs.GetInt("heat");
+		heat += projectileHeat;
+		if (g_debugDamage.GetBool()) {
+			printf("Target %s (%dKg) current heat: %f/%f - projectile heat: %d\n", (const char*)name, mass, heat, maxHeat, projectileHeat);
+		}
+		if (heat > maxHeat) {
+			Killed( inflictor, attacker, damage, dir, location, true );
+			Gib( dir, damageDefName );
+			if (g_debugDamage.GetBool()) {
+				printf("%s killed by overheat\n", (const char*)name);
+			}
+		}
 	}
 }
 

@@ -3240,9 +3240,7 @@ idAI::SpawnParticles
 */
 void idAI::SpawnParticles( const char *keyName ) {
 	const idKeyValue *kv = spawnArgs.MatchPrefix( keyName, NULL );
-	printf("Keyname: %s\n", keyName);
 	while ( kv ) {
-		printf("key: %s\n", (const char*)kv->GetKey());
 		particleEmitter_t pe;
 
 		idStr particleName = kv->GetValue();
@@ -3258,7 +3256,6 @@ void idAI::SpawnParticles( const char *keyName ) {
 
 			SpawnParticlesOnJoint( pe, particleName, jointName );
 			particles.Append( pe );
-			printf("particle: %s, joint name: %s, particles: %d\n", (const char*)particleName, (const char*)jointName, (int)particles.Size());
 		}
 
 		kv = spawnArgs.MatchPrefix( keyName, kv );
