@@ -215,7 +215,10 @@ protected:
 	// smolspacer
 	bool 					isPlasmaHeatable;	// Whether this entity can be heated with the plasmagun
 	float 					heat;				// How much heat this entity currently has
+	float 					maxHeat;			// The point at which the entity overheats and detonates
 	float					heatDecayRate;		// How much heat per second the entity sheds
+	idDeclSkin*				previousSkin;		// Skin the character had before he was heated
+	idDeclSkin*				heatedSkin;			// Material that makes the heated entity glow
 
 	float					fovDot;				// cos( fovDegrees )
 	idVec3					eyeOffset;			// offset of eye relative to physics origin
@@ -284,6 +287,7 @@ private:
 	void					FinishSetup( void );
 	void					SetupHead( void );
 	void					PlayFootStepSound( void );
+	void					UpdateHeatState( void );
 
 	void					Event_EnableEyeFocus( void );
 	void					Event_DisableEyeFocus( void );

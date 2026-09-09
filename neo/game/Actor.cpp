@@ -447,7 +447,10 @@ idActor::idActor( void ) {
 	allowEyeFocus		= false;
 
 	heat 				= 0;
+	maxHeat				= 0;
 	heatDecayRate		= 0;
+	previousSkin 		= nullptr;
+	heatedSkin			= nullptr;
 
 	waitState			= "";
 
@@ -631,8 +634,16 @@ void idActor::Spawn( void ) {
 
 	finalBoss = spawnArgs.GetBool( "finalBoss" );
 
+	// smolspacer
 	heatDecayRate = spawnArgs.GetFloat("heat_decay_rate");
 	isPlasmaHeatable = spawnArgs.GetBool("plasma_heatable");
+	const char* heatedSkinName = spawnArgs.GetString("skin_heated");
+	previousSkin = (idDeclSkin*)GetSkin();
+	heatedSkin = (idDeclSkin*)declManager->FindSkin(heatedSkinName);
+	if (!heatedSkin) {
+		common->Error("Invalid heated skin %s", heatedSkinName);
+	}
+	maxHeat = g_massHeatScaled.GetFloat() * spawnArgs.GetFloat("mass");
 
 	FinishSetup();
 }
@@ -2022,13 +2033,7 @@ idActor::UpdateAnimState
 void idActor::UpdateAnimState( void ) {
 	// smolspacer - heat decay
 	if (isPlasmaHeatable) {
-		float deltaTime = float(gameLocal.time - gameLocal.previousTime) / 1000.0;
-		if (heat > 0) {
-			heat -= heatDecayRate * deltaTime;
-			if (heat < 0) {
-				heat = 0;
-			}
-		}
+		UpdateHeatState();
 	}
 	headAnim.UpdateState();
 	torsoAnim.UpdateState();
@@ -2124,6 +2129,33 @@ void idActor::SyncAnimChannels( int channel, int syncToChannel, int blendFrames 
 		}
 	} else {
 		animator.SyncAnimChannels( channel, syncToChannel, gameLocal.time, blendTime );
+	}
+}
+
+// smolspacer -- Updates the heat values with the decay amount and also manages the materials
+void idActor::UpdateHeatState() {
+	float deltaTime = float(gameLocal.time - gameLocal.previousTime) / 1000.0;
+	idDeclSkin* currentSkin = (idDeclSkin*)GetSkin();
+	if (heat > 0) {
+		float heatDecay = heatDecayRate * deltaTime;
+		heat = (heat - heatDecay) > 0.0 ? (heat - heatDecay) : 0.0;				// clamp heat to zero
+		if (currentSkin != heatedSkin) {
+			previousSkin = currentSkin;
+			SetSkin(heatedSkin);
+			if (g_debugHeat.GetBool()) {
+				common->Printf("Swapping previous skin for heated skin\n");
+			}
+		}
+		// SetShaderParm(SHADERPARM_HEAT_INDEX, heat / maxHeat);					// Update the shader intensity	
+		SetShaderParm(SHADERPARM_BEAM_WIDTH, heat / maxHeat);						// Update the shader intensity	
+	}
+	if (heat <= 0 && currentSkin == heatedSkin) {
+		SetSkin(previousSkin);
+		// SetShaderParm(SHADERPARM_HEAT_INDEX, 0.0);
+		SetShaderParm(SHADERPARM_BEAM_WIDTH, 0.0);
+		if (g_debugHeat.GetBool()) {
+			common->Printf("Swapping heated skin for previous skin\n");
+		}
 	}
 }
 
@@ -2253,19 +2285,23 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 	
 	// smolspace - handle heat
 	if (isPlasmaHeatable) {
-		int mass = spawnArgs.GetInt("mass");
-		float maxHeat = (int)ceil(g_massHeatScaled.GetFloat() * mass);
 		int projectileHeat = inflictor->spawnArgs.GetInt("heat");
 		heat += projectileHeat;
-		if (g_debugDamage.GetBool()) {
-			printf("Target %s (%dKg) current heat: %f/%f - projectile heat: %d\n", (const char*)name, mass, heat, maxHeat, projectileHeat);
+		if (g_debugHeat.GetBool()) {
+			int mass = spawnArgs.GetInt("mass");
+			common->Printf("Target %s (%dKg) current heat: %f/%f - projectile heat: %d\n", (const char*)name, mass, heat, maxHeat, projectileHeat);
 		}
 		if (heat > maxHeat) {
+			SetSkin(previousSkin);
 			Killed( inflictor, attacker, damage, dir, location, true );
 			Gib( dir, damageDefName );
-			if (g_debugDamage.GetBool()) {
-				printf("%s killed by overheat\n", (const char*)name);
+			if (g_debugHeat.GetBool()) {
+				common->Printf("%s killed by overheat\n", (const char*)name);
 			}
+		}
+		if (g_debugHeat.GetBool()) {
+			// common->Printf("SHADERPARM_HEAT_INDEX (12): %f ", renderEntity.shaderParms[SHADERPARM_HEAT_INDEX]);
+			common->Printf("(11) SHADERPARM_BEAM_WIDTH (HEAT): %f ", renderEntity.shaderParms[SHADERPARM_BEAM_WIDTH]);
 		}
 	}
 }

@@ -3307,7 +3307,7 @@ idAI::Killed
 void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat ) {
 	idAngles ang;
 	const char *modelDeath;
-
+	
 	// make sure the monster is activated
 	EndAttack();
 
