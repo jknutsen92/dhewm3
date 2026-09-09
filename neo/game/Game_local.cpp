@@ -3635,7 +3635,7 @@ idActor *idGameLocal::GetAlertEntity( void ) {
 idGameLocal::RadiusDamage
 ============
 */
-void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEntity *attacker, idEntity *ignoreDamage, idEntity *ignorePush, const char *damageDefName, float dmgPower ) {
+void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEntity *attacker, idEntity *ignoreDamage, idEntity *ignorePush, const char *damageDefName, float dmgPower, float applyHeat ) {
 	float		dist, damageScale, attackerDamageScale, attackerPushScale;
 	idEntity *	ent;
 	idEntity *	entityList[ MAX_GENTITIES ];
@@ -3726,6 +3726,8 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 			}
 
 			ent->Damage( inflictor, attacker, dir, damageDefName, damageScale, INVALID_JOINT );
+
+			// smolspacer apply heat here TODO
 		}
 	}
 

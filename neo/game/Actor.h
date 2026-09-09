@@ -219,6 +219,7 @@ protected:
 	float					heatDecayRate;		// How much heat per second the entity sheds
 	idDeclSkin*				previousSkin;		// Skin the character had before he was heated
 	idDeclSkin*				heatedSkin;			// Material that makes the heated entity glow
+	idEntityFx*				glowLightFx;		// Glow from the entity radiating visible light
 
 	float					fovDot;				// cos( fovDegrees )
 	idVec3					eyeOffset;			// offset of eye relative to physics origin
@@ -288,6 +289,7 @@ private:
 	void					SetupHead( void );
 	void					PlayFootStepSound( void );
 	void					UpdateHeatState( void );
+	void 					ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName);
 
 	void					Event_EnableEyeFocus( void );
 	void					Event_DisableEyeFocus( void );
