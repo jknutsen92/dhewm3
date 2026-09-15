@@ -400,6 +400,13 @@ void idEntityFx::Run( int time ) {
 			}
 		}
 
+		// // smolspacer
+		if (fxaction.boundLightAndParm && IsBound()) {
+			laction.renderLight.origin 	= GetBindMaster()->GetPhysics()->GetOrigin() + fxaction.offset;
+			laction.renderLight.axis 	= GetBindMaster()->GetPhysics()->GetAxis();
+			laction.renderLight.shaderParms[SHADERPARM_BEAM_WIDTH] = GetBindMaster()->GetRenderEntity()->shaderParms[SHADERPARM_BEAM_WIDTH];
+		}
+
 		idFXLocalAction *useAction;
 		if ( fxaction.sibling == -1 ) {
 			useAction = &laction;

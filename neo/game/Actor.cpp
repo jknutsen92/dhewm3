@@ -454,7 +454,7 @@ idActor::idActor( void ) {
 	heatDecayRate		= 0;
 	previousSkin 		= nullptr;
 	heatedSkin			= nullptr;
-	glowLightFx			= nullptr;
+	heatGlowFx			= nullptr;
 
 	waitState			= "";
 
@@ -2142,25 +2142,25 @@ void idActor::UpdateHeatState() {
 	idDeclSkin* currentSkin = (idDeclSkin*)GetSkin();
 	if (heat > 0) {
 		float heatDecay = heatDecayRate * deltaTime;
-		heat = (heat - heatDecay) > 0.0 ? (heat - heatDecay) : 0.0;				// clamp heat to zero
+		heat = (heat - heatDecay) > 0.0 ? (heat - heatDecay) : 0.0;					// clamp heat to zero
 		if (currentSkin != heatedSkin) {
 			previousSkin = currentSkin;
 			SetSkin(heatedSkin);
-			glowLightFx = idEntityFx::StartFx("heatglow.fx", nullptr, nullptr, this, true);
+			heatGlowFx = idEntityFx::StartFx("fx/heatglow.fx", &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, true);
 			if (g_debugHeat.GetBool()) {
-				common->Printf("Swapping previous skin (%s) for heated skin (%s)\n", previousSkin->GetName(), heatedSkin->GetName());
+				common->Printf("Swapping previous skin for heated skin\n");
 			}
 		}
 		// SetShaderParm(SHADERPARM_HEAT_INDEX, heat / maxHeat);					// Update the shader intensity	
-		SetShaderParm(SHADERPARM_BEAM_WIDTH, heat / maxHeat);						// Update the shader intensity	
+		SetShaderParm(SHADERPARM_BEAM_WIDTH, heat / maxHeat);			// Update the shader intensity	
 	}
 	if (heat <= 0 && currentSkin == heatedSkin) {
 		SetSkin(previousSkin);
-		glowLightFx->Stop();
+		heatGlowFx->Stop();
 		// SetShaderParm(SHADERPARM_HEAT_INDEX, 0.0);
 		SetShaderParm(SHADERPARM_BEAM_WIDTH, 0.0);
 		if (g_debugHeat.GetBool()) {
-			common->Printf("Swapping heated skin (%s) for previous skin (%s)\n", heatedSkin->GetName(), previousSkin->GetName());
+			common->Printf("Swapping heated skin for previous skin\n");
 		}
 	}
 }
@@ -2326,7 +2326,7 @@ void idActor::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, con
 		if (heat > maxHeat) {
 			const idVec3 origin = GetPhysics()->GetOrigin();
 			SetSkin(previousSkin);											// Reset to normal skin
-			glowLightFx->Stop();
+			heatGlowFx->Stop();
 			// Heat blast radial explosion
 			// gameLocal.RadiusDamage(origin, inflictor, attacker, attacker, attacker, "damage_heatblast", 1.0f, true);	// TODO: currently borked, GDB to the rescue
 			Killed( inflictor, attacker, damage, dir, location, true );

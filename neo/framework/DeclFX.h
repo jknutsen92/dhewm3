@@ -94,6 +94,7 @@ typedef struct {
 	bool					noshadows;
 	bool					particleTrackVelocity;
 	bool					trackOrigin;
+	bool					boundLightAndParm;
 } idFXSingleAction;
 
 //

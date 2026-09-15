@@ -219,7 +219,7 @@ protected:
 	float					heatDecayRate;		// How much heat per second the entity sheds
 	idDeclSkin*				previousSkin;		// Skin the character had before he was heated
 	idDeclSkin*				heatedSkin;			// Material that makes the heated entity glow
-	idEntityFx*				glowLightFx;		// Glow from the entity radiating visible light
+	idEntityFx*				heatGlowFx;			// Glow from the entity radiating visible light
 
 	float					fovDot;				// cos( fovDegrees )
 	idVec3					eyeOffset;			// offset of eye relative to physics origin
