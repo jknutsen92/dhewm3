@@ -208,7 +208,7 @@ void idDeclFX::ParseSingleFXAction( idLexer &src, idFXSingleAction& FXAction ) {
 			continue;
 		}
 
-		if ( !token.Icmp( "boundLightAndParm" ) ) {
+		if ( !token.Icmp( "boundlightandparm" ) ) {
 			FXAction.boundLightAndParm = src.ParseBool();
 			continue;
 		}

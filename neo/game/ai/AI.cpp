@@ -32,6 +32,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "gamesys/SysCvar.h"
 #include "Moveable.h"
 #include "SmokeParticles.h"
+#include "Fx.h"
 
 #include "ai/AI.h"
 
@@ -3329,8 +3330,9 @@ void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const id
 	}
 
 	if (isOverheat) {
-		StartSoundShader(declManager->FindSound("plasma_heat_blast"), SND_CHANNEL_ANY, 0, false, nullptr);
-		SpawnParticles("smoke_heatblast");
+		idEntityFx::StartFx(spawnArgs.GetString("heatblast_fx"), &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, true);
+		// Heat blast radial explosion
+		// gameLocal.RadiusDamage(origin, inflictor, attacker, attacker, attacker, "damage_heatblast", 1.0f, true);	// TODO: currently borked, GDB to the rescue
 	}
 
 	// stop all voice sounds

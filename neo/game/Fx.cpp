@@ -33,6 +33,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "Player.h"
 #include "Projectile.h"
 #include "WorldSpawn.h"
+#include <cmath>
 
 #include "Fx.h"
 
@@ -475,13 +476,25 @@ void idEntityFx::Run( int time ) {
 			}
 			case FX_SHAKE: {
 				if ( !useAction->shakeStarted ) {
-					idDict args;
-					args.Clear();
-					args.SetFloat( "kick_time", fxaction.shakeTime );
-					args.SetFloat( "kick_amplitude", fxaction.shakeAmplitude );
 					for ( j = 0; j < gameLocal.numClients; j++ ) {
 						idPlayer *player = gameLocal.GetClientByNum( j );
-						if ( player && ( player->GetPhysics()->GetOrigin() - GetPhysics()->GetOrigin() ).LengthSqr() < Square( fxaction.shakeDistance ) ) {
+						float distance = (GetPhysics()->GetOrigin() - player->GetPhysics()->GetOrigin()).LengthFast();
+						float shakeTime;
+						float shakeAmplitude;
+						if (fxaction.shakeFalloff) {
+							float shakeFalloffCoefficient = sqrt(distance) * fxaction.shakeFalloff;
+							shakeTime = fxaction.shakeTime / shakeFalloffCoefficient;
+							shakeAmplitude = fxaction.shakeAmplitude / shakeFalloffCoefficient;
+						}
+						else {
+							shakeTime = fxaction.shakeTime;
+							shakeAmplitude = fxaction.shakeAmplitude;
+						}
+						idDict args;
+						args.Clear();
+						args.SetFloat( "kick_time", shakeTime );
+						args.SetFloat( "kick_amplitude", shakeAmplitude );
+						if ( player && ( distance < Square( fxaction.shakeDistance ) ) ) {
 							if ( !gameLocal.isMultiplayer || !fxaction.shakeIgnoreMaster || GetBindMaster() != player ) {
 								player->playerView.DamageImpulse( fxaction.offset, &args );
 							}

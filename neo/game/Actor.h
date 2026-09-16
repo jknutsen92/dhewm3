@@ -33,6 +33,8 @@ If you have questions concerning this license or the applicable additional terms
 #include "IK.h"
 #include "PlayerView.h"
 
+#define SIZZLE_SND_CHANNEL SND_CHANNEL_BODY3
+
 /*
 ===============================================================================
 

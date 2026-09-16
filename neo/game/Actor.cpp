@@ -27,6 +27,7 @@ If you have questions concerning this license or the applicable additional terms
 */
 
 #include "Game_local.h"
+#include "framework/DeclManager.h"
 #include "physics/Clip.h"
 #include "sys/platform.h"
 #include "gamesys/SysCvar.h"
@@ -2147,16 +2148,18 @@ void idActor::UpdateHeatState() {
 			previousSkin = currentSkin;
 			SetSkin(heatedSkin);
 			heatGlowFx = idEntityFx::StartFx("fx/heatglow.fx", &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, true);
+			StartSoundShader(declManager->FindSound("heat_sizzle"), SIZZLE_SND_CHANNEL, 0, false, nullptr);
 			if (g_debugHeat.GetBool()) {
 				common->Printf("Swapping previous skin for heated skin\n");
 			}
 		}
 		// SetShaderParm(SHADERPARM_HEAT_INDEX, heat / maxHeat);					// Update the shader intensity	
-		SetShaderParm(SHADERPARM_BEAM_WIDTH, heat / maxHeat);			// Update the shader intensity	
+		SetShaderParm(SHADERPARM_BEAM_WIDTH, heat / maxHeat);			// Update the shader intensity
 	}
 	if (heat <= 0 && currentSkin == heatedSkin) {
 		SetSkin(previousSkin);
 		heatGlowFx->Stop();
+		StopSound(SIZZLE_SND_CHANNEL, false);
 		// SetShaderParm(SHADERPARM_HEAT_INDEX, 0.0);
 		SetShaderParm(SHADERPARM_BEAM_WIDTH, 0.0);
 		if (g_debugHeat.GetBool()) {
@@ -2324,13 +2327,12 @@ void idActor::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, con
 			common->Printf("Target %s (%dKg) current heat: %f/%f - projectile heat: %d\n", (const char*)name, mass, heat, maxHeat, projectileHeat);
 		}
 		if (heat > maxHeat) {
-			const idVec3 origin = GetPhysics()->GetOrigin();
-			SetSkin(previousSkin);											// Reset to normal skin
+			StopSound(SIZZLE_SND_CHANNEL, false);
 			heatGlowFx->Stop();
-			// Heat blast radial explosion
-			// gameLocal.RadiusDamage(origin, inflictor, attacker, attacker, attacker, "damage_heatblast", 1.0f, true);	// TODO: currently borked, GDB to the rescue
 			Killed( inflictor, attacker, damage, dir, location, true );
-			Gib( dir, damageDefName );
+			if (spawnArgs.GetBool("gib")) {
+				Gib( dir, damageDefName );
+			}
 			if (g_debugHeat.GetBool()) {
 				common->Printf("%s killed by overheat\n", (const char*)name);
 			}
