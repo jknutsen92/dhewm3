@@ -277,6 +277,8 @@ protected:
 
 	virtual void			Gib( const idVec3 &dir, const char *damageDefName );
 
+	virtual void 			InflictHeat( float heatToInflict ); 
+
 							// removes attachments with "remove" set for when character dies
 	void					RemoveAttachments( void );
 

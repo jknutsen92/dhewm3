@@ -3635,7 +3635,7 @@ idActor *idGameLocal::GetAlertEntity( void ) {
 idGameLocal::RadiusDamage
 ============
 */
-void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEntity *attacker, idEntity *ignoreDamage, idEntity *ignorePush, const char *damageDefName, float dmgPower, float applyHeat ) {
+void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEntity *attacker, idEntity *ignoreDamage, idEntity *ignorePush, const char *damageDefName, float dmgPower ) {
 	float		dist, damageScale, attackerDamageScale, attackerPushScale;
 	idEntity *	ent;
 	idEntity *	entityList[ MAX_GENTITIES ];
@@ -3643,6 +3643,7 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 	idBounds	bounds;
 	idVec3		v, damagePoint, dir;
 	int			i, e, damage, radius, push;
+	float 		heat;
 
 	const idDict *damageDef = FindEntityDefDict( damageDefName, false );
 	if ( !damageDef ) {
@@ -3655,6 +3656,22 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 	damageDef->GetInt( "push", va( "%d", damage * 100 ), push );
 	damageDef->GetFloat( "attackerDamageScale", "0.5", attackerDamageScale );
 	damageDef->GetFloat( "attackerPushScale", "0", attackerPushScale );
+	heat = damageDef->GetFloat("heat");
+	
+	if (damageDef->GetBool("massScale")) {						// Effectiveness of overheat bomb scales with the size of the entity
+		if (g_debugDamage.GetBool()) {
+			common->Printf("MassScale enabled - pre-scaled values: push=%d,damage=%d,heat=%f,radius=%d\n", push, damage, heat, radius);
+		}
+		float mass = attacker->spawnArgs.GetFloat("mass");
+		push = (int)ceil(mass * push);
+		damage = (int)ceil(mass * damage / 5.0f);
+		heat = mass * heat / 5.0f;
+		radius = mass * radius / 2.5f;
+	}
+
+	if (g_debugDamage.GetBool()) {
+		common->Printf("Radial damage from %s: push=%d,damage=%d,heat=%f,radius=%d\n", attacker->GetName(), push, damage, heat, radius);
+	}
 
 	if ( radius < 1 ) {
 		radius = 1;
@@ -3727,7 +3744,7 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 
 			ent->Damage( inflictor, attacker, dir, damageDefName, damageScale, INVALID_JOINT );
 
-			// smolspacer apply heat here TODO
+			ent->InflictHeat(heat);			// smolspacer
 		}
 	}
 

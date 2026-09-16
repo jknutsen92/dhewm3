@@ -2195,6 +2195,10 @@ void idActor::Gib( const idVec3 &dir, const char *damageDefName ) {
 	StopSound( SND_CHANNEL_VOICE, false );
 }
 
+void idActor::InflictHeat(float heatToInflict) {
+	heat += heatToInflict;
+}
+
 
 /*
 ============
@@ -2321,7 +2325,7 @@ void idActor::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, con
 	// smolspace - handle heat
 	if (isPlasmaHeatable) {
 		int projectileHeat = inflictor->spawnArgs.GetInt("heat");
-		heat += projectileHeat;
+		InflictHeat(projectileHeat);
 		if (g_debugHeat.GetBool()) {
 			int mass = spawnArgs.GetInt("mass");
 			common->Printf("Target %s (%dKg) current heat: %f/%f - projectile heat: %d\n", (const char*)name, mass, heat, maxHeat, projectileHeat);
