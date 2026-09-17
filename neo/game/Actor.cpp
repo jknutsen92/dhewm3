@@ -648,7 +648,7 @@ void idActor::Spawn( void ) {
 	if (!heatedSkin) {
 		common->Error("Invalid heated skin %s", heatedSkinName);
 	}
-	maxHeat = g_massHeatScaled.GetFloat() * spawnArgs.GetFloat("mass");
+	maxHeat = g_pMassHeatScale.GetFloat() * spawnArgs.GetFloat("mass");
 
 	FinishSetup();
 }
@@ -2037,7 +2037,7 @@ idActor::UpdateAnimState
 */
 void idActor::UpdateAnimState( void ) {
 	// smolspacer - heat decay
-	if (isPlasmaHeatable) {
+	if (isPlasmaHeatable && isAlive) {
 		UpdateHeatState();
 	}
 	headAnim.UpdateState();
@@ -2153,14 +2153,12 @@ void idActor::UpdateHeatState() {
 				common->Printf("Swapping previous skin for heated skin\n");
 			}
 		}
-		// SetShaderParm(SHADERPARM_HEAT_INDEX, heat / maxHeat);					// Update the shader intensity	
 		SetShaderParm(SHADERPARM_BEAM_WIDTH, heat / maxHeat);			// Update the shader intensity
 	}
 	if (heat <= 0 && currentSkin == heatedSkin) {
 		SetSkin(previousSkin);
 		heatGlowFx->Stop();
 		StopSound(SIZZLE_SND_CHANNEL, false);
-		// SetShaderParm(SHADERPARM_HEAT_INDEX, 0.0);
 		SetShaderParm(SHADERPARM_BEAM_WIDTH, 0.0);
 		if (g_debugHeat.GetBool()) {
 			common->Printf("Swapping heated skin for previous skin\n");

@@ -3309,6 +3309,7 @@ void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const id
 	idAngles ang;
 	const char *modelDeath;
 	
+	isAlive = false;
 	// make sure the monster is activated
 	EndAttack();
 
@@ -3329,8 +3330,9 @@ void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const id
 		return;
 	}
 
-	if (isOverheat) {		// smolspacer - apply AOE damage and FX
-		fl.takedamage = 0;
+	if (isOverheat) {				// smolspacer - apply AOE damage and FX
+		fl.takedamage = 0;			// Prevents recursive calling of Killed by multiple enemies heatblasting nearby each other
+		SetSkin(0);
 		idEntityFx::StartFx(spawnArgs.GetString("heatblast_fx"), &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, true);
 		gameLocal.RadiusDamage(GetPhysics()->GetOrigin(), inflictor, this, this, nullptr, "damage_heatblast", 1.0f);
 	}

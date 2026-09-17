@@ -415,6 +415,7 @@ idEntity::idEntity() {
 	renderView		= NULL;
 	cameraTarget	= NULL;
 	health			= 0;
+	isAlive 		= true;
 
 	physics			= NULL;
 	bindMaster		= NULL;
@@ -3078,6 +3079,7 @@ This is a virtual function that subclasses are expected to implement.
 ============
 */
 void idEntity::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat ) {
+	isAlive = false;
 }
 
 // For subclasses to implement - smolspacer

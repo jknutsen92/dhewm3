@@ -3663,10 +3663,10 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 			common->Printf("MassScale enabled - pre-scaled values: push=%d,damage=%d,heat=%f,radius=%d\n", push, damage, heat, radius);
 		}
 		float mass = attacker->spawnArgs.GetFloat("mass");
-		push = (int)ceil(mass * push);
-		damage = (int)ceil(mass * damage / 5.0f);
-		heat = mass * heat / 5.0f;
-		radius = mass * radius / 2.5f;
+		push 	= (int)ceil(mass * push * g_pMassPushScale.GetFloat());
+		damage 	= (int)ceil(mass * damage * g_pAreaDmgScale.GetFloat());
+		heat 	= mass * heat * g_pAreaHeatScale.GetFloat();
+		radius 	= mass * radius * g_pMassRadiusScale.GetFloat();
 	}
 
 	if (g_debugDamage.GetBool()) {

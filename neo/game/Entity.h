@@ -142,6 +142,7 @@ public:
 	idList< idEntityPtr<idEntity> >	targets;		// when this entity is activated these entities entity are activated
 
 	int						health;					// FIXME: do all objects really need health?
+	bool					isAlive;				// Used to fix some skin glitches with the heat system
 
 	struct entityFlags_s {
 		bool				notarget			:1;	// if true never attack or target this entity
