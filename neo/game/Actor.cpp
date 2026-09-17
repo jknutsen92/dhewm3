@@ -453,8 +453,10 @@ idActor::idActor( void ) {
 	heat 				= 0;
 	maxHeat				= 0;
 	heatDecayRate		= 0;
-	previousSkin 		= nullptr;
-	heatedSkin			= nullptr;
+	previousSkinBody 	= nullptr;
+	heatedSkinBody		= nullptr;
+	previousSkinHead	= nullptr;
+	heatedSkinHead		= nullptr;
 	heatGlowFx			= nullptr;
 
 	waitState			= "";
@@ -642,14 +644,19 @@ void idActor::Spawn( void ) {
 	// smolspacer
 	heatDecayRate = spawnArgs.GetFloat("heat_decay_rate");
 	isPlasmaHeatable = spawnArgs.GetBool("plasma_heatable");
-	const char* heatedSkinName = spawnArgs.GetString("skin_heated");
-	previousSkin = (idDeclSkin*)GetSkin();
-	heatedSkin = (idDeclSkin*)declManager->FindSkin(heatedSkinName);
-	if (!heatedSkin) {
-		common->Error("Invalid heated skin %s", heatedSkinName);
+	previousSkinBody = (idDeclSkin*)GetSkin();
+	heatedSkinBody = (idDeclSkin*)declManager->FindSkin(spawnArgs.GetString("body_skin_heated"));
+	if (!heatedSkinBody) {
+		common->Warning("Invalid heated skin %s", spawnArgs.GetString("body_skin_heated"));
+	}
+	if (headEnt) {
+		previousSkinHead = (idDeclSkin*)GetSkin();
+		heatedSkinHead = (idDeclSkin*)declManager->FindSkin(spawnArgs.GetString("head_skin_heated"));
+		if (!heatedSkinHead) {
+			common->Warning("Invalid heated skin %s", spawnArgs.GetString("head_skin_heated"));
+		}
 	}
 	maxHeat = g_pMassHeatScale.GetFloat() * spawnArgs.GetFloat("mass");
-
 	FinishSetup();
 }
 
@@ -2037,7 +2044,7 @@ idActor::UpdateAnimState
 */
 void idActor::UpdateAnimState( void ) {
 	// smolspacer - heat decay
-	if (isPlasmaHeatable && isAlive) {
+	if (isPlasmaHeatable && heat > 0 && isAlive) {
 		UpdateHeatState();
 	}
 	headAnim.UpdateState();
@@ -2144,25 +2151,49 @@ void idActor::UpdateHeatState() {
 	if (heat > 0) {
 		float heatDecay = heatDecayRate * deltaTime;
 		heat = (heat - heatDecay) > 0.0 ? (heat - heatDecay) : 0.0;					// clamp heat to zero
-		if (currentSkin != heatedSkin) {
-			previousSkin = currentSkin;
-			SetSkin(heatedSkin);
-			heatGlowFx = idEntityFx::StartFx("fx/heatglow.fx", &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, true);
-			StartSoundShader(declManager->FindSound("heat_sizzle"), SIZZLE_SND_CHANNEL, 0, false, nullptr);
+		if (currentSkin != heatedSkinBody) {
+			ApplyHeatFx(currentSkin);
 			if (g_debugHeat.GetBool()) {
 				common->Printf("Swapping previous skin for heated skin\n");
 			}
 		}
-		SetShaderParm(SHADERPARM_BEAM_WIDTH, heat / maxHeat);			// Update the shader intensity
+		UpdateHeatShaderParms(heat / maxHeat);							// Update the shader intensity
 	}
-	if (heat <= 0 && currentSkin == heatedSkin) {
-		SetSkin(previousSkin);
-		heatGlowFx->Stop();
-		StopSound(SIZZLE_SND_CHANNEL, false);
-		SetShaderParm(SHADERPARM_BEAM_WIDTH, 0.0);
+	if (heat <= 0 && currentSkin == heatedSkinBody) {
+		RemoveHeatFx();
+		UpdateHeatShaderParms(0.0f);
 		if (g_debugHeat.GetBool()) {
 			common->Printf("Swapping heated skin for previous skin\n");
 		}
+	}
+}
+
+void idActor::ApplyHeatFx(idDeclSkin* currentSkin) {
+	// Apply skin
+	previousSkinBody = currentSkin;
+	SetSkin(heatedSkinBody);
+	if (head.GetEntity()) {
+		head.GetEntity()->SetSkin(heatedSkinHead);
+	}
+	// Apply glow fx
+	heatGlowFx = idEntityFx::StartFx("fx/heatglow.fx", &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, true);
+	// Loop sizzle sound
+	StartSoundShader(declManager->FindSound("heat_sizzle"), SIZZLE_SND_CHANNEL, 0, false, nullptr);
+}
+
+void idActor::RemoveHeatFx() {
+	SetSkin(previousSkinBody);
+	if (head.GetEntity()) {
+		head.GetEntity()->SetSkin(previousSkinHead);
+	}	
+	heatGlowFx->Stop();
+	StopSound(SIZZLE_SND_CHANNEL, false);
+}
+
+void idActor::UpdateHeatShaderParms(float heatRatio) {
+	SetShaderParm(SHADERPARM_BEAM_WIDTH, heatRatio);
+	if (head.GetEntity()) {
+		head.GetEntity()->SetShaderParm(SHADERPARM_BEAM_WIDTH, heatRatio);
 	}
 }
 

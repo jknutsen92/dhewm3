@@ -407,7 +407,7 @@ void idDeclFX::ParseSingleFXAction( idLexer &src, idFXSingleAction& FXAction ) {
 			continue;
 		}
 
-		src.Warning( "FX File: bad token" );
+		src.Warning( "FX File: bad token: %s", token.c_str() );
 		continue;
 	}
 }
