@@ -26,6 +26,7 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
+#include "framework/DeclFX.h"
 #include "sys/platform.h"
 #include "renderer/ModelManager.h"
 
@@ -401,11 +402,20 @@ void idEntityFx::Run( int time ) {
 			}
 		}
 
+		if (fxaction.type == FX_PARTICLE && fxaction.bindParticles && IsBound()) {
+			laction.renderEntity.origin = GetBindMaster()->GetPhysics()->GetOrigin() + fxaction.offset;
+			laction.renderEntity.axis 	= GetBindMaster()->GetPhysics()->GetAxis();
+		}
+
 		// // smolspacer
-		if (fxaction.boundLightAndParm && IsBound()) {
+		if (fxaction.type == FX_LIGHT && fxaction.boundLightAndParm && IsBound()) {
+			float shaderParm = GetBindMaster()->GetRenderEntity()->shaderParms[SHADERPARM_BEAM_WIDTH];
 			laction.renderLight.origin 	= GetBindMaster()->GetPhysics()->GetOrigin() + fxaction.offset;
 			laction.renderLight.axis 	= GetBindMaster()->GetPhysics()->GetAxis();
-			laction.renderLight.shaderParms[SHADERPARM_BEAM_WIDTH] = GetBindMaster()->GetRenderEntity()->shaderParms[SHADERPARM_BEAM_WIDTH];
+			laction.renderLight.shaderParms[SHADERPARM_BEAM_WIDTH] = shaderParm;
+			laction.renderLight.lightRadius[0] = fxaction.lightRadius * shaderParm;
+			laction.renderLight.lightRadius[1] = fxaction.lightRadius * shaderParm;
+			laction.renderLight.lightRadius[2] = fxaction.lightRadius * shaderParm;
 		}
 
 		idFXLocalAction *useAction;

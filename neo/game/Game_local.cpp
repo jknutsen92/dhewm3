@@ -48,6 +48,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "Trigger.h"
 
 #include "framework/Licensee.h" // DG: for ID__DATE__
+#include <cstddef>
 
 #include "Game_local.h"
 
@@ -3669,7 +3670,7 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 		radius 	= mass * radius * g_pMassRadiusScale.GetFloat();
 	}
 
-	if (g_debugDamage.GetBool()) {
+	if (g_debugDamage.GetBool() && attacker) {
 		common->Printf("Radial damage from %s: push=%d,damage=%d,heat=%f,radius=%d\n", attacker->GetName(), push, damage, heat, radius);
 	}
 
@@ -3743,8 +3744,11 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 			}
 
 			ent->Damage( inflictor, attacker, dir, damageDefName, damageScale, INVALID_JOINT );
-
-			ent->InflictHeat(heat);			// smolspacer
+			
+			if (!ent->IsType( idPlayer::Type)) {
+				// ent->InflictHeat(heat);			// smolspacer
+				ent->ApplyHeat(inflictor, attacker, 0, dir, 0, damageDefName);
+			}
 		}
 	}
 

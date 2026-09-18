@@ -2324,7 +2324,10 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 			BecomeActive( TH_PHYSICS );
 		}
 	}
-	ApplyHeat(inflictor, attacker, damage, dir, location, damageDefName);
+	
+	if (isPlasmaHeatable) {
+		ApplyHeat(inflictor, attacker, damage, dir, location, damageDefName);
+	}
 }
 
 
@@ -2351,28 +2354,27 @@ idStr idActor::GetHeadshotSoundShader(idEntity* inflictor) {
 }
 
 void idActor::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName) {
-	// smolspace - handle heat
-	if (isPlasmaHeatable) {
-		int projectileHeat = inflictor->spawnArgs.GetInt("heat");
-		InflictHeat(projectileHeat);
-		if (g_debugHeat.GetBool()) {
-			int mass = spawnArgs.GetInt("mass");
-			common->Printf("Target %s (%dKg) current heat: %f/%f - projectile heat: %d\n", (const char*)name, mass, heat, maxHeat, projectileHeat);
-		}
-		if (heat > maxHeat) {
-			StopSound(SIZZLE_SND_CHANNEL, false);
+	int projectileHeat = inflictor->spawnArgs.GetInt("heat");
+	InflictHeat(projectileHeat);
+	if (g_debugHeat.GetBool()) {
+		int mass = spawnArgs.GetInt("mass");
+		common->Printf("Target %s (%dKg) current heat: %f/%f - projectile heat: %d\n", (const char*)name, mass, heat, maxHeat, projectileHeat);
+	}
+	if (heat > maxHeat) {
+		StopSound(SIZZLE_SND_CHANNEL, false);
+		if (heatGlowFx) {
 			heatGlowFx->Stop();
-			Killed( inflictor, attacker, damage, dir, location, true );
-			if (spawnArgs.GetBool("gib")) {
-				Gib( dir, damageDefName );
-			}
-			if (g_debugHeat.GetBool()) {
-				common->Printf("%s killed by overheat\n", (const char*)name);
-			}
+		}
+		Killed( inflictor, attacker, damage, dir, location, true );
+		if (spawnArgs.GetBool("gib")) {
+			Gib( dir, damageDefName );
 		}
 		if (g_debugHeat.GetBool()) {
-			common->Printf("(11) SHADERPARM_BEAM_WIDTH (HEAT): %f ", renderEntity.shaderParms[SHADERPARM_BEAM_WIDTH]);
+			common->Printf("%s killed by overheat\n", (const char*)name);
 		}
+	}
+	if (g_debugHeat.GetBool()) {
+		common->Printf("(11) SHADERPARM_BEAM_WIDTH (HEAT): %f ", renderEntity.shaderParms[SHADERPARM_BEAM_WIDTH]);
 	}
 }
 

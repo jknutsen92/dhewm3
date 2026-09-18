@@ -3086,6 +3086,9 @@ void idEntity::Killed( idEntity *inflictor, idEntity *attacker, int damage, cons
 void idEntity::InflictHeat( float heatToInflict ) {
 }
 
+void idEntity::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName) {
+}
+
 
 /***********************************************************************
 
