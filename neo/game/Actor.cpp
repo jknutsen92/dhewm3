@@ -2366,7 +2366,10 @@ void idActor::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, con
 			heatGlowFx->Stop();
 		}
 		Killed( inflictor, attacker, damage, dir, location, true );
-		if (spawnArgs.GetBool("gib")) {
+		if (spawnArgs.GetBool("gib") || spawnArgs.GetBool("heatgib")) {
+			if (spawnArgs.GetBool("heatgib")) {
+				Hide();
+			}
 			Gib( dir, damageDefName );
 		}
 		if (g_debugHeat.GetBool()) {
