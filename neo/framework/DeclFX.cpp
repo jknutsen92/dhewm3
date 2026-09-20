@@ -214,11 +214,6 @@ void idDeclFX::ParseSingleFXAction( idLexer &src, idFXSingleAction& FXAction ) {
 			continue;
 		}
 
-		if ( !token.Icmp( "bindParticles" ) ) {
-			FXAction.bindParticles = src.ParseBool();
-			continue;
-		}
-
 		if (!token.Icmp("restart")) {
 			FXAction.restart = src.ParseFloat();
 			continue;

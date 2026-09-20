@@ -402,11 +402,6 @@ void idEntityFx::Run( int time ) {
 			}
 		}
 
-		if (fxaction.type == FX_PARTICLE && fxaction.bindParticles && IsBound()) {
-			laction.renderEntity.origin = GetBindMaster()->GetPhysics()->GetOrigin() + fxaction.offset;
-			laction.renderEntity.axis 	= GetBindMaster()->GetPhysics()->GetAxis();
-		}
-
 		// // smolspacer
 		if (fxaction.type == FX_LIGHT && fxaction.boundLightAndParm && IsBound()) {
 			float shaderParm = GetBindMaster()->GetRenderEntity()->shaderParms[SHADERPARM_BEAM_WIDTH];

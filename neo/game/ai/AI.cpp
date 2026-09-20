@@ -28,7 +28,6 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "sys/platform.h"
 #include "idlib/math/Quat.h"
-
 #include "gamesys/SysCvar.h"
 #include "Moveable.h"
 #include "SmokeParticles.h"
@@ -3333,7 +3332,8 @@ void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const id
 	if (isOverheat) {				// smolspacer - apply AOE damage and FX
 		fl.takedamage = 0;			// Prevents recursive calling of Killed by multiple enemies heatblasting nearby each other
 		SetSkin(0);
-		idEntityFx::StartFx(spawnArgs.GetString("heatblast_fx"), &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, true);
+		idEntityFx::StartFx(spawnArgs.GetString("heatblast_fx"), &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, false);
+		//gameLocal.ProjectDecal( GetPhysics()->GetOrigin(), GetPhysics()->GetGravity(), 8.0f, true, 300, "textures/decals/ballburn01");
 		gameLocal.RadiusDamage(GetPhysics()->GetOrigin(), inflictor, this, this, nullptr, "damage_heatblast", 1.0f);
 	}
 
