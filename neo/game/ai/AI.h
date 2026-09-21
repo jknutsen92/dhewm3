@@ -512,7 +512,7 @@ protected:
 	idProjectile			*CreateProjectile( const idVec3 &pos, const idVec3 &dir );
 	void					RemoveProjectile( void );
 	idProjectile			*LaunchProjectile( const char *jointname, idEntity *target, bool clampToAttackCone );
-	virtual void			DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, bool isHeadshot = false );
+	virtual void			DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, bool isWeakpoint = false );
 	void					DirectDamage( const char *meleeDefName, idEntity *ent );
 	bool					TestMelee( void ) const;
 	bool					AttackMelee( const char *meleeDefName );

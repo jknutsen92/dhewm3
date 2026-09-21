@@ -4214,7 +4214,7 @@ FIXME: This gets called when we call idPlayer::CalcDamagePoints from idAI::Attac
 possibly forcing a miss.  This is harmless behavior ATM, but is not intuitive.
 ================
 */
-void idAI::DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, bool isHeadshot ) {
+void idAI::DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, bool isWeakpoint ) {
 	if ( ( victim == this ) && inflictor->IsType( idProjectile::Type ) ) {
 		// monsters only get half damage from their own projectiles
 		damage = ( damage + 1 ) / 2;  // round up so we don't do 0 damage

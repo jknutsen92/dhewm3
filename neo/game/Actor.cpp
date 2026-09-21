@@ -28,6 +28,7 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "Game_local.h"
 #include "framework/DeclManager.h"
+#include "idlib/Dict.h"
 #include "physics/Clip.h"
 #include "sys/platform.h"
 #include "gamesys/SysCvar.h"
@@ -2270,36 +2271,41 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 		gameLocal.Error( "Unknown damageDef '%s'", damageDefName );
 	}
 
-	int	damage = damageDef->GetInt( "damage" ) * damageScale;
-
 	// smolspacer
-	const char* damageGroup = GetDamageGroup(location);
-	bool isHeadshot = false;
-	int initialDamage = damage;
-	if (idStr::Icmp(damageGroup, "head")) {						// If not a headshot
-		damage = GetDamageForLocation( damage, location );		// calculate zone damage as normal
-		if (g_debugDamage.GetBool()) {
-			printf("Target %s - base dmg: %d, location scale: %d\n", (const char*)this->name, initialDamage, damage);
-		}
+	int damage;
+	int	baseDmg = damageDef->GetInt( "damage" );
+	const char* dmgGroup = GetDamageGroup(location);
+	float dmgZoneScale = GetDamageLocationScale(location);
+	if (g_debugDamage.GetBool()) {
+		common->Printf("Target %s - base dmg: %d, location scale (%s): %f, global damage scale: %f. ", this->name.c_str(), baseDmg, dmgGroup ,dmgZoneScale, damageScale);
 	}
-	else if (spawnArgs.GetBool("headshot_weakness") && inflictor->spawnArgs.GetBool("weakpoint_bonus")) {
+	bool isWeakpoint = false;
+	idStr weakpointZone = spawnArgs.GetString("weakpoint_zone"); 
+	if (inflictor->spawnArgs.GetBool("weakpoint_bonus") && IsWeakpointGroup(dmgGroup)) {
+		isWeakpoint = true;
 		// Lookup the snd_headshot from the entity def
-		idStr headshotSound = GetHeadshotSoundShader(inflictor);
+		idStr weakpointSound = GetWeakpointSoundShader(inflictor);
 		// Play the headshot sound shader
-		StartSoundShader(declManager->FindSound(headshotSound), SND_CHANNEL_ANY, 0, false, nullptr);
+		StartSoundShader(declManager->FindSound(weakpointSound), SND_CHANNEL_ANY, 0, false, nullptr);
+		// TODO: Spawn a particle effect for headshot burst
 
 		// Apply damage scaling based on damage_scale head monster spawn args and weakpoint_bonus on the projectile
-		float dmgHeadZoneBonus = this->spawnArgs.GetFloat("damage_scale head");
-		float dmgWeaponBonus = inflictor->spawnArgs.GetFloat("weakpoint_bonus");
-		damage = (int)ceil(dmgWeaponBonus * dmgHeadZoneBonus * damage);
-		isHeadshot = true;
+		float weapWeakpointBonus = inflictor->spawnArgs.GetFloat("weakpoint_bonus");
+		damage = (int)ceil(baseDmg * weapWeakpointBonus * dmgZoneScale * damageScale);
 		if (g_debugDamage.GetBool()) {
-			printf("Headshot %s - base dmg: %d, head scale: %f, weap scale: %f, final dmg: %d\n", (const char*)this->name, initialDamage, dmgHeadZoneBonus, dmgWeaponBonus, damage);
+			common->Printf("Weakpoint %s hit - weapon crit bonus: %f, final dmg: %d\n", weakpointZone.c_str(), weapWeakpointBonus, damage);
+		}
+	}
+	else {
+		float dmgZoneCapped = Min(dmgZoneScale, 1.0f);					// We only want damage bonuses on a weakpoint hit - so zone penalties only
+		damage = (int)ceil(baseDmg * dmgZoneCapped * damageScale);			
+		if (g_debugDamage.GetBool()) {
+			common->Printf("Final damage (%s capped to %f):  %d\n", dmgGroup, dmgZoneCapped, damage);
 		}
 	}
 
-	// inform the attacker that they hit someone - TODO: Change this to yellow if this is a headshot
-	attacker->DamageFeedback( this, inflictor, damage, isHeadshot );
+	// inform the attacker that they hit someone, and if it was a weakpoint hit
+	attacker->DamageFeedback( this, inflictor, damage, isWeakpoint );
 
 	if ( damage > 0 ) {
 		health -= damage;
@@ -2330,24 +2336,35 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 	}
 }
 
+bool idActor::IsWeakpointGroup(const char* damageGroup) {
+	const idKeyValue* kv;
+	kv = spawnArgs.MatchPrefix("weakpoint_zone");
+	while (kv) {
+		if (!idStr::Icmp(damageGroup, kv->GetValue())) {
+			return true;
+		}
+		kv = spawnArgs.MatchPrefix("weakpoint_zone", kv);
+	}
+	return false;
+}
 
 // smolspacer
-idStr idActor::GetHeadshotSoundShader(idEntity* inflictor) {
+idStr idActor::GetWeakpointSoundShader(idEntity* inflictor) {
 	const char* projectileName = inflictor->GetEntityDefName();
 	if (!idStr::Icmp(projectileName, "projectile_bullet_pistol")) {
-		return spawnArgs.GetString("snd_headshot_pistol");
+		return spawnArgs.GetString("snd_weakpoint_pistol");
 	}
 	if (!idStr::Icmp(projectileName, "projectile_bullet_shotgun")) {
-		return spawnArgs.GetString("snd_headshot_shotgun");
+		return spawnArgs.GetString("snd_weakpoint_shotgun");
 	}
 	if (!idStr::Icmp(projectileName, "projectile_bullet_machinegun")) {
-		return spawnArgs.GetString("snd_headshot_machinegun");
+		return spawnArgs.GetString("snd_weakpoint_machinegun");
 	}
 	if (!idStr::Icmp(projectileName, "projectile_chaingunbullet")) {
-		return spawnArgs.GetString("snd_headshot_pistol");
+		return spawnArgs.GetString("snd_weakpoint_chaingun");
 	}
 	if (!idStr::Icmp(projectileName, "projectile_rocket")) {
-		return spawnArgs.GetString("snd_headshot_rocket");
+		return spawnArgs.GetString("snd_weakpoint_rocket");
 	}
 	common->Error("No sound shader for %s", projectileName);
 	return "";
@@ -2545,6 +2562,13 @@ int idActor::GetDamageForLocation( int damage, int location ) {
 	}
 
 	return (int)ceil( damage * damageScale[ location ] );
+}
+
+float idActor::GetDamageLocationScale(int location) {
+	if (location < 0 || location >= damageScale.Num()) {	
+		return 1.0f;
+	}
+	return damageScale[location];
 }
 
 /*

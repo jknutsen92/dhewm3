@@ -169,6 +169,7 @@ public:
 	void					SetupDamageGroups( void );
 	virtual	void			Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir, const char *damageDefName, const float damageScale, const int location );
 	int						GetDamageForLocation( int damage, int location );
+	float					GetDamageLocationScale( int location );
 	const char *			GetDamageGroup( int location );
 	void					ClearPain( void );
 	virtual bool			Pain( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location );
@@ -287,7 +288,8 @@ protected:
 							// copies animation from body to head joints
 	void					CopyJointsFromBodyToHead( void );
 
-	idStr					GetHeadshotSoundShader(idEntity* inflictor);
+	bool 					IsWeakpointGroup(const char* damageGroup);
+	idStr					GetWeakpointSoundShader(idEntity* inflictor);
 
 private:
 	void					SyncAnimChannels( int channel, int syncToChannel, int blendFrames );

@@ -383,7 +383,7 @@ public:
 
 	virtual void			GetAASLocation( idAAS *aas, idVec3 &pos, int &areaNum ) const;
 	virtual void			GetAIAimTargets( const idVec3 &lastSightPos, idVec3 &headPos, idVec3 &chestPos );
-	virtual void			DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, bool isHeadshot = false );
+	virtual void			DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, bool isWeakpoint = false );
 	void					CalcDamagePoints(  idEntity *inflictor, idEntity *attacker, const idDict *damageDef,
 							   const float damageScale, const int location, int *health, int *armor );
 	virtual	void			Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir, const char *damageDefName, const float damageScale, const int location );
@@ -443,7 +443,7 @@ public:
 	void					StealWeapon( idPlayer *player );
 	void					AddProjectilesFired( int count );
 	void					AddProjectileHits( int count );
-	void					SetLastHitTime( int time, bool isHeadshot = false );
+	void					SetLastHitTime( int time, bool isWeakpoint = false );
 	void					LowerWeapon( void );
 	void					RaiseWeapon( void );
 	void					WeaponLoweringCallback( void );

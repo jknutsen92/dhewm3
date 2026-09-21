@@ -483,23 +483,11 @@ void idEntityFx::Run( int time ) {
 				if ( !useAction->shakeStarted ) {
 					for ( j = 0; j < gameLocal.numClients; j++ ) {
 						idPlayer *player = gameLocal.GetClientByNum( j );
-						float distance = (GetPhysics()->GetOrigin() - player->GetPhysics()->GetOrigin()).LengthFast();
-						float shakeTime;
-						float shakeAmplitude;
-						if (fxaction.shakeFalloff) {
-							float shakeFalloffCoefficient = sqrt(distance) * fxaction.shakeFalloff;
-							shakeTime = fxaction.shakeTime / shakeFalloffCoefficient;
-							shakeAmplitude = fxaction.shakeAmplitude / shakeFalloffCoefficient;
-						}
-						else {
-							shakeTime = fxaction.shakeTime;
-							shakeAmplitude = fxaction.shakeAmplitude;
-						}
 						idDict args;
 						args.Clear();
-						args.SetFloat( "kick_time", shakeTime );
-						args.SetFloat( "kick_amplitude", shakeAmplitude );
-						if ( player && ( distance < Square( fxaction.shakeDistance ) ) ) {
+						args.SetFloat( "kick_time", fxaction.shakeTime );
+						args.SetFloat( "kick_amplitude", fxaction.shakeAmplitude );
+						if ( player && ( (GetPhysics()->GetOrigin() - player->GetPhysics()->GetOrigin()).LengthFast() < Square( fxaction.shakeDistance ) ) ) {
 							if ( !gameLocal.isMultiplayer || !fxaction.shakeIgnoreMaster || GetBindMaster() != player ) {
 								player->playerView.DamageImpulse( fxaction.offset, &args );
 							}
