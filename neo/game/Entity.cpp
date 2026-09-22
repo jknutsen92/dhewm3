@@ -2959,7 +2959,7 @@ idEntity::DamageFeedback
 callback function for when another entity received damage from this entity.  damage can be adjusted and returned to the caller.
 ================
 */
-void idEntity::DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, bool isWeakpoint ) {
+void idEntity::DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, idVec3 cursorColor ) {
 	// implemented in subclasses
 }
 

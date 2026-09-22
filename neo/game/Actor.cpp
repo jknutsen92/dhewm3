@@ -29,6 +29,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "Game_local.h"
 #include "framework/DeclManager.h"
 #include "idlib/Dict.h"
+#include "idlib/math/Vector.h"
 #include "physics/Clip.h"
 #include "sys/platform.h"
 #include "gamesys/SysCvar.h"
@@ -2273,16 +2274,15 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 
 	// smolspacer
 	int damage;
+	idVec3 cursorColor;
 	int	baseDmg = damageDef->GetInt( "damage" );
 	const char* dmgGroup = GetDamageGroup(location);
 	float dmgZoneScale = GetDamageLocationScale(location);
 	if (g_debugDamage.GetBool()) {
 		common->Printf("Target %s - base dmg: %d, location scale (%s): %f, global damage scale: %f. ", this->name.c_str(), baseDmg, dmgGroup ,dmgZoneScale, damageScale);
 	}
-	bool isWeakpoint = false;
 	idStr weakpointZone = spawnArgs.GetString("weakpoint_zone"); 
 	if (inflictor->spawnArgs.GetBool("weakpoint_bonus") && IsWeakpointGroup(dmgGroup)) {
-		isWeakpoint = true;
 		// Lookup the snd_headshot from the entity def
 		idStr weakpointSound = GetWeakpointSoundShader(inflictor);
 		// Play the headshot sound shader
@@ -2292,20 +2292,25 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 		// Apply damage scaling based on damage_scale head monster spawn args and weakpoint_bonus on the projectile
 		float weapWeakpointBonus = inflictor->spawnArgs.GetFloat("weakpoint_bonus");
 		damage = (int)ceil(baseDmg * weapWeakpointBonus * dmgZoneScale * damageScale);
+		cursorColor = idVec3(1.0f, 0.5f, 0.0f);
 		if (g_debugDamage.GetBool()) {
 			common->Printf("Weakpoint %s hit - weapon crit bonus: %f, final dmg: %d\n", weakpointZone.c_str(), weapWeakpointBonus, damage);
 		}
 	}
 	else {
-		float dmgZoneCapped = Min(dmgZoneScale, 1.0f);					// We only want damage bonuses on a weakpoint hit - so zone penalties only
-		damage = (int)ceil(baseDmg * dmgZoneCapped * damageScale);			
+		// We only want damage bonuses on a weakpoint hit - so zone penalties only
+		float dmgZoneCapped = Min(dmgZoneScale, 1.0f);					
+		damage = (int)ceil(baseDmg * dmgZoneCapped * damageScale);
+		// Desaturate the cursor feedback color based on damage reduction		
+		cursorColor.Lerp(idVec3(0.15f, 0.00f, 0.05f), idVec3(0.8f, 0.0f, 0.0f), dmgZoneScale);
+		// cursorColor = idVec3(0.8, 0.0f, 0.0f);
 		if (g_debugDamage.GetBool()) {
 			common->Printf("Final damage (%s capped to %f):  %d\n", dmgGroup, dmgZoneCapped, damage);
 		}
 	}
 
 	// inform the attacker that they hit someone, and if it was a weakpoint hit
-	attacker->DamageFeedback( this, inflictor, damage, isWeakpoint );
+	attacker->DamageFeedback( this, inflictor, damage, cursorColor );
 
 	if ( damage > 0 ) {
 		health -= damage;

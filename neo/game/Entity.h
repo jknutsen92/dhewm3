@@ -307,7 +307,7 @@ public:
 							// adds a damage effect like overlays, blood, sparks, debris etc.
 	virtual void			AddDamageEffect( const trace_t &collision, const idVec3 &velocity, const char *damageDefName );
 							// callback function for when another entity received damage from this entity.  damage can be adjusted and returned to the caller.
-	virtual void			DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, bool isWeakpoint = false );
+	virtual void			DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, idVec3 cursorColor = idVec3( 0.8f, 0.0f, 0.0f ) );
 							// notifies this entity that it is in pain
 	virtual bool			Pain( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location );
 							// notifies this entity that is has been killed

@@ -6625,11 +6625,11 @@ idPlayer::DamageFeedback
 callback function for when another entity received damage from this entity.  damage can be adjusted and returned to the caller.
 ================
 */
-void idPlayer::DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, bool isWeakpoint ) {
+void idPlayer::DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, idVec3 cursorColor ) {
 	assert( !gameLocal.isClient );
 	damage *= PowerUpModifier( BERSERK );
 	if ( damage && ( victim != this ) && victim->IsType( idActor::Type ) ) {
-		SetLastHitTime( gameLocal.time, isWeakpoint );
+		SetLastHitTime( gameLocal.time, cursorColor );
 	}
 }
 
@@ -7480,7 +7480,7 @@ void idPlayer::AddProjectileHits( int count ) {
 idPlayer::SetLastHitTime
 =============
 */
-void idPlayer::SetLastHitTime( int time, bool isWeakpoint ) {
+void idPlayer::SetLastHitTime( int time, idVec3 cursorColor ) {
 	idPlayer *aimed = NULL;
 
 	if ( time && lastHitTime != time ) {
@@ -7496,7 +7496,9 @@ void idPlayer::SetLastHitTime( int time, bool isWeakpoint ) {
 		StartSound( "snd_hit_feedback", SND_CHANNEL_ANY, SSF_PRIVATE_SOUND, false, NULL );
 	}
 	if ( cursor ) {
-		cursor->SetStateBool("headshot", isWeakpoint);
+		cursor->SetStateFloat("cursorR", cursorColor.x);
+		cursor->SetStateFloat("cursorG", cursorColor.y);
+		cursor->SetStateFloat("cursorB", cursorColor.z);
 		cursor->HandleNamedEvent( "hitTime" );
 	}
 	if ( hud ) {

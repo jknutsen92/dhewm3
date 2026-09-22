@@ -3695,7 +3695,7 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 
 	// apply damage to the entities
 	for ( e = 0; e < numListedEntities; e++ ) {
-		ent = entityList[ e ];
+	ent = entityList[ e ];
 		assert( ent );
 
 		if ( !ent->fl.takedamage ) {
