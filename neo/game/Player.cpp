@@ -984,6 +984,9 @@ idPlayer::idPlayer() {
 	lastHitTime				= 0;
 	lastSndHitTime			= 0;
 	lastSavingThrowTime		= 0;
+	reticleCritColor		= idVec3(1.0f, 0.5f, 0.0f);
+	reticleHitColor			= idVec3(0.8f, 0.0f, 0.0f);
+	reticleDimColor			= idVec3(0.15f, 0.00f, 0.05f);
 
 	weapon					= NULL;
 
@@ -6625,11 +6628,11 @@ idPlayer::DamageFeedback
 callback function for when another entity received damage from this entity.  damage can be adjusted and returned to the caller.
 ================
 */
-void idPlayer::DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, idVec3 cursorColor ) {
+void idPlayer::DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, float damageZoneScale ) {
 	assert( !gameLocal.isClient );
 	damage *= PowerUpModifier( BERSERK );
 	if ( damage && ( victim != this ) && victim->IsType( idActor::Type ) ) {
-		SetLastHitTime( gameLocal.time, cursorColor );
+		SetLastHitTime( gameLocal.time, damageZoneScale );
 	}
 }
 
@@ -7480,7 +7483,7 @@ void idPlayer::AddProjectileHits( int count ) {
 idPlayer::SetLastHitTime
 =============
 */
-void idPlayer::SetLastHitTime( int time, idVec3 cursorColor ) {
+void idPlayer::SetLastHitTime( int time, float damageZoneScale ) {
 	idPlayer *aimed = NULL;
 
 	if ( time && lastHitTime != time ) {
@@ -7496,6 +7499,16 @@ void idPlayer::SetLastHitTime( int time, idVec3 cursorColor ) {
 		StartSound( "snd_hit_feedback", SND_CHANNEL_ANY, SSF_PRIVATE_SOUND, false, NULL );
 	}
 	if ( cursor ) {
+		idVec3 cursorColor;
+		if (damageZoneScale > 1.0f && g_reticleHighlightWeakp.GetBool()) {			
+			cursorColor = reticleCritColor;
+		}
+		else if (g_reticleHighlightDim.GetBool()) {
+			cursorColor.Lerp(reticleDimColor, reticleHitColor, damageZoneScale);
+		}
+		else {										
+			cursorColor = reticleHitColor;
+		}
 		cursor->SetStateFloat("cursorR", cursorColor.x);
 		cursor->SetStateFloat("cursorG", cursorColor.y);
 		cursor->SetStateFloat("cursorB", cursorColor.z);

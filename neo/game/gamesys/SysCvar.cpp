@@ -140,7 +140,8 @@ idCVar g_useDynamicProtection(		"g_useDynamicProtection",	"1",			CVAR_GAME | CVA
 idCVar g_healthTakeTime(			"g_healthTakeTime",		"5",			CVAR_GAME | CVAR_INTEGER | CVAR_ARCHIVE, 	"how often to take health in nightmare mode" );
 idCVar g_healthTakeAmt(				"g_healthTakeAmt",			"5",			CVAR_GAME | CVAR_INTEGER | CVAR_ARCHIVE, 	"how much health to take in nightmare mode" );
 idCVar g_healthTakeLimit(			"g_healthTakeLimit",		"25",			CVAR_GAME | CVAR_INTEGER | CVAR_ARCHIVE, 	"how low can health get taken in nightmare mode" );
-
+idCVar g_reticleHighlightDim(		"g_reticleHighlightDim",	"1",			CVAR_GAME | CVAR_BOOL | CVAR_ARCHIVE, 	"whether the reticle dims when hitting a reduced damage body part");
+idCVar g_reticleHighlightWeakp(		"g_reticleHighlightWeakp",	"1",			CVAR_GAME | CVAR_BOOL | CVAR_ARCHIVE, 	"whether the reticle has a unique flash when hitting a weakpoint");
 
 
 idCVar g_showPVS(					"g_showPVS",				"0",			CVAR_GAME | CVAR_INTEGER, "", 0, 2 );

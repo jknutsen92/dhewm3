@@ -79,6 +79,9 @@ extern idCVar	g_healthTakeTime;
 extern idCVar	g_healthTakeAmt;
 extern idCVar	g_healthTakeLimit;
 
+extern idCVar   g_reticleHighlightDim;
+extern idCVar   g_reticleHighlightWeakp;
+
 extern idCVar	g_showPVS;
 extern idCVar	g_showTargets;
 extern idCVar	g_showTriggers;

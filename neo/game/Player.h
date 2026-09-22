@@ -31,6 +31,7 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "idlib/math/Interpolate.h"
 
+#include "idlib/math/Vector.h"
 #include "physics/Physics_Player.h"
 #include "Item.h"
 #include "Actor.h"
@@ -241,6 +242,9 @@ public:
 	int						lastHitTime;			// last time projectile fired by player hit target
 	int						lastSndHitTime;			// MP hit sound - != lastHitTime because we throttle
 	int						lastSavingThrowTime;	// for the "free miss" effect
+	idVec3					reticleCritColor;		// Color recticle flashes when hitting a weakpoint
+	idVec3					reticleHitColor;		// Color reticle flashes when hitting a body part with damage scaling of 1
+	idVec3					reticleDimColor;		// Color reticle flashes when hitting a body part with damage scale of 0
 
 	idScriptBool			AI_FORWARD;
 	idScriptBool			AI_BACKWARD;
@@ -383,7 +387,7 @@ public:
 
 	virtual void			GetAASLocation( idAAS *aas, idVec3 &pos, int &areaNum ) const;
 	virtual void			GetAIAimTargets( const idVec3 &lastSightPos, idVec3 &headPos, idVec3 &chestPos );
-	virtual void			DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, idVec3 cursorColor = idVec3( 0.8f, 0.0f, 0.0f ) );
+	virtual void			DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, float damageZoneScale );
 	void					CalcDamagePoints(  idEntity *inflictor, idEntity *attacker, const idDict *damageDef,
 							   const float damageScale, const int location, int *health, int *armor );
 	virtual	void			Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir, const char *damageDefName, const float damageScale, const int location );
@@ -443,7 +447,7 @@ public:
 	void					StealWeapon( idPlayer *player );
 	void					AddProjectilesFired( int count );
 	void					AddProjectileHits( int count );
-	void					SetLastHitTime( int time, idVec3 cursorColor = idVec3( 0.8f, 0.0f, 0.0f ) );
+	void					SetLastHitTime( int time, float damageZoneScale = 1.0f );
 	void					LowerWeapon( void );
 	void					RaiseWeapon( void );
 	void					WeaponLoweringCallback( void );
