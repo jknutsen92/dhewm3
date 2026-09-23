@@ -2295,12 +2295,19 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 			common->Printf("Weakpoint %s hit - weapon crit bonus: %f, final dmg: %d\n", weakpointZone.c_str(), weapWeakpointBonus, damage);
 		}
 	}
+	else if (inflictor->spawnArgs.GetBool("ignore_zone_scaling")) {
+		dmgZoneScale = 1.0f;				// For feedback
+		damage = (int)ceil(baseDmg * damageScale);
+		if (g_debugDamage.GetBool()) {
+			common->Printf("Final damage (no zone scale): %d\n", damage);
+		}
+	}
 	else {
 		// We only want damage bonuses on a weakpoint hit - so zone penalties only
-		float dmgZoneCapped = Min(dmgZoneScale, 1.0f);					
-		damage = (int)ceil(baseDmg * dmgZoneCapped * damageScale);
+		dmgZoneScale = Min(dmgZoneScale, 1.0f);					
+		damage = (int)ceil(baseDmg * dmgZoneScale * damageScale);
 		if (g_debugDamage.GetBool()) {
-			common->Printf("Final damage (%s capped to %f):  %d\n", dmgGroup, dmgZoneCapped, damage);
+			common->Printf("Final damage (%s capped to %f):  %d\n", dmgGroup, dmgZoneScale, damage);
 		}
 	}
 
