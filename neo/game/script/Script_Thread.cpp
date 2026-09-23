@@ -75,6 +75,7 @@ const idEventDef EV_Thread_GetRotatedVec("getRotatedVec", "vvvf", 'v');
 const idEventDef EV_Thread_Sine( "sin", "f", 'f' );
 const idEventDef EV_Thread_Cosine( "cos", "f", 'f' );
 const idEventDef EV_Thread_SquareRoot( "sqrt", "f", 'f' );
+const idEventDef EV_Thread_Round("round", "f", 'f');
 const idEventDef EV_Thread_Normalize( "vecNormalize", "v", 'v' );
 const idEventDef EV_Thread_VecLength( "vecLength", "v", 'f' );
 const idEventDef EV_Thread_VecDotProduct( "DotProduct", "vv", 'f' );
@@ -154,6 +155,7 @@ CLASS_DECLARATION( idClass, idThread )
 	EVENT( EV_Thread_Sine,					idThread::Event_GetSine )
 	EVENT( EV_Thread_Cosine,				idThread::Event_GetCosine )
 	EVENT( EV_Thread_SquareRoot,			idThread::Event_GetSquareRoot )
+	EVENT( EV_Thread_Round,					idThread::Event_Round)
 	EVENT( EV_Thread_Normalize,				idThread::Event_VecNormalize )
 	EVENT( EV_Thread_VecLength,				idThread::Event_VecLength )
 	EVENT( EV_Thread_VecDotProduct,			idThread::Event_VecDotProduct )
@@ -1302,6 +1304,10 @@ idThread::Event_GetSquareRoot
 */
 void idThread::Event_GetSquareRoot( float theSquare ) {
 	ReturnFloat( idMath::Sqrt( theSquare ) );
+}
+
+void idThread::Event_Round(float number) {
+	ReturnFloat(floor(number + 0.5f));
 }
 
 /*

@@ -64,6 +64,7 @@ extern const idEventDef EV_Thread_AngToUp;
 extern const idEventDef EV_Thread_GetRotatedVec;
 extern const idEventDef EV_Thread_Sine;
 extern const idEventDef EV_Thread_Cosine;
+extern const idEventDef EV_Thread_Round;
 extern const idEventDef EV_Thread_Normalize;
 extern const idEventDef EV_Thread_VecLength;
 extern const idEventDef EV_Thread_VecDotProduct;
@@ -147,6 +148,7 @@ private:
 	void						Event_GetSine( float angle );
 	void						Event_GetCosine( float angle );
 	void						Event_GetSquareRoot( float theSquare );
+	void						Event_Round(float number);
 	void						Event_VecNormalize( idVec3 &vec );
 	void						Event_VecLength( idVec3 &vec );
 	void						Event_VecDotProduct( idVec3 &vec1, idVec3 &vec2 );
