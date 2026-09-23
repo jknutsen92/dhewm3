@@ -26,6 +26,7 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
+#include "idlib/math/Rotation.h"
 #include "sys/platform.h"
 
 #include "game/gamesys/SysCvar.h"
@@ -70,6 +71,7 @@ const idEventDef EV_Thread_GetPersistantVector( "getPersistantVector", "s", 'v' 
 const idEventDef EV_Thread_AngToForward( "angToForward", "v", 'v' );
 const idEventDef EV_Thread_AngToRight( "angToRight", "v", 'v' );
 const idEventDef EV_Thread_AngToUp( "angToUp", "v", 'v' );
+const idEventDef EV_Thread_GetRotatedVec("getRotatedVec", "vvvf", 'v');
 const idEventDef EV_Thread_Sine( "sin", "f", 'f' );
 const idEventDef EV_Thread_Cosine( "cos", "f", 'f' );
 const idEventDef EV_Thread_SquareRoot( "sqrt", "f", 'f' );
@@ -148,6 +150,7 @@ CLASS_DECLARATION( idClass, idThread )
 	EVENT( EV_Thread_AngToForward,			idThread::Event_AngToForward )
 	EVENT( EV_Thread_AngToRight,			idThread::Event_AngToRight )
 	EVENT( EV_Thread_AngToUp,				idThread::Event_AngToUp )
+	EVENT( EV_Thread_GetRotatedVec,			idThread::Event_GetRotatedVec)
 	EVENT( EV_Thread_Sine,					idThread::Event_GetSine )
 	EVENT( EV_Thread_Cosine,				idThread::Event_GetCosine )
 	EVENT( EV_Thread_SquareRoot,			idThread::Event_GetSquareRoot )
@@ -1265,6 +1268,13 @@ void idThread::Event_AngToUp( idAngles &ang ) {
 
 	ang.ToVectors( NULL, NULL, &vec );
 	ReturnVector( vec );
+}
+
+void idThread::Event_GetRotatedVec(idVec3& vec, idVec3& origin, idVec3& axis, float angle) {
+	axis.Normalize();
+	idRotation rotation = idRotation(origin, axis, angle);
+	idVec3 rotatedVec = rotation * vec;
+	ReturnVector(rotatedVec);
 }
 
 /*
