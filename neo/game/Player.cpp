@@ -6336,15 +6336,8 @@ void idPlayer::Think( void ) {
 		// not done on clients for various reasons. don't do it on server and save the sound channel for other things
 		if ( !gameLocal.isMultiplayer ) {
 			SetCurrentHeartRate();
-			float scale = g_damageScale.GetFloat();
-			if ( g_useDynamicProtection.GetBool() && scale < 1.0f && gameLocal.time - lastDmgTime > 500 ) {
-				if ( scale < 1.0f ) {
-					scale += 0.05f;
-				}
-				if ( scale > 1.0f ) {
-					scale = 1.0f;
-				}
-				g_damageScale.SetFloat( scale );
+			if (g_useDynamicProtection.GetBool()) {
+				UpdateDynamicProtection(0);
 			}
 		}
 
@@ -6653,28 +6646,6 @@ void idPlayer::CalcDamagePoints( idEntity *inflictor, idEntity *attacker, const 
 	damageDef->GetInt( "damage", "20", damage );
 	damage = GetDamageForLocation( damage, location );
 
-	idPlayer *player = attacker->IsType( idPlayer::Type ) ? static_cast<idPlayer*>(attacker) : NULL;
-	if ( !gameLocal.isMultiplayer ) {
-		if ( inflictor != gameLocal.world ) {
-			switch ( g_skill.GetInteger() ) {
-				case 0:
-					damage *= 0.80f;
-					if ( damage < 1 ) {
-						damage = 1;
-					}
-					break;
-				case 2:
-					damage *= 1.70f;
-					break;
-				case 3:
-					damage *= 3.5f;
-					break;
-				default:
-					break;
-			}
-		}
-	}
-
 	damage *= damageScale;
 
 	// always give half damage if hurting self
@@ -6701,10 +6672,11 @@ void idPlayer::CalcDamagePoints( idEntity *inflictor, idEntity *attacker, const 
 	// save some from armor
 	if ( !damageDef->GetBool( "noArmor" ) ) {
 		float armor_protection;
+		float armorCoverage = Max(Min((float)inventory.armor / 100.0f, 1.0f), 0.4f);	// 0.4 <= armorCoverage <= 1.0
 
 		armor_protection = ( gameLocal.isMultiplayer ) ? g_armorProtectionMP.GetFloat() : g_armorProtection.GetFloat();
 
-		armorSave = ceil( damage * armor_protection );
+		armorSave = ceil( damage * armor_protection * armorCoverage );
 		if ( armorSave >= inventory.armor ) {
 			armorSave = inventory.armor;
 		}
@@ -6722,6 +6694,7 @@ void idPlayer::CalcDamagePoints( idEntity *inflictor, idEntity *attacker, const 
 	}
 
 	// check for team damage
+	idPlayer *player = attacker->IsType( idPlayer::Type ) ? static_cast<idPlayer*>(attacker) : NULL;
 	if ( gameLocal.gameType == GAME_TDM
 		&& !gameLocal.serverInfo.GetBool( "si_teamDamage" )
 		&& !damageDef->GetBool( "noTeam" )
@@ -6761,6 +6734,8 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 	idVec3		localDamageVector;
 	float		attackerPushScale;
 
+	float 		finalDamageScale = damageScale * g_damageScale.GetFloat();
+
 	// damage is only processed on server
 	if ( gameLocal.isClient ) {
 		return;
@@ -6797,7 +6772,7 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 		return;
 	}
 
-	CalcDamagePoints( inflictor, attacker, &damageDef->dict, damageScale, location, &damage, &armorSave );
+	CalcDamagePoints( inflictor, attacker, &damageDef->dict, finalDamageScale, location, &damage, &armorSave );
 
 	// determine knockback
 	damageDef->dict.GetInt( "knockback", "20", knockback );
@@ -6818,7 +6793,6 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 		physicsObj.SetKnockBack( idMath::ClampInt( 50, 200, knockback * 2 ) );
 	}
 
-	float scale = g_damageScale.GetFloat();
 	// give feedback on the player view and audibly when armor is helping
 	if ( armorSave ) {
 		int scaledArmorSave = armorSave * g_armorStripScale.GetFloat();
@@ -6859,20 +6833,11 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 
 	// do the damage
 	if ( damage > 0 ) {
-
 		if ( !gameLocal.isMultiplayer ) {
 			if ( g_useDynamicProtection.GetBool() && g_skill.GetInteger() < 2 ) {
-				if ( gameLocal.time > lastDmgTime + 500 && scale > 0.25f ) {
-					scale -= 0.05f;
-					g_damageScale.SetFloat( scale );
-				}
-			}
-
-			if ( scale > 0.0f ) {
-				damage *= scale;
+				UpdateDynamicProtection(damage);
 			}
 		}
-
 		if ( damage < 1 ) {
 			damage = 1;
 		}
@@ -8619,4 +8584,21 @@ idPlayer::NeedsIcon
 bool idPlayer::NeedsIcon( void ) {
 	// local clients don't render their own icons... they're only info for other clients
 	return entityNumber != gameLocal.localClientNum && ( isLagged || isChatting );
+}
+
+void idPlayer::UpdateDynamicProtection(int damage) {
+	float scale = g_damageScale.GetFloat();
+	if ( !damage && scale < 1.0f && gameLocal.time - lastDmgTime > 500 ) {		// Slowly raise damage scale if we haven't taken a hit in a while
+		if ( scale < 1.0f ) {
+			scale += 0.05f;
+		}
+		if ( scale > 1.0f ) {
+			scale = 1.0f;
+		}
+		g_damageScale.SetFloat( scale );
+	}
+	else if (damage && gameLocal.time > lastDmgTime + 500 && scale > 0.25f) {
+		scale -= 0.05f;
+		g_damageScale.SetFloat( scale );
+	}
 }

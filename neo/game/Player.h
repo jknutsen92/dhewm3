@@ -532,6 +532,7 @@ public:
 
 	bool					SelfSmooth( void );
 	void					SetSelfSmooth( bool b );
+	void 					UpdateDynamicProtection(int damage);
 
 private:
 	jointHandle_t			hipJoint;

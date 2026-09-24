@@ -48,6 +48,7 @@ extern const idEventDef EV_Thread_Assert;
 extern const idEventDef EV_Thread_Trigger;
 extern const idEventDef EV_Thread_SetCvar;
 extern const idEventDef EV_Thread_GetCvar;
+extern const idEventDef EV_Thread_ExecCfg;
 extern const idEventDef EV_Thread_Random;
 extern const idEventDef EV_Thread_GetTime;
 extern const idEventDef EV_Thread_KillThread;
@@ -126,6 +127,7 @@ private:
 	void						Event_Trigger( idEntity *ent );
 	void						Event_SetCvar( const char *name, const char *value ) const;
 	void						Event_GetCvar( const char *name ) const;
+	void						Event_ExecCfg(const char* name);
 	void						Event_Random( float range ) const;
 	void						Event_GetTime( void );
 	void						Event_KillThread( const char *name );

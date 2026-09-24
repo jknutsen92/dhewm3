@@ -52,6 +52,7 @@ const idEventDef EV_Thread_Assert( "assert", "f" );
 const idEventDef EV_Thread_Trigger( "trigger", "e" );
 const idEventDef EV_Thread_SetCvar( "setcvar", "ss" );
 const idEventDef EV_Thread_GetCvar( "getcvar", "s", 's' );
+const idEventDef EV_Thread_ExecCfg("execCfg", "s");
 const idEventDef EV_Thread_Random( "random", "f", 'f' );
 const idEventDef EV_Thread_GetTime( "getTime", NULL, 'f' );
 const idEventDef EV_Thread_KillThread( "killthread", "s" );
@@ -132,6 +133,7 @@ CLASS_DECLARATION( idClass, idThread )
 	EVENT( EV_Thread_Trigger,				idThread::Event_Trigger )
 	EVENT( EV_Thread_SetCvar,				idThread::Event_SetCvar )
 	EVENT( EV_Thread_GetCvar,				idThread::Event_GetCvar )
+	EVENT( EV_Thread_ExecCfg,				idThread::Event_ExecCfg)
 	EVENT( EV_Thread_Random,				idThread::Event_Random )
 	EVENT( EV_Thread_GetTime,				idThread::Event_GetTime )
 	EVENT( EV_Thread_KillThread,			idThread::Event_KillThread )
@@ -1061,6 +1063,12 @@ idThread::Event_GetCvar
 */
 void idThread::Event_GetCvar( const char *name ) const {
 	ReturnString( cvarSystem->GetCVarString( name ) );
+}
+
+void idThread::Event_ExecCfg(const char* filename) {
+	idStr commandText = va("exec %s\n", filename);
+	cmdSystem->BufferCommandText( CMD_EXEC_APPEND, commandText );
+	cmdSystem->ExecuteCommandBuffer();
 }
 
 /*
