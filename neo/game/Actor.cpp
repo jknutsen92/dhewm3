@@ -2306,7 +2306,17 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 	const char* dmgGroup = GetDamageGroup(location);
 	float dmgZoneScale = GetDamageLocationScale(location);
 	if (g_debugDamage.GetBool()) {
-		common->Printf("Target %s - base dmg: %d, location scale (%s): %f, global damage scale: %f. ", this->name.c_str(), baseDmg, dmgGroup ,dmgZoneScale, damageScale);
+		common->Printf("Target %s - base dmg: %d, location scale (%s): %f, global damage scale: %f. ", this->name.c_str(), baseDmg, dmgGroup, dmgZoneScale, damageScale);
+	}
+	float heatedDmgBonus = 1.0f;
+	float heatRatio	= 0.0f;
+	if (heat && !inflictor->spawnArgs.GetBool("heat")) {			// Apply damage multiplier if target is pre-heated
+		heatRatio = heat / maxHeat;										// [0,1]
+		heatedDmgBonus = 1.0f + heatRatio;								// [1,2]
+		StartSoundShader(declManager->FindSound("heat_bonus_hit"), SND_CHANNEL_ANY, 0, false, nullptr);
+		if (g_debugDamage.GetBool()) {
+			common->Printf("Heated target (%f): Applying dmg bonus of %f. ", heatRatio, heatedDmgBonus);
+		}
 	}
 	idStr weakpointZone = spawnArgs.GetString("weakpoint_zone"); 
 	if (inflictor->spawnArgs.GetBool("weakpoint_bonus") && IsWeakpointGroup(dmgGroup)) {
@@ -2318,14 +2328,14 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 
 		// Apply damage scaling based on damage_scale head monster spawn args and weakpoint_bonus on the projectile
 		float weapWeakpointBonus = inflictor->spawnArgs.GetFloat("weakpoint_bonus");
-		damage = (int)ceil(baseDmg * weapWeakpointBonus * dmgZoneScale * damageScale);
+		damage = (int)ceil(baseDmg * weapWeakpointBonus * dmgZoneScale * heatedDmgBonus * damageScale);
 		if (g_debugDamage.GetBool()) {
 			common->Printf("Weakpoint %s hit - weapon crit bonus: %f, final dmg: %d\n", weakpointZone.c_str(), weapWeakpointBonus, damage);
 		}
 	}
 	else if (inflictor->spawnArgs.GetBool("ignore_zone_scaling")) {
 		dmgZoneScale = 1.0f;				// For feedback
-		damage = (int)ceil(baseDmg * damageScale);
+		damage = (int)ceil(baseDmg * heatedDmgBonus * damageScale);
 		if (g_debugDamage.GetBool()) {
 			common->Printf("Final damage (no zone scale): %d\n", damage);
 		}
@@ -2333,14 +2343,14 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 	else {
 		// We only want damage bonuses on a weakpoint hit - so zone penalties only
 		dmgZoneScale = Min(dmgZoneScale, 1.0f);					
-		damage = (int)ceil(baseDmg * dmgZoneScale * damageScale);
+		damage = (int)ceil(baseDmg * dmgZoneScale * heatedDmgBonus * damageScale);
 		if (g_debugDamage.GetBool()) {
 			common->Printf("Final damage (%s capped to %f):  %d\n", dmgGroup, dmgZoneScale, damage);
 		}
 	}
 
 	// inform the attacker that they hit someone, and if it was a weakpoint hit
-	attacker->DamageFeedback( this, inflictor, damage, dmgZoneScale );
+	attacker->DamageFeedback( this, inflictor, damage, dmgZoneScale, heatRatio );
 
 	if ( damage > 0 ) {
 		health -= damage;
