@@ -211,6 +211,7 @@ public:
 	void					SetWaitState( const char *_waitstate );
 	bool					AnimDone( int channel, int blendFrames ) const;
 	virtual void			SpawnGibs( const idVec3 &dir, const char *damageDefName );
+	void 					ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName);
 
 protected:
 	friend class			idAnimState;
@@ -300,7 +301,6 @@ private:
 	void 					ApplyHeatFx( idDeclSkin* currentSkin );
 	void					RemoveHeatFx( void );
 	void					UpdateHeatShaderParms( float heatRatio );
-	void 					ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName);
 
 	void					Event_EnableEyeFocus( void );
 	void					Event_DisableEyeFocus( void );

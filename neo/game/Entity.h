@@ -143,6 +143,7 @@ public:
 
 	int						health;					// FIXME: do all objects really need health?
 	bool					isAlive;				// Used to fix some skin glitches with the heat system
+	bool					isPlasmaHeatable;
 
 	struct entityFlags_s {
 		bool				notarget			:1;	// if true never attack or target this entity

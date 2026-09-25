@@ -409,13 +409,14 @@ idEntity::idEntity() {
 	snapshotSequence = -1;
 	snapshotBits = 0;
 
-	thinkFlags		= 0;
-	dormantStart	= 0;
-	cinematic		= false;
-	renderView		= NULL;
-	cameraTarget	= NULL;
-	health			= 0;
-	isAlive 		= true;
+	thinkFlags			= 0;
+	dormantStart		= 0;
+	cinematic			= false;
+	renderView			= NULL;
+	cameraTarget		= NULL;
+	health				= 0;
+	isAlive 			= true;
+	isPlasmaHeatable 	= false;
 
 	physics			= NULL;
 	bindMaster		= NULL;

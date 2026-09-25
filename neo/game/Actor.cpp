@@ -809,6 +809,16 @@ void idActor::Save( idSaveGame *savefile ) const {
 		savefile->WriteObject( ent );
 	}
 
+	// smolspacer heat properties
+	savefile->WriteBool(isPlasmaHeatable);
+	savefile->WriteFloat(heat);
+	savefile->WriteFloat(maxHeat);
+	savefile->WriteFloat(heatDecayRate);
+	savefile->WriteSkin(previousSkinBody);
+	savefile->WriteSkin(heatedSkinBody);
+	savefile->WriteSkin(previousSkinHead);
+	savefile->WriteSkin(heatedSkinHead);
+
 	savefile->WriteFloat( fovDot );
 	savefile->WriteVec3( eyeOffset );
 	savefile->WriteVec3( modelOffset );
@@ -913,6 +923,10 @@ unarchives object from save game file
 void idActor::Restore( idRestoreGame *savefile ) {
 	int i, num;
 	idActor *ent;
+	const idDeclSkin* psb;
+	const idDeclSkin* hsb;
+	const idDeclSkin* psh;
+	const idDeclSkin* hsh;
 
 	savefile->ReadInt( team );
 	savefile->ReadInt( rank );
@@ -926,6 +940,20 @@ void idActor::Restore( idRestoreGame *savefile ) {
 			ent->enemyNode.AddToEnd( enemyList );
 		}
 	}
+
+	// smolspacer heat properties
+	savefile->ReadBool(isPlasmaHeatable);
+	savefile->ReadFloat(heat);
+	savefile->ReadFloat(maxHeat);
+	savefile->ReadFloat(heatDecayRate);
+	savefile->ReadSkin(psb);
+	savefile->ReadSkin(hsb);
+	savefile->ReadSkin(psh);
+	savefile->ReadSkin(hsh);
+	previousSkinBody	= (idDeclSkin*)psb;
+	heatedSkinBody 		= (idDeclSkin*)hsb;
+	previousSkinHead	= (idDeclSkin*)psh;
+	heatedSkinHead		= (idDeclSkin*)hsh;
 
 	savefile->ReadFloat( fovDot );
 	savefile->ReadVec3( eyeOffset );
