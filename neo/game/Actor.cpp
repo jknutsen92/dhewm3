@@ -2338,7 +2338,7 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 		}
 	}
 	
-	if (isPlasmaHeatable) {
+	if (isPlasmaHeatable && inflictor->spawnArgs.GetBool("heat")) {
 		ApplyHeat(inflictor, attacker, damage, dir, location, damageDefName);
 	}
 }
