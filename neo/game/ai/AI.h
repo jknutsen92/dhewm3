@@ -33,6 +33,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "Entity.h"
 #include "Actor.h"
 #include "Projectile.h"
+#include "script/Script_Program.h"
 
 /*
 ===============================================================================
@@ -403,6 +404,8 @@ protected:
 	idScriptBool			AI_TALK;
 	idScriptBool			AI_DAMAGE;
 	idScriptBool			AI_PAIN;
+	idScriptFloat			AI_DAMAGE_LOCATION;
+	idScriptFloat			AI_DAMAGE_VALUE;
 	idScriptFloat			AI_SPECIAL_DAMAGE;
 	idScriptBool			AI_DEAD;
 	idScriptBool			AI_ENEMY_VISIBLE;
@@ -457,6 +460,7 @@ protected:
 	void					StaticMove( void );
 
 	// damage
+	virtual void			Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir, const char *damageDefName, const float damageScale, const int location );
 	virtual bool			Pain( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location );
 	virtual void			Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat = false );
 
@@ -512,7 +516,7 @@ protected:
 	idProjectile			*CreateProjectile( const idVec3 &pos, const idVec3 &dir );
 	void					RemoveProjectile( void );
 	idProjectile			*LaunchProjectile( const char *jointname, idEntity *target, bool clampToAttackCone );
-	virtual void			DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, float damageZoneScale );
+	virtual void			DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, float damageZoneScale = 1.0, float heatRatio = 0.0f);
 	void					DirectDamage( const char *meleeDefName, idEntity *ent );
 	bool					TestMelee( void ) const;
 	bool					AttackMelee( const char *meleeDefName );
