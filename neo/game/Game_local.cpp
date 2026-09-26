@@ -26,6 +26,7 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
+#include "idlib/bv/Sphere.h"
 #include "sys/platform.h"
 #include "idlib/LangDict.h"
 #include "idlib/Timer.h"
@@ -3672,6 +3673,11 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 
 	if (g_debugDamage.GetBool() && attacker) {
 		common->Printf("Radial damage from %s: push=%d,damage=%d,heat=%f,radius=%d\n", attacker->GetName(), push, damage, heat, radius);
+		if (!damageDef->GetBool("exclude_debug_draw")) {
+			idVec4 debugColor = idVec4(1, 0, 0, 0.75);
+			idSphere debugSphere = idSphere(origin, radius);
+			gameRenderWorld->DebugSphere(debugColor, debugSphere, 2000);
+		}
 	}
 
 	if ( radius < 1 ) {

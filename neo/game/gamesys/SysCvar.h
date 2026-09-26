@@ -64,6 +64,8 @@ extern idCVar	g_debugCinematic;
 extern idCVar   g_debugHeat;
 extern idCVar	g_stopTime;
 extern idCVar	g_armorProtection;
+extern idCVar   g_armorCoverageMin;
+extern idCVar   g_armorCoverageMax;
 extern idCVar	g_armorProtectionMP;
 extern idCVar	g_damageScale;
 extern idCVar   g_armorStripScale;
@@ -81,6 +83,8 @@ extern idCVar	g_healthTakeLimit;
 
 extern idCVar   g_reticleHighlightDim;
 extern idCVar   g_reticleHighlightWeakp;
+extern idCVar   g_reticleHighlightHeat;
+extern idCVar   g_extendedSoundFeedback;
 
 extern idCVar	g_showPVS;
 extern idCVar	g_showTargets;

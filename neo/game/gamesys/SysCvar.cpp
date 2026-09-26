@@ -126,7 +126,9 @@ idCVar g_debugCinematic(			"g_debugCinematic",			"0",			CVAR_GAME | CVAR_BOOL, "
 idCVar g_debugHeat(					"g_debugHeat",				"0",			CVAR_GAME | CVAR_BOOL, "prints debug information related to the heat system");
 idCVar g_stopTime(					"g_stopTime",				"0",			CVAR_GAME | CVAR_BOOL, "" );
 idCVar g_damageScale(				"g_damageScale",			"1",			CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"scale final damage on player by this factor" );
-idCVar g_armorProtection(			"g_armorProtection",		"0.3",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"armor takes this percentage of damage" );
+idCVar g_armorProtection(			"g_armorProtection",		"0.9",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"Efficiency of armor. Absorbs this percentage of damage" );
+idCVar g_armorCoverageMin(			"g_armorCoverageMin",		"0.4",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"Represents minimum body coverage of armor given by how much armor the player has" );
+idCVar g_armorCoverageMax(			"g_armorCoverageMax",		"1.0",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"Represents maximum body coverage of armor given by how much armor the player has" );
 idCVar g_armorStripScale(			"g_armorStripScale",		"1.5",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"controls how much armor each point of damage removes from inventory");
 idCVar g_maxAmmoScale(				"g_maxAmmoScale",			"1.0",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"multiplies the base value of max ammo inventory limits for players");
 idCVar g_itemValueScale(			"g_itemValueScale",		"1.0",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"multiplies the base value of health/armor/ammo pickups");
@@ -142,6 +144,8 @@ idCVar g_healthTakeAmt(				"g_healthTakeAmt",			"5",			CVAR_GAME | CVAR_INTEGER 
 idCVar g_healthTakeLimit(			"g_healthTakeLimit",		"25",			CVAR_GAME | CVAR_INTEGER | CVAR_ARCHIVE, 	"how low can health get taken in nightmare mode" );
 idCVar g_reticleHighlightDim(		"g_reticleHighlightDim",	"1",			CVAR_GAME | CVAR_BOOL | CVAR_ARCHIVE, 	"whether the reticle dims when hitting a reduced damage body part");
 idCVar g_reticleHighlightWeakp(		"g_reticleHighlightWeakp",	"1",			CVAR_GAME | CVAR_BOOL | CVAR_ARCHIVE, 	"whether the reticle has a unique flash when hitting a weakpoint");
+idCVar g_reticleHighlightHeat(		"g_reticleHighlightHeat",	"1",			CVAR_GAME | CVAR_BOOL | CVAR_ARCHIVE, 	"whether the reticle has a unique flash when damaging a heated enemy");
+idCVar g_extendedSoundFeedback(		"g_extendedSoundFeedback",	"1",			CVAR_GAME | CVAR_BOOL | CVAR_ARCHIVE, 	"play sounds on weakpoint hit or against heated enemies");
 
 
 idCVar g_showPVS(					"g_showPVS",				"0",			CVAR_GAME | CVAR_INTEGER, "", 0, 2 );

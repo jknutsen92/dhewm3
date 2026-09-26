@@ -167,6 +167,7 @@ public:
 
 							// damage
 	void					SetupDamageGroups( void );
+	int 					CalcDamagePoints(idEntity *inflictor, idEntity *attacker, const idDict *damageDef, const float damageScale, const int location, float& dmgZoneScale, float& heatRatio);
 	virtual	void			Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir, const char *damageDefName, const float damageScale, const int location );
 	int						GetDamageForLocation( int damage, int location );
 	float					GetDamageLocationScale( int location );

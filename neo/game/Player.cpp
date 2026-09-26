@@ -6672,10 +6672,12 @@ void idPlayer::CalcDamagePoints( idEntity *inflictor, idEntity *attacker, const 
 
 	// save some from armor
 	if ( !damageDef->GetBool( "noArmor" ) ) {
-		float armor_protection;
-		float armorCoverage = Max(Min((float)inventory.armor / 100.0f, 1.0f), 0.4f);	// 0.4 <= armorCoverage <= 1.0
+		float armor_protection = ( gameLocal.isMultiplayer ) ? g_armorProtectionMP.GetFloat() : g_armorProtection.GetFloat();
+		float minArmorCoverage = g_armorCoverageMin.GetFloat();
+		float maxArmorCoverage = g_armorCoverageMax.GetFloat();
 
-		armor_protection = ( gameLocal.isMultiplayer ) ? g_armorProtectionMP.GetFloat() : g_armorProtection.GetFloat();
+		// minArmorCoverage <= armorCoverage <= maxArmorCoverage
+		float armorCoverage = Max(Min((float)inventory.armor / 100.0f, maxArmorCoverage), minArmorCoverage);
 
 		armorSave = ceil( damage * armor_protection * armorCoverage );
 		if ( armorSave >= inventory.armor ) {
@@ -7476,7 +7478,7 @@ void idPlayer::SetLastHitTime( int time, float damageZoneScale, float heatRatio 
 			cursorColor = reticleHitColor;
 		}
 
-		if (heatRatio) {
+		if (heatRatio && g_reticleHighlightHeat.GetBool()) {
 			cursorColor.Lerp(cursorColor, reticleHeatColor, heatRatio);
 		}
 
