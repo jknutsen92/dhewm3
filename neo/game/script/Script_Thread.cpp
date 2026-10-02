@@ -26,9 +26,10 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
+#include "Entity.h"
 #include "idlib/math/Rotation.h"
 #include "sys/platform.h"
-
+#include "Fx.h"
 #include "game/gamesys/SysCvar.h"
 #include "game/Player.h"
 #include "game/Camera.h"
@@ -117,6 +118,7 @@ const idEventDef EV_Thread_DebugCircle( "debugCircle", "vvvfdf" );
 const idEventDef EV_Thread_DebugBounds( "debugBounds", "vvvf" );
 const idEventDef EV_Thread_DrawText( "drawText", "svfvdf" );
 const idEventDef EV_Thread_InfluenceActive( "influenceActive", NULL, 'd' );
+const idEventDef EV_Thread_RezRagdoll("rezRagdoll", "es");
 
 CLASS_DECLARATION( idClass, idThread )
 	EVENT( EV_Thread_Execute,				idThread::Event_Execute )
@@ -200,6 +202,7 @@ CLASS_DECLARATION( idClass, idThread )
 	EVENT( EV_Thread_DebugBounds,			idThread::Event_DebugBounds )
 	EVENT( EV_Thread_DrawText,				idThread::Event_DrawText )
 	EVENT( EV_Thread_InfluenceActive,		idThread::Event_InfluenceActive )
+	EVENT( EV_Thread_RezRagdoll,			idThread::Event_RezRagdoll)
 END_CLASS
 
 idThread			*idThread::currentThread = NULL;
@@ -1865,6 +1868,13 @@ void idThread::Event_InfluenceActive( void ) {
 		idThread::ReturnInt( false );
 	}
 }
+
+void idThread::Event_RezRagdoll(idEntity* ragdoll, const char* newMonster) {
+	// Ensure target entity is ragdoll
+	if (!ragdoll->RezDissolve(newMonster)) {
+		common->Error("Invalid target for resurrection dissolve");
+	}
+} 
 
 int idGameEditExt::ThreadGetNum(const idThread* thread) const
 {

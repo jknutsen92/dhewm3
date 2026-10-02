@@ -26,10 +26,11 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
+#include "framework/DeclEntityDef.h"
 #include "sys/platform.h"
 #include "idlib/geometry/JointTransform.h"
 #include "renderer/ModelManager.h"
-
+#include "Fx.h"
 #include "gamesys/SysCvar.h"
 #include "Item.h"
 #include "Player.h"
@@ -536,6 +537,8 @@ idAFEntity_Base::idAFEntity_Base( void ) {
 	combatModel = NULL;
 	combatModelContents = 0;
 	nextSoundTime = 0;
+	rezClassName = NULL;
+	rezDissolveFx = nullptr;
 	spawnOrigin.Zero();
 	spawnAxis.Identity();
 }
@@ -630,6 +633,21 @@ idAFEntity_Base::Think
 void idAFEntity_Base::Think( void ) {
 	RunPhysics();
 	UpdateAnimation();
+	
+	// smolspacer - TODO: We can put corpse timers in here too
+	if (rezDissolveFx && rezDissolveFx->Done()) {
+		// Create the new monster
+		idDict args;
+		args.Set("classname", rezClassName);
+		args.Set("teleport", "1");
+		args.Set("origin", GetPhysics()->GetOrigin().ToString());
+		args.Set("angle", va("%f", GetPhysics()->GetAxis().ToAngles().yaw));
+		if (!gameLocal.SpawnEntityDef(args)) {
+			common->Warning("Could not spawn resurrected entity %s\n", rezClassName.c_str());
+		}
+		delete this;		// Clean up the dissolved ragdoll after spawning the resurrected creature
+	}
+
 	if ( thinkFlags & TH_UPDATEVISUALS ) {
 		Present();
 		LinkCombat();
@@ -928,6 +946,15 @@ void idAFEntity_Base::DropAFs( idEntity *ent, const char *type, idList<idEntity 
 		skin = declManager->FindSkin( skinName );
 		ent->SetSkin( skin );
 	}
+}
+
+bool idAFEntity_Base::RezDissolve(const char* monsterClassName) {
+	// Find and apply dissolve skin
+
+	// Play the FX
+	rezDissolveFx = idEntityFx::StartFx("fx/resurrect.fx", &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, false);
+
+	return true;
 }
 
 /*
