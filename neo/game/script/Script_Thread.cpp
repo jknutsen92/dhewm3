@@ -1871,7 +1871,7 @@ void idThread::Event_InfluenceActive( void ) {
 
 void idThread::Event_RezRagdoll(idEntity* ragdoll, const char* newMonster) {
 	// Ensure target entity is ragdoll
-	if (!ragdoll->RezDissolve(newMonster)) {
+	if (!ragdoll->StartResurrection(newMonster)) {
 		common->Error("Invalid target for resurrection dissolve");
 	}
 } 

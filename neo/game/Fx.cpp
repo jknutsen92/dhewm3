@@ -305,7 +305,7 @@ idEntityFx::Done
 ================
 */
 const bool idEntityFx::Done() {
-	if (started > 0 && gameLocal.time > started + Duration()) {
+	if (started < 0 || (started > 0 && gameLocal.time > started + Duration())) {
 		return true;
 	}
 	return false;

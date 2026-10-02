@@ -4881,7 +4881,7 @@ bool idEntity::ClientReceiveEvent( int event, int time, const idBitMsg &msg ) {
 	return false;
 }
 
-bool idEntity::RezDissolve(const char* monsterClassName) {
+bool idEntity::StartResurrection(const char* monsterClassName) {
 	return false;
 }
 

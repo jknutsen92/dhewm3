@@ -636,22 +636,34 @@ void idAFEntity_Base::Think( void ) {
 	
 	// smolspacer - TODO: We can put corpse timers in here too
 	if (rezDissolveFx && rezDissolveFx->Done()) {
-		// Create the new monster
-		idDict args;
-		args.Set("classname", rezClassName);
-		args.Set("teleport", "1");
-		args.Set("origin", GetPhysics()->GetOrigin().ToString());
-		args.Set("angle", va("%f", GetPhysics()->GetAxis().ToAngles().yaw));
-		if (!gameLocal.SpawnEntityDef(args)) {
-			common->Warning("Could not spawn resurrected entity %s\n", rezClassName.c_str());
-		}
-		delete this;		// Clean up the dissolved ragdoll after spawning the resurrected creature
+		CompleteResurrection();
 	}
 
 	if ( thinkFlags & TH_UPDATEVISUALS ) {
 		Present();
 		LinkCombat();
 	}
+}
+
+void idAFEntity_Base::CompleteResurrection() {
+	// Create the new monster
+	idEntity* monster;
+	idDict args;
+	args.Set("classname", rezClassName);
+	args.Set("teleport", "1");
+	args.Set("origin", GetPhysics()->GetOrigin().ToString());
+	args.Set("angle", va("%f", GetPhysics()->GetAxis().ToAngles().yaw));
+	if (!gameLocal.SpawnEntityDef(args, &monster)) {
+		common->Warning("Could not spawn resurrected entity %s\n", rezClassName.c_str());
+	}
+
+	// Trigger monster
+	monster->Signal( SIG_TRIGGER );
+	monster->ProcessEvent( &EV_Activate, gameLocal.GetLocalPlayer() );
+	monster->TriggerGuis();
+
+	// Clean up the dissolved ragdoll after spawning the resurrected creature
+	delete this;
 }
 
 /*
@@ -948,8 +960,12 @@ void idAFEntity_Base::DropAFs( idEntity *ent, const char *type, idList<idEntity 
 	}
 }
 
-bool idAFEntity_Base::RezDissolve(const char* monsterClassName) {
-	// Find and apply dissolve skin
+bool idAFEntity_Base::StartResurrection(const char* monsterClassName) {
+	// TODO: Find and apply dissolve skin
+	// TODO: Update shaderparm 7
+
+	// Update the spawn class of the monster to replace us
+	rezClassName = monsterClassName;
 
 	// Play the FX
 	rezDissolveFx = idEntityFx::StartFx("fx/resurrect.fx", &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, false);

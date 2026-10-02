@@ -193,7 +193,7 @@ public:
 	static void				DropAFs( idEntity *ent, const char *type, idList<idEntity *> *list );
 
 	// Starts the resurrection process
-	virtual bool			RezDissolve(const char* monsterClassName);
+	virtual bool			StartResurrection(const char* monsterClassName);
 
 protected:
 	idAF					af;				// articulated figure
@@ -206,6 +206,7 @@ protected:
 	idStr					rezClassName;	// Name of the spawn class to create following dissolve
 
 	void					Event_SetConstraintPosition( const char *name, const idVec3 &pos );
+	void					CompleteResurrection(void);
 };
 
 /*
