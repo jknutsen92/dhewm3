@@ -1135,7 +1135,8 @@ void idAFEntity_Gibbable::Damage( idEntity *inflictor, idEntity *attacker, const
 		return;
 	}
 	idAFEntity_Base::Damage( inflictor, attacker, dir, damageDefName, damageScale, location );
-	if ( health < -20 && spawnArgs.GetBool( "gib" ) ) {
+	const idDict* damageDef = gameLocal.FindEntityDefDict( damageDefName ); 
+	if ( health < -20 && spawnArgs.GetBool( "gib" ) && damageDef->GetBool("gib")) {
 		Gib( dir, damageDefName );
 	}
 }

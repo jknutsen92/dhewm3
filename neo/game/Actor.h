@@ -131,6 +131,8 @@ public:
 	void					Save( idSaveGame *savefile ) const;
 	void					Restore( idRestoreGame *savefile );
 
+	virtual void			Think(void);
+
 	virtual void			Hide( void );
 	virtual void			Show( void );
 	virtual int				GetDefaultSurfaceType( void ) const;
@@ -267,6 +269,11 @@ protected:
 
 	// script variables
 	idThread *				scriptThread;
+
+	// Script callbacks
+	idList<idThread*>		scriptCallbackThreads;
+	function_t*				callbackFuncDamaged;
+
 	idStr					waitState;
 	idAnimState				headAnim;
 	idAnimState				torsoAnim;
@@ -302,6 +309,8 @@ private:
 	void 					ApplyHeatFx( idDeclSkin* currentSkin );
 	void					RemoveHeatFx( void );
 	void					UpdateHeatShaderParms( float heatRatio );
+	idThread*				GetIdleCallbackThread(void);
+	void					InitCallbacks(void);
 
 	void					Event_EnableEyeFocus( void );
 	void					Event_DisableEyeFocus( void );
@@ -343,6 +352,8 @@ private:
 	void					Event_SetState( const char *name );
 	void					Event_GetState( void );
 	void					Event_GetHead( void );
+	void					Event_EnableTargeting(void);
+	void 					Event_DisableTargeting(void);
 };
 
 #endif /* !__GAME_ACTOR_H__ */
