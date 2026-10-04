@@ -58,6 +58,10 @@ extern const idEventDef AI_PlayCycle;
 extern const idEventDef AI_AnimDone;
 extern const idEventDef AI_SetBlendFrames;
 extern const idEventDef AI_GetBlendFrames;
+extern const idEventDef AI_GetTeam;
+extern const idEventDef AI_SetTeam;
+extern const idEventDef AI_RemoveEventCallback;
+extern const idEventDef AI_SetEventCallback;
 
 class idDeclParticle;
 
@@ -354,6 +358,8 @@ private:
 	void					Event_GetHead( void );
 	void					Event_EnableTargeting(void);
 	void 					Event_DisableTargeting(void);
+	void					Event_GetTeam(void);
+	void 					Event_SetTeam(int newTeam);
 };
 
 #endif /* !__GAME_ACTOR_H__ */

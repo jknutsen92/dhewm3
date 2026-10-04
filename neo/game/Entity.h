@@ -68,6 +68,7 @@ extern const idEventDef EV_SetSkin;
 extern const idEventDef EV_StartSoundShader;
 extern const idEventDef EV_StopSound;
 extern const idEventDef EV_CacheSoundShader;
+extern const idEventDef EV_IsSpawned;
 
 // Think flags
 enum {
@@ -129,7 +130,7 @@ public:
 	int						snapshotBits;			// number of bits this entity occupied in the last snapshot
 
 	idStr					name;					// name of entity
-	idDict					spawnArgs;				// key/value pairs used to spawn and initialize entity
+	// idDict					spawnArgs;				// key/value pairs used to spawn and initialize entity
 	idScriptObject			scriptObject;			// contains all script defined data for this entity
 
 	int						thinkFlags;				// TH_? flags
@@ -186,6 +187,7 @@ public:
 	virtual	void			DormantBegin( void );	// called when entity becomes dormant
 	virtual	void			DormantEnd( void );		// called when entity wakes from being dormant
 	bool					IsActive( void ) const;
+	bool 					IsSpawned(void) const;
 	void					BecomeActive( int flags );
 	void					BecomeInactive( int flags );
 	void					UpdatePVSAreas( const idVec3 &pos );
@@ -367,7 +369,7 @@ public:
 	void					ServerSendEvent( int eventId, const idBitMsg *msg, bool saveEvent, int excludeClient ) const;
 	void					ClientSendEvent( int eventId, const idBitMsg *msg ) const;
 
-	virtual bool			StartResurrection(const char* monsterClassName);
+	virtual idEntity*		StartResurrection(const char* monsterClassName, const idDict corpseSpawnArgs);
 
 protected:
 	renderEntity_t			renderEntity;						// used to present a model to the renderer
@@ -473,6 +475,7 @@ private:
 	void					Event_HasFunction( const char *name );
 	void					Event_CallFunction( const char *name );
 	void					Event_SetNeverDormant( int enable );
+	void					Event_IsSpawned(void);
 };
 
 /*

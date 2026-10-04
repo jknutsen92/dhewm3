@@ -251,6 +251,8 @@ public:
 	static int					GetTypeNumBits( void ) { return typeNumBits; }
 	static idTypeInfo *			GetType( int num );
 
+	idDict 						spawnArgs;
+
 private:
 	classSpawnFunc_t			CallSpawnFunc( idTypeInfo *cls );
 

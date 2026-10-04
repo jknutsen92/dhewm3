@@ -232,7 +232,7 @@ void idGameLocal::Clear( void ) {
 	aasNames.Clear();
 	lastAIAlertEntity = NULL;
 	lastAIAlertTime = 0;
-	spawnArgs.Clear();
+	// spawnArgs.Clear();
 	gravity.Set( 0, 0, -1 );
 	playerPVS.h = (unsigned int)-1;
 	playerConnectedAreas.h = (unsigned int)-1;
@@ -608,7 +608,7 @@ void idGameLocal::SaveGame( idFile *f ) {
 	lastAIAlertEntity.Save( &savegame );
 	savegame.WriteInt( lastAIAlertTime );
 
-	savegame.WriteDict( &spawnArgs );
+	// savegame.WriteDict( &spawnArgs );
 
 	savegame.WriteInt( playerPVS.i );
 	savegame.WriteInt( playerPVS.h );
@@ -967,7 +967,7 @@ void idGameLocal::LoadMap( const char *mapName, int randseed ) {
 
 	gravity.Set( 0, 0, -g_gravity.GetFloat() );
 
-	spawnArgs.Clear();
+	// spawnArgs.Clear();
 
 	skipCinematic = false;
 	inCinematic = false;
@@ -1458,7 +1458,7 @@ bool idGameLocal::InitFromSaveGame( const char *mapName, idRenderWorld *renderWo
 	lastAIAlertEntity.Restore( &savegame );
 	savegame.ReadInt( lastAIAlertTime );
 
-	savegame.ReadDict( &spawnArgs );
+	// savegame.ReadDict( &spawnArgs );
 
 	savegame.ReadInt( playerPVS.i );
 	savegame.ReadInt( (int &)playerPVS.h );
@@ -3019,7 +3019,7 @@ void idGameLocal::RegisterEntity( idEntity *ent ) {
 		Error( "idGameLocal::RegisterEntity: spawn count overflow" );
 	}
 
-	if ( !spawnArgs.GetInt( "spawn_entnum", "0", spawn_entnum ) ) {
+	if ( ent->spawnArgs.GetInt( "spawn_entnum", "0", spawn_entnum ) ) {
 		while( entities[firstFreeIndex] && firstFreeIndex < ENTITYNUM_MAX_NORMAL ) {
 			firstFreeIndex++;
 		}
@@ -3033,7 +3033,7 @@ void idGameLocal::RegisterEntity( idEntity *ent ) {
 	spawnIds[ spawn_entnum ] = spawnCount++;
 	ent->entityNumber = spawn_entnum;
 	ent->spawnNode.AddToEnd( spawnedEntities );
-	ent->spawnArgs.TransferKeyValues( spawnArgs );
+	// ent->spawnArgs.TransferKeyValues( spawnArgs );
 
 	if ( spawn_entnum >= num_entities ) {
 		num_entities++;
@@ -3082,19 +3082,16 @@ idEntity *idGameLocal::SpawnEntityType( const idTypeInfo &classdef, const idDict
 	}
 
 	try {
-		if ( args ) {
-			spawnArgs = *args;
-		} else {
-			spawnArgs.Clear();
-		}
 		obj = classdef.CreateInstance();
+		if ( args ) {
+			obj->spawnArgs = *args;
+		}
 		obj->CallSpawn();
 	}
 
 	catch( idAllocError & ) {
 		obj = NULL;
 	}
-	spawnArgs.Clear();
 
 	return static_cast<idEntity *>(obj);
 }
@@ -3114,6 +3111,7 @@ bool idGameLocal::SpawnEntityDef( const idDict &args, idEntity **ent, bool setDe
 	idClass		*obj;
 	idStr		error;
 	const char  *name;
+	idDict 		spawnArgs;
 
 	if ( ent ) {
 		*ent = NULL;
@@ -3151,7 +3149,7 @@ bool idGameLocal::SpawnEntityDef( const idDict &args, idEntity **ent, bool setDe
 			Warning( "Could not spawn '%s'. Instance could not be created%s.", classname, error.c_str() );
 			return false;
 		}
-
+		obj->spawnArgs = spawnArgs;
 		obj->CallSpawn();
 
 		if ( ent && obj->IsType( idEntity::Type ) ) {
@@ -3176,6 +3174,48 @@ bool idGameLocal::SpawnEntityDef( const idDict &args, idEntity **ent, bool setDe
 
 	Warning( "%s doesn't include a spawnfunc or spawnclass%s.", classname, error.c_str() );
 	return false;
+}
+
+idEntity* idGameLocal::CreateEntityDef(const idDict& args) {
+	idStr		error;
+
+	const char* classname;
+	args.GetString("classname", "", &classname);
+
+	// Validate spawn class
+	const idDeclEntityDef* def = FindEntityDef(classname, false);
+	if (!def) {
+		Warning( "Unknown classname '%s'%s.", classname, error.c_str() );
+		return nullptr;
+	}
+
+	idDict spawnArgs = args;
+	// Sets defaults if keys not present
+	spawnArgs.SetDefaults(&def->dict);
+
+	// Instance an idClass, if applicable
+	const char* spawn;
+	spawnArgs.GetString("spawnclass", "", &spawn);
+	if (spawn) {
+		idTypeInfo*	cls = idClass::GetClass(spawn);
+		if (!cls) {
+			Warning( "Could not spawn '%s'.  Class '%s' not found%s.", classname, spawn, error.c_str() );
+			return nullptr;
+		}
+
+		idClass* obj = cls->CreateInstance();
+		if (!obj) {
+			Warning( "Could not spawn '%s'. Instance could not be created%s.", classname, error.c_str() );
+			return nullptr;	
+		}
+		obj->spawnArgs = spawnArgs;
+
+		if (!obj->IsType(idEntity::Type)) {
+			Warning("spawnclass %s doesn't inherit from idEntity", spawn);
+			return nullptr;
+		}
+		return static_cast<idEntity*>(obj);
+	}
 }
 
 /*

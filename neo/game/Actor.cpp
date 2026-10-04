@@ -26,6 +26,7 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
+#include "Entity.h"
 #include "Game_local.h"
 #include "d3xp/script/Script_Program.h"
 #include "framework/DeclManager.h"
@@ -383,6 +384,8 @@ const idEventDef AI_SetNextState( "setNextState", "s" );
 const idEventDef AI_SetState( "setState", "s" );
 const idEventDef AI_GetState( "getState", NULL, 's' );
 const idEventDef AI_GetHead( "getHead", NULL, 'e' );
+const idEventDef AI_GetTeam("getTeam", NULL, 'd');
+const idEventDef AI_SetTeam("setTeam", "d");
 
 CLASS_DECLARATION( idAFEntity_Gibbable, idActor )
 	EVENT( AI_EnableEyeFocus,			idActor::Event_EnableEyeFocus )
@@ -426,6 +429,8 @@ CLASS_DECLARATION( idAFEntity_Gibbable, idActor )
 	EVENT( AI_SetState,					idActor::Event_SetState )
 	EVENT( AI_GetState,					idActor::Event_GetState )
 	EVENT( AI_GetHead,					idActor::Event_GetHead )
+	EVENT( AI_GetTeam,					idActor::Event_GetTeam )
+	EVENT( AI_SetTeam,					idActor::Event_SetTeam )
 END_CLASS
 
 /*
@@ -2317,10 +2322,11 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 		return;
 	}
 
-	if (spawnArgs.GetString("script_callback_damaged")[0]) {
-		idThread* thread = GetIdleCallbackThread();
-		thread->CallFunction(this, callbackFuncDamaged, true);
-	}
+	Signal(SIG_DAMAGE);
+	// if (callbackFuncDamaged) {
+	// 	idThread* thread = GetIdleCallbackThread();
+	// 	thread->CallFunction(this, callbackFuncDamaged, true);
+	// }
 
 	if ( !inflictor ) {
 		inflictor = gameLocal.world;
@@ -2687,12 +2693,16 @@ idThread* idActor::GetIdleCallbackThread() {
 }
 
 void idActor::InitCallbacks() {
-	const char* callbackName;
+	const char* callbackName; 
 	if (spawnArgs.GetString("script_callback_damaged", "", &callbackName)) {
-		// TODO: Parse namespace and decide whether to search scriptObject or gameLocal.program
-		// callbackFuncDamaged = gameLocal.program.FindFunction(spawnArgs.GetString("script_callback_damaged"));
-		callbackFuncDamaged = (function_t*)scriptObject.GetFunction(callbackName);
-		assert(callbackFuncDamaged);
+		const idStr callbackStr = idStr(callbackName);
+		// Parse namespace and decide whether to search scriptObject or gameLocal.program
+		if (callbackStr.HasNamespace()) {
+			callbackFuncDamaged = gameLocal.program.FindFunction(spawnArgs.GetString("script_callback_damaged"));
+		}
+		else {
+			callbackFuncDamaged = (function_t*)scriptObject.GetFunction(callbackName);
+		}
 	}
 }
 
@@ -3582,4 +3592,12 @@ idActor::Event_GetHead
 */
 void idActor::Event_GetHead( void ) {
 	idThread::ReturnEntity( head.GetEntity() );
+}
+
+void idActor::Event_GetTeam() {
+	idThread::ReturnInt(team);
+}
+
+void idActor::Event_SetTeam(int newTeam) {
+	team = newTeam;
 }

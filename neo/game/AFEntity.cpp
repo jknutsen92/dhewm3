@@ -26,6 +26,8 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
+#include "Entity.h"
+#include "Game_local.h"
 #include "framework/DeclEntityDef.h"
 #include "sys/platform.h"
 #include "idlib/geometry/JointTransform.h"
@@ -520,9 +522,11 @@ void idAFAttachment::UnlinkCombat( void ) {
 */
 
 const idEventDef EV_SetConstraintPosition( "SetConstraintPosition", "sv" );
+const idEventDef EV_RezRagdoll("rezRagdoll", "s");
 
 CLASS_DECLARATION( idAnimatedEntity, idAFEntity_Base )
 	EVENT( EV_SetConstraintPosition,	idAFEntity_Base::Event_SetConstraintPosition )
+	EVENT( EV_RezRagdoll, 				idAFEntity_Base::Event_RezRagdoll )
 END_CLASS
 
 static const float BOUNCE_SOUND_MIN_VELOCITY	= 80.0f;
@@ -537,8 +541,8 @@ idAFEntity_Base::idAFEntity_Base( void ) {
 	combatModel = NULL;
 	combatModelContents = 0;
 	nextSoundTime = 0;
-	rezClassName = NULL;
 	rezDissolveFx = nullptr;
+	rezEntity = nullptr;
 	spawnOrigin.Zero();
 	spawnAxis.Identity();
 }
@@ -646,21 +650,13 @@ void idAFEntity_Base::Think( void ) {
 }
 
 void idAFEntity_Base::CompleteResurrection() {
-	// Create the new monster
-	idEntity* monster;
-	idDict args;
-	args.Set("classname", rezClassName);
-	args.Set("teleport", "1");
-	args.Set("origin", GetPhysics()->GetOrigin().ToString());
-	args.Set("angle", va("%f", GetPhysics()->GetAxis().ToAngles().yaw));
-	if (!gameLocal.SpawnEntityDef(args, &monster)) {
-		common->Warning("Could not spawn resurrected entity %s\n", rezClassName.c_str());
-	}
+	// Spawn monster
+	rezEntity->Spawn();
 
 	// Trigger monster
-	monster->Signal( SIG_TRIGGER );
-	monster->ProcessEvent( &EV_Activate, gameLocal.GetLocalPlayer() );
-	monster->TriggerGuis();
+	rezEntity->Signal( SIG_TRIGGER );
+	rezEntity->ProcessEvent( &EV_Activate, gameLocal.GetLocalPlayer() );
+	rezEntity->TriggerGuis();
 
 	// Clean up the dissolved ragdoll after spawning the resurrected creature
 	delete this;
@@ -960,17 +956,29 @@ void idAFEntity_Base::DropAFs( idEntity *ent, const char *type, idList<idEntity 
 	}
 }
 
-bool idAFEntity_Base::StartResurrection(const char* monsterClassName) {
+idEntity* idAFEntity_Base::StartResurrection(const char* monsterClassName, const idDict corpseSpawnArgs) {
+	idDict args;
+	// Copy spawn args to the entity - script object can pass attributes
+	args.Copy(corpseSpawnArgs);
+	// Override resurrection specific args
+	args.Set("classname", monsterClassName);
+	args.Set("teleport", "1");
+	args.Set("origin", GetPhysics()->GetOrigin().ToString());
+	args.Set("angle", va("%f", GetPhysics()->GetAxis().ToAngles().yaw));
+	// Create the entity
+	rezEntity = gameLocal.CreateEntityDef(args);
+	if (!rezEntity) {
+		common->Warning("Unable to spawn %s from %s\n", monsterClassName, GetName());
+		return nullptr;
+	}
+	
 	// TODO: Find and apply dissolve skin
 	// TODO: Update shaderparm 7
-
-	// Update the spawn class of the monster to replace us
-	rezClassName = monsterClassName;
 
 	// Play the FX
 	rezDissolveFx = idEntityFx::StartFx("fx/resurrect.fx", &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, false);
 
-	return true;
+	return rezEntity;
 }
 
 /*
@@ -980,6 +988,10 @@ idAFEntity_Base::Event_SetConstraintPosition
 */
 void idAFEntity_Base::Event_SetConstraintPosition( const char *name, const idVec3 &pos ) {
 	af.SetConstraintPosition( name, pos );
+}
+
+void idAFEntity_Base::Event_RezRagdoll(const char* monsterClassName) {
+	idThread::ReturnEntity(StartResurrection(monsterClassName, spawnArgs));
 }
 
 /*

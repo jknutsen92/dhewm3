@@ -426,11 +426,11 @@ bool idStr::CheckExtension( const char *name, const char *ext ) {
 	return ( s1 >= name );
 }
 
-bool idStr::HasNamespace(idStr str) {
-	return idStr::FindText(str, "::", false) > 0;
+bool idStr::HasNamespace() const {
+	return idStr::FindText(this->c_str(), "::", false) > 0;
 }
 
-void idStr::ParseNamespaceAndName(idStr& ns, idStr& name) {
+void idStr::ParseNamespaceAndName(idStr& ns, idStr& name) const {
 	int index = idStr::FindText(this->c_str(), "::", false);
 	assert(index > 0);
 	ns = idStr(this->c_str(), 0, index);

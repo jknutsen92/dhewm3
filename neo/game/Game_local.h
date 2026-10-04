@@ -380,6 +380,7 @@ public:
 	idEntity *				SpawnEntityType( const idTypeInfo &classdef, const idDict *args = NULL, bool bIsClientReadSnapshot = false );
 	bool					SpawnEntityDef( const idDict &args, idEntity **ent = NULL, bool setDefaults = true );
 	int						GetSpawnId( const idEntity *ent ) const;
+	idEntity*				CreateEntityDef(const idDict &args);	// Creates an entity but defers the actual spawn - used by rezRagdoll
 
 	const idDeclEntityDef *	FindEntityDef( const char *name, bool makeDefault = true ) const;
 	const idDict *			FindEntityDefDict( const char *name, bool makeDefault = true ) const;
@@ -478,7 +479,7 @@ private:
 	idEntityPtr<idActor>	lastAIAlertEntity;
 	int						lastAIAlertTime;
 
-	idDict					spawnArgs;				// spawn args used during entity spawning  FIXME: shouldn't be necessary anymore
+	// idDict					spawnArgs;				// spawn args used during entity spawning  FIXME: shouldn't be necessary anymore
 
 	pvsHandle_t				playerPVS;				// merged pvs of all players
 	pvsHandle_t				playerConnectedAreas;	// all areas connected to any player area

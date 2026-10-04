@@ -2323,7 +2323,7 @@ void Cmd_RezTarget_f(const idCmdArgs &args) {
 		common->Printf("no target ragdoll for resurrection");
 		return;
 	}
-	target->StartResurrection(newMonster);
+	target->StartResurrection(newMonster, target->spawnArgs);
 }
 
 /*

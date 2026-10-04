@@ -260,8 +260,8 @@ public:
 	bool				CheckExtension( const char *ext );
 	
 	// namespace methods
-	bool				HasNamespace(idStr str);
-	void				ParseNamespaceAndName(idStr& ns, idStr& name);
+	bool				HasNamespace() const;
+	void				ParseNamespaceAndName(idStr& ns, idStr& name) const;
 
 	// char * methods to replace library functions
 	static int			Length( const char *s );

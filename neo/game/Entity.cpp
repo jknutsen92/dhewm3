@@ -120,6 +120,7 @@ const idEventDef EV_StartFx( "startFx", "s" );
 const idEventDef EV_HasFunction( "hasFunction", "s", 'd' );
 const idEventDef EV_CallFunction( "callFunction", "s" );
 const idEventDef EV_SetNeverDormant( "setNeverDormant", "d" );
+const idEventDef EV_IsSpawned("isSpawned", NULL, 'd');
 
 ABSTRACT_DECLARATION( idClass, idEntity )
 	EVENT( EV_GetName,				idEntity::Event_GetName )
@@ -185,6 +186,7 @@ ABSTRACT_DECLARATION( idClass, idEntity )
 	EVENT( EV_HasFunction,			idEntity::Event_HasFunction )
 	EVENT( EV_CallFunction,			idEntity::Event_CallFunction )
 	EVENT( EV_SetNeverDormant,		idEntity::Event_SetNeverDormant )
+	EVENT( EV_IsSpawned,			idEntity::Event_IsSpawned )
 END_CLASS
 
 /*
@@ -932,6 +934,10 @@ idEntity::IsActive
 */
 bool idEntity::IsActive( void ) const {
 	return activeNode.InList();
+}
+
+bool idEntity::IsSpawned(void) const {
+	return spawnNode.InList();
 }
 
 /*
@@ -4592,6 +4598,10 @@ void idEntity::Event_SetNeverDormant( int enable ) {
 	dormantStart = 0;
 }
 
+void idEntity::Event_IsSpawned(void) {
+	idThread::ReturnInt(IsSpawned());
+}
+
 /***********************************************************************
 
    Network
@@ -4881,8 +4891,8 @@ bool idEntity::ClientReceiveEvent( int event, int time, const idBitMsg &msg ) {
 	return false;
 }
 
-bool idEntity::StartResurrection(const char* monsterClassName) {
-	return false;
+idEntity* idEntity::StartResurrection(const char* monsterClassName, const idDict corpseSpawnArgs) {
+	return nullptr;
 }
 
 /*
