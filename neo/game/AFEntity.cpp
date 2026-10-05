@@ -522,11 +522,9 @@ void idAFAttachment::UnlinkCombat( void ) {
 */
 
 const idEventDef EV_SetConstraintPosition( "SetConstraintPosition", "sv" );
-const idEventDef EV_RezRagdoll("rezRagdoll", "s");
 
 CLASS_DECLARATION( idAnimatedEntity, idAFEntity_Base )
 	EVENT( EV_SetConstraintPosition,	idAFEntity_Base::Event_SetConstraintPosition )
-	EVENT( EV_RezRagdoll, 				idAFEntity_Base::Event_RezRagdoll )
 END_CLASS
 
 static const float BOUNCE_SOUND_MIN_VELOCITY	= 80.0f;
@@ -651,7 +649,7 @@ void idAFEntity_Base::Think( void ) {
 
 void idAFEntity_Base::CompleteResurrection() {
 	// Spawn monster
-	rezEntity->Spawn();
+	gameLocal.SpawnEntity(rezEntity);
 
 	// Trigger monster
 	rezEntity->Signal( SIG_TRIGGER );
@@ -956,21 +954,20 @@ void idAFEntity_Base::DropAFs( idEntity *ent, const char *type, idList<idEntity 
 	}
 }
 
-idEntity* idAFEntity_Base::StartResurrection(const char* monsterClassName, const idDict corpseSpawnArgs) {
-	idDict args;
-	// Copy spawn args to the entity - script object can pass attributes
-	args.Copy(corpseSpawnArgs);
+idEntity* idAFEntity_Base::StartResurrection(const idDict rezEntSpawnArgs) {
+	idDict args = rezEntSpawnArgs;
 	// Override resurrection specific args
-	args.Set("classname", monsterClassName);
 	args.Set("teleport", "1");
 	args.Set("origin", GetPhysics()->GetOrigin().ToString());
 	args.Set("angle", va("%f", GetPhysics()->GetAxis().ToAngles().yaw));
 	// Create the entity
 	rezEntity = gameLocal.CreateEntityDef(args);
 	if (!rezEntity) {
-		common->Warning("Unable to spawn %s from %s\n", monsterClassName, GetName());
+		common->Warning("Unable to spawn %s from %s\n", args.GetString("classname"), GetName());
 		return nullptr;
 	}
+	// Doesn't spawn, but we need to reserve a spot on the entity list in order for the scripting to work
+	gameLocal.AddToEntityList(rezEntity);
 	
 	// TODO: Find and apply dissolve skin
 	// TODO: Update shaderparm 7
@@ -988,10 +985,6 @@ idAFEntity_Base::Event_SetConstraintPosition
 */
 void idAFEntity_Base::Event_SetConstraintPosition( const char *name, const idVec3 &pos ) {
 	af.SetConstraintPosition( name, pos );
-}
-
-void idAFEntity_Base::Event_RezRagdoll(const char* monsterClassName) {
-	idThread::ReturnEntity(StartResurrection(monsterClassName, spawnArgs));
 }
 
 /*

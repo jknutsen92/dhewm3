@@ -193,7 +193,7 @@ public:
 	static void				DropAFs( idEntity *ent, const char *type, idList<idEntity *> *list );
 
 	// Starts the resurrection process
-	virtual idEntity*		StartResurrection(const char* monsterClassName, const idDict corpseSpawnArgs);
+	virtual idEntity*		StartResurrection(const idDict rezEntSpawnArgs);
 
 protected:
 	idAF					af;				// articulated figure
@@ -207,7 +207,6 @@ protected:
 	idEntity*				rezEntity;		// Entity that will be spawned after the dissolve
 
 	void					Event_SetConstraintPosition( const char *name, const idVec3 &pos );
-	void					Event_RezRagdoll(const char* monsterClassName);
 	void					CompleteResurrection(void);
 };
 
@@ -221,7 +220,6 @@ idAFEntity_Gibbable
 
 extern const idEventDef		EV_Gib;
 extern const idEventDef		EV_Gibbed;
-extern const idEventDef 	EV_RezRagdoll;
 
 class idAFEntity_Gibbable : public idAFEntity_Base {
 public:

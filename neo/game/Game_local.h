@@ -381,10 +381,12 @@ public:
 	bool					SpawnEntityDef( const idDict &args, idEntity **ent = NULL, bool setDefaults = true );
 	int						GetSpawnId( const idEntity *ent ) const;
 	idEntity*				CreateEntityDef(const idDict &args);	// Creates an entity but defers the actual spawn - used by rezRagdoll
+	void					SpawnEntity(idEntity* ent);				// Spawns the entity created by CreateEntityDef
 
 	const idDeclEntityDef *	FindEntityDef( const char *name, bool makeDefault = true ) const;
 	const idDict *			FindEntityDefDict( const char *name, bool makeDefault = true ) const;
 
+	void					AddToEntityList(idEntity* ent);
 	void					RegisterEntity( idEntity *ent );
 	void					UnregisterEntity( idEntity *ent );
 
@@ -509,6 +511,8 @@ private:
 	idStrList				shakeSounds;
 
 	byte					lagometer[ LAGO_IMG_HEIGHT ][ LAGO_IMG_WIDTH ][ 4 ];
+
+	void					AddToSpawnList(idEntity* ent);
 
 	void					Clear( void );
 							// returns true if the entity shouldn't be spawned at all in this game type or difficulty level

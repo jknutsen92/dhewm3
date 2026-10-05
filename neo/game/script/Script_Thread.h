@@ -54,6 +54,7 @@ extern const idEventDef EV_Thread_GetTime;
 extern const idEventDef EV_Thread_KillThread;
 extern const idEventDef EV_Thread_SetThreadName;
 extern const idEventDef EV_Thread_GetEntity;
+extern const idEventDef EV_Thread_ResurrectRagdoll;
 extern const idEventDef EV_Thread_Spawn;
 extern const idEventDef EV_Thread_SetSpawnArg;
 extern const idEventDef EV_Thread_SpawnString;
@@ -132,6 +133,7 @@ private:
 	void						Event_GetTime( void );
 	void						Event_KillThread( const char *name );
 	void						Event_GetEntity( const char *name );
+	void						Event_ResurrectRagdoll(idEntity* ragdoll);
 	void						Event_Spawn( const char *classname );
 	void						Event_CopySpawnArgs( idEntity *ent );
 	void						Event_SetSpawnArg( const char *key, const char *value );

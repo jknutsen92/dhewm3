@@ -3013,13 +3013,21 @@ idGameLocal::RegisterEntity
 ===================
 */
 void idGameLocal::RegisterEntity( idEntity *ent ) {
-	int spawn_entnum;
-
 	if ( spawnCount >= ( 1 << ( 32 - GENTITYNUM_BITS ) ) ) {
 		Error( "idGameLocal::RegisterEntity: spawn count overflow" );
 	}
 
-	if ( ent->spawnArgs.GetInt( "spawn_entnum", "0", spawn_entnum ) ) {
+	// Add to the entity list if necessary
+	if (ent->entityNumber == ENTITYNUM_NONE) {
+		AddToEntityList(ent);
+	}
+
+	AddToSpawnList(ent);
+}
+
+void idGameLocal::AddToEntityList(idEntity* ent) {
+	int spawn_entnum;
+	if ( !ent->spawnArgs.GetInt( "spawn_entnum", "0", spawn_entnum ) ) {
 		while( entities[firstFreeIndex] && firstFreeIndex < ENTITYNUM_MAX_NORMAL ) {
 			firstFreeIndex++;
 		}
@@ -3030,14 +3038,15 @@ void idGameLocal::RegisterEntity( idEntity *ent ) {
 	}
 
 	entities[ spawn_entnum ] = ent;
-	spawnIds[ spawn_entnum ] = spawnCount++;
 	ent->entityNumber = spawn_entnum;
-	ent->spawnNode.AddToEnd( spawnedEntities );
-	// ent->spawnArgs.TransferKeyValues( spawnArgs );
-
 	if ( spawn_entnum >= num_entities ) {
 		num_entities++;
 	}
+}
+
+void idGameLocal::AddToSpawnList(idEntity* ent) {
+	spawnIds[ ent->entityNumber ] = spawnCount++;
+	ent->spawnNode.AddToEnd( spawnedEntities );
 }
 
 /*
@@ -3216,6 +3225,11 @@ idEntity* idGameLocal::CreateEntityDef(const idDict& args) {
 		}
 		return static_cast<idEntity*>(obj);
 	}
+}
+
+void idGameLocal::SpawnEntity(idEntity* ent) {
+	idClass* obj = reinterpret_cast<idClass*>(ent);
+	obj->CallSpawn();
 }
 
 /*

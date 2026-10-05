@@ -4598,7 +4598,7 @@ void idEntity::Event_SetNeverDormant( int enable ) {
 	dormantStart = 0;
 }
 
-void idEntity::Event_IsSpawned(void) {
+void idEntity::Event_IsSpawned() {
 	idThread::ReturnInt(IsSpawned());
 }
 
@@ -4891,7 +4891,7 @@ bool idEntity::ClientReceiveEvent( int event, int time, const idBitMsg &msg ) {
 	return false;
 }
 
-idEntity* idEntity::StartResurrection(const char* monsterClassName, const idDict corpseSpawnArgs) {
+idEntity* idEntity::StartResurrection(const idDict corpseSpawnArgs) {
 	return nullptr;
 }
 

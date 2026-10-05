@@ -2306,8 +2306,8 @@ void Cmd_RezTarget_f(const idCmdArgs &args) {
 	}
 
 	// Check args
-	const char* newMonster = args.Argv(1);
-	if (!newMonster[0]) {
+	const char* classname = args.Argv(1);
+	if (!classname[0]) {
 		common->Printf("usage: rezTarget <classname>\n");
 		return;
 	}
@@ -2323,7 +2323,9 @@ void Cmd_RezTarget_f(const idCmdArgs &args) {
 		common->Printf("no target ragdoll for resurrection");
 		return;
 	}
-	target->StartResurrection(newMonster, target->spawnArgs);
+	idDict spawnArgs;
+	spawnArgs.Set("classname", classname);
+	target->StartResurrection(spawnArgs);
 }
 
 /*

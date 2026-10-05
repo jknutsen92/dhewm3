@@ -369,7 +369,7 @@ public:
 	void					ServerSendEvent( int eventId, const idBitMsg *msg, bool saveEvent, int excludeClient ) const;
 	void					ClientSendEvent( int eventId, const idBitMsg *msg ) const;
 
-	virtual idEntity*		StartResurrection(const char* monsterClassName, const idDict corpseSpawnArgs);
+	virtual idEntity*		StartResurrection(const idDict corpseSpawnArgs);
 
 protected:
 	renderEntity_t			renderEntity;						// used to present a model to the renderer
