@@ -2467,9 +2467,9 @@ idStr idActor::GetWeakpointSoundShader(idEntity* inflictor) {
 	return "";
 }
 
-void idActor::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName) {
+void idActor::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, int areaHeat) {
 	int projectileHeat = inflictor->spawnArgs.GetInt("heat");
-	InflictHeat(projectileHeat);
+	InflictHeat(projectileHeat + areaHeat);
 	if (g_debugHeat.GetBool()) {
 		int mass = spawnArgs.GetInt("mass");
 		common->Printf("Target %s (%dKg) current heat: %f/%f - projectile heat: %d\n", (const char*)name, mass, heat, maxHeat, projectileHeat);

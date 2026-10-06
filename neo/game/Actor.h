@@ -218,13 +218,12 @@ public:
 	void					SetWaitState( const char *_waitstate );
 	bool					AnimDone( int channel, int blendFrames ) const;
 	virtual void			SpawnGibs( const idVec3 &dir, const char *damageDefName );
-	void 					ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName);
+	void 					ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, int areaHeat = 0);
 
 protected:
 	friend class			idAnimState;
 
 	// smolspacer
-	bool 					isPlasmaHeatable;	// Whether this entity can be heated with the plasmagun
 	float 					heat;				// How much heat this entity currently has
 	float 					maxHeat;			// The point at which the entity overheats and detonates
 	float					heatDecayRate;		// How much heat per second the entity sheds

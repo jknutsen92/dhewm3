@@ -144,7 +144,7 @@ public:
 
 	int						health;					// FIXME: do all objects really need health?
 	bool					isAlive;				// Used to fix some skin glitches with the heat system
-	bool					isPlasmaHeatable;
+	bool					isPlasmaHeatable;		// Used to differentiate entities that can be heated with the plasmagun
 
 	struct entityFlags_s {
 		bool				notarget			:1;	// if true never attack or target this entity
@@ -317,7 +317,7 @@ public:
 	virtual void			Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat = false );
 
 	virtual void			InflictHeat( float heatToInflict );
-	virtual void 			ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName);
+	virtual void 			ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, int areaHeat = 0);
 
 
 	// scripting

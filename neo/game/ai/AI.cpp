@@ -3344,7 +3344,7 @@ void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const id
 		SetSkin(0);
 		idEntityFx::StartFx(spawnArgs.GetString("heatblast_fx"), &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, false);
 		//gameLocal.ProjectDecal( GetPhysics()->GetOrigin(), GetPhysics()->GetGravity(), 8.0f, true, 300, "textures/decals/ballburn01");
-		gameLocal.RadiusDamage(GetPhysics()->GetOrigin(), inflictor, this, this, nullptr, "damage_heatblast", 1.0f);
+		gameLocal.RadiusDamage(GetPhysics()->GetOrigin(), inflictor, attacker, this, nullptr, "damage_heatblast", 1.0f);
 	}
 
 	// stop all voice sounds
