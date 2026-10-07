@@ -619,6 +619,13 @@ idEntity::~idEntity( void ) {
 	delete renderView;
 	renderView = NULL;
 
+	if (signals) {
+		for (int i = 0; i < NUM_SIGNALS; i++) {
+			for (int j = 0; j < signals->signal[i].Num(); j++) {
+				delete signals->signal[i][j].thread;
+			}
+		}
+	}
 	delete signals;
 	signals = NULL;
 
@@ -689,7 +696,8 @@ void idEntity::Save( idSaveGame *savefile ) const {
 		for( i = 0; i < NUM_SIGNALS; i++ ) {
 			savefile->WriteInt( signals->signal[ i ].Num() );
 			for( j = 0; j < signals->signal[ i ].Num(); j++ ) {
-				savefile->WriteInt( signals->signal[ i ][ j ].threadnum );
+				// savefile->WriteInt( signals->signal[ i ][ j ].threadnum );
+				savefile->WriteObject(signals->signal[i][j].thread);
 				savefile->WriteString( signals->signal[ i ][ j ].function->Name() );
 			}
 		}
@@ -766,7 +774,8 @@ void idEntity::Restore( idRestoreGame *savefile ) {
 			savefile->ReadInt( num );
 			signals->signal[ i ].SetNum( num );
 			for( j = 0; j < num; j++ ) {
-				savefile->ReadInt( signals->signal[ i ][ j ].threadnum );
+				// savefile->ReadInt( signals->signal[ i ][ j ].threadnum );
+				savefile->ReadObject(reinterpret_cast<idClass*&>(signals->signal[i][j].thread));
 				savefile->ReadString( funcname );
 				signals->signal[ i ][ j ].function = gameLocal.program.FindFunction( funcname );
 				if ( !signals->signal[ i ][ j ].function ) {
@@ -3197,10 +3206,7 @@ idEntity::SetSignal
 ================
 */
 void idEntity::SetSignal( signalNum_t signalnum, idThread *thread, const function_t *function ) {
-	int			i;
-	int			num;
 	signal_t	sig;
-	int			threadnum;
 
 	assert( ( signalnum >= 0 ) && ( signalnum < NUM_SIGNALS ) );
 
@@ -3208,14 +3214,11 @@ void idEntity::SetSignal( signalNum_t signalnum, idThread *thread, const functio
 		signals = new signalList_t;
 	}
 
-	assert( thread );
-	threadnum = thread->GetThreadNum();
-
-	num = signals->signal[ signalnum ].Num();
-	for( i = 0; i < num; i++ ) {
-		if ( signals->signal[ signalnum ][ i ].threadnum == threadnum ) {
-			signals->signal[ signalnum ][ i ].function = function;
-			return;
+	// Check if this signal handler is already registered
+	int num = signals->signal[ signalnum ].Num();
+	for( int i = 0; i < num; i++ ) {
+		if ( signals->signal[ signalnum ][ i ].function == function) {
+			return;					// handler is already registered
 		}
 	}
 
@@ -3223,7 +3226,10 @@ void idEntity::SetSignal( signalNum_t signalnum, idThread *thread, const functio
 		thread->Error( "Exceeded maximum number of signals per object" );
 	}
 
-	sig.threadnum = threadnum;
+	// We should create a brand new thread for this, not hijack the current script thread 
+	sig.thread = new idThread();
+	sig.thread->SetThreadName(va("%s(%d)-%s", GetName(), signalnum, function->Name()));
+	sig.thread->ManualDelete();
 	sig.function = function;
 	signals->signal[ signalnum ].Append( sig );
 }
@@ -3243,6 +3249,11 @@ void idEntity::ClearSignal( idThread *thread, signalNum_t signalnum ) {
 		return;
 	}
 
+	// End the threads gracefully and clear the list
+	idList<signal_t> signalCallbacks = signals->signal[signalnum];
+	for (int i = 0; i < signalCallbacks.Num(); i++) {
+		delete signalCallbacks[i].thread;
+	}
 	signals->signal[ signalnum ].Clear();
 }
 
@@ -3252,10 +3263,6 @@ idEntity::ClearSignalThread
 ================
 */
 void idEntity::ClearSignalThread( signalNum_t signalnum, idThread *thread ) {
-	int	i;
-	int	num;
-	int	threadnum;
-
 	assert( thread );
 
 	if ( ( signalnum < 0 ) || ( signalnum >= NUM_SIGNALS ) ) {
@@ -3266,12 +3273,13 @@ void idEntity::ClearSignalThread( signalNum_t signalnum, idThread *thread ) {
 		return;
 	}
 
-	threadnum = thread->GetThreadNum();
+	// threadnum = thread->GetThreadNum();
 
-	num = signals->signal[ signalnum ].Num();
-	for( i = 0; i < num; i++ ) {
-		if ( signals->signal[ signalnum ][ i ].threadnum == threadnum ) {
-			signals->signal[ signalnum ].RemoveIndex( i );
+	idList<signal_t> signalCallbacks = signals->signal[signalnum];
+	for( int i = 0; i < signalCallbacks.Num(); i++ ) {
+		if ( signalCallbacks[i].thread == thread ) {
+			delete signalCallbacks[i].thread;
+			signalCallbacks.RemoveIndex( i );
 			return;
 		}
 	}
@@ -3283,33 +3291,18 @@ idEntity::Signal
 ================
 */
 void idEntity::Signal( signalNum_t signalnum ) {
-	int			i;
-	int			num;
-	signal_t	sigs[ MAX_SIGNAL_THREADS ];
-	idThread	*thread;
-
 	assert( ( signalnum >= 0 ) && ( signalnum < NUM_SIGNALS ) );
 
 	if ( !signals ) {
 		return;
 	}
 
-	// we copy the signal list since each thread has the potential
-	// to end any of the threads in the list.  By copying the list
-	// we don't have to worry about the list changing as we're
-	// processing it.
-	num = signals->signal[ signalnum ].Num();
-	for( i = 0; i < num; i++ ) {
-		sigs[ i ] = signals->signal[ signalnum ][ i ];
-	}
+	idList<signal_t> signalCallbacks = signals->signal[signalnum];
 
-	// clear out the signal list so that we don't get into an infinite loop
-	signals->signal[ signalnum ].Clear();
-
-	for( i = 0; i < num; i++ ) {
-		thread = idThread::GetThread( sigs[ i ].threadnum );
+	for( int i = 0; i < signalCallbacks.Num(); i++ ) {
+		idThread* thread = signalCallbacks[i].thread;
 		if ( thread ) {
-			thread->CallFunction( this, sigs[ i ].function, true );
+			thread->CallFunction( this, signalCallbacks[i].function, true );
 			thread->Execute();
 		}
 	}

@@ -125,16 +125,6 @@ void idAnimState::Restore( idRestoreGame *savefile ) {
 	savefile->ReadBool( disabled );
 }
 
-void idActor::Think() {
-	// Execute callback threads and then clear them
-	for (int i = 0; i < scriptCallbackThreads.Num(); i++) {
-		if (!scriptCallbackThreads[i]->IsWaiting()) {
-			scriptCallbackThreads[i]->Execute();
-		}
-	}
-	scriptCallbackThreads.DeleteContents(true);
-}
-
 /*
 =====================
 idAnimState::Init
@@ -490,8 +480,6 @@ idActor::idActor( void ) {
 
 	enemyNode.SetOwner( this );
 	enemyList.SetOwner( this );
-	
-	callbackFuncDamaged = nullptr;
 }
 
 /*
@@ -523,8 +511,6 @@ idActor::~idActor( void ) {
 			ent->PostEventMS( &EV_Remove, 0 );
 		}
 	}
-
-	scriptCallbackThreads.DeleteContents(true);
 
 	ShutdownThreads();
 }
@@ -682,9 +668,6 @@ void idActor::Spawn( void ) {
 
 	// Sets up script object
 	FinishSetup();
-
-	// Script callbacks
-	InitCallbacks();
 }
 
 /*
@@ -892,11 +875,6 @@ void idActor::Save( idSaveGame *savefile ) const {
 
 	savefile->WriteString( waitState );
 
-	savefile->WriteInt(scriptCallbackThreads.Num());
-	for (i = 0; i < scriptCallbackThreads.Num(); i++) {
-		savefile->WriteObject(scriptCallbackThreads[i]);
-	}
-
 	headAnim.Save( savefile );
 	torsoAnim.Save( savefile );
 	legsAnim.Save( savefile );
@@ -1038,13 +1016,6 @@ void idActor::Restore( idRestoreGame *savefile ) {
 	savefile->ReadObject( reinterpret_cast<idClass *&>( scriptThread ) );
 
 	savefile->ReadString( waitState );
-
-	savefile->ReadInt(num);
-	for (i = 0; i < num; i++) {
-		savefile->ReadObject(reinterpret_cast<idClass*&>(cbThread));
-		scriptCallbackThreads.Append(cbThread);
-	}
-	InitCallbacks();
 
 	headAnim.Restore( savefile );
 	torsoAnim.Restore( savefile );
@@ -2679,31 +2650,6 @@ const char *idActor::GetDamageGroup( int location ) {
 	}
 
 	return damageGroups[ location ];
-}
-
-idThread* idActor::GetIdleCallbackThread() {
-	for (int i = 0; i < scriptCallbackThreads.Num(); i++) {
-		if (scriptCallbackThreads[i]->IsDoneProcessing()) {
-			return scriptCallbackThreads[i];
-		}
-	}
-	idThread* thread = new idThread();
-	scriptCallbackThreads.Append(thread);
-	return thread;
-}
-
-void idActor::InitCallbacks() {
-	const char* callbackName; 
-	if (spawnArgs.GetString("script_callback_damaged", "", &callbackName)) {
-		const idStr callbackStr = idStr(callbackName);
-		// Parse namespace and decide whether to search scriptObject or gameLocal.program
-		if (callbackStr.HasNamespace()) {
-			callbackFuncDamaged = gameLocal.program.FindFunction(spawnArgs.GetString("script_callback_damaged"));
-		}
-		else {
-			callbackFuncDamaged = (function_t*)scriptObject.GetFunction(callbackName);
-		}
-	}
 }
 
 /***********************************************************************

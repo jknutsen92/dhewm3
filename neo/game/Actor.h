@@ -60,8 +60,6 @@ extern const idEventDef AI_SetBlendFrames;
 extern const idEventDef AI_GetBlendFrames;
 extern const idEventDef AI_GetTeam;
 extern const idEventDef AI_SetTeam;
-extern const idEventDef AI_RemoveEventCallback;
-extern const idEventDef AI_SetEventCallback;
 
 class idDeclParticle;
 
@@ -134,8 +132,6 @@ public:
 
 	void					Save( idSaveGame *savefile ) const;
 	void					Restore( idRestoreGame *savefile );
-
-	virtual void			Think(void);
 
 	virtual void			Hide( void );
 	virtual void			Show( void );
@@ -273,10 +269,6 @@ protected:
 	// script variables
 	idThread *				scriptThread;
 
-	// Script callbacks
-	idList<idThread*>		scriptCallbackThreads;
-	function_t*				callbackFuncDamaged;
-
 	idStr					waitState;
 	idAnimState				headAnim;
 	idAnimState				torsoAnim;
@@ -312,8 +304,6 @@ private:
 	void 					ApplyHeatFx( idDeclSkin* currentSkin );
 	void					RemoveHeatFx( void );
 	void					UpdateHeatShaderParms( float heatRatio );
-	idThread*				GetIdleCallbackThread(void);
-	void					InitCallbacks(void);
 
 	void					Event_EnableEyeFocus( void );
 	void					Event_DisableEyeFocus( void );

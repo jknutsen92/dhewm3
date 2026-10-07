@@ -105,7 +105,7 @@ typedef enum {
 #define MAX_SIGNAL_THREADS 16		// probably overkill, but idList uses a granularity of 16
 
 struct signal_t {
-	int					threadnum;
+	idThread* 			thread;
 	const function_t	*function;
 };
 
@@ -130,7 +130,6 @@ public:
 	int						snapshotBits;			// number of bits this entity occupied in the last snapshot
 
 	idStr					name;					// name of entity
-	// idDict					spawnArgs;				// key/value pairs used to spawn and initialize entity
 	idScriptObject			scriptObject;			// contains all script defined data for this entity
 
 	int						thinkFlags;				// TH_? flags
