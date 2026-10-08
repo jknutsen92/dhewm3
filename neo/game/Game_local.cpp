@@ -26,8 +26,8 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
-#include "idlib/bv/Sphere.h"
-#include "idlib/math/Math.h"
+// #include "idlib/bv/Sphere.h"
+// #include "idlib/math/Math.h"
 #include "sys/platform.h"
 #include "idlib/LangDict.h"
 #include "idlib/Timer.h"
@@ -50,7 +50,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "Trigger.h"
 
 #include "framework/Licensee.h" // DG: for ID__DATE__
-#include <cstddef>
+// #include <cstddef>
 
 #include "Game_local.h"
 

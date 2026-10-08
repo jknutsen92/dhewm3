@@ -26,10 +26,10 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
-#include "Entity.h"
-#include "idlib/math/Rotation.h"
+// #include "Entity.h"
+// #include "idlib/math/Rotation.h"
 #include "sys/platform.h"
-#include "Fx.h"
+// #include "Fx.h"
 #include "game/gamesys/SysCvar.h"
 #include "game/Player.h"
 #include "game/Camera.h"

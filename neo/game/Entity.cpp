@@ -2567,7 +2567,7 @@ bool idEntity::RunPhysics( void ) {
 
 	// don't run physics if not enabled
 	if ( !( thinkFlags & TH_PHYSICS ) ) {
-		ZoneScopedN("disabled_physics")
+		ZoneScopedN("disabled_physics");
 		// however do update any animation controllers
 		if ( UpdateAnimationControllers() ) {
 			BecomeActive( TH_ANIMATE );
