@@ -864,6 +864,7 @@ idClass::ProcessEvent
 ================
 */
 bool idClass::ProcessEvent( const idEventDef *ev, idEventArg arg1 ) {
+	ZoneScoped;
 	return ProcessEventArgs( ev, 1, &arg1 );
 }
 
@@ -873,6 +874,7 @@ idClass::ProcessEvent
 ================
 */
 bool idClass::ProcessEvent( const idEventDef *ev, idEventArg arg1, idEventArg arg2 ) {
+	ZoneScoped;
 	return ProcessEventArgs( ev, 2, &arg1, &arg2 );
 }
 

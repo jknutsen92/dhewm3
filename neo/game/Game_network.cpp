@@ -36,6 +36,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "Player.h"
 
 #include "Game_local.h"
+#include <tracy/Tracy.hpp>
 
 /*
 ===============================================================================
@@ -729,6 +730,7 @@ idGameLocal::ServerProcessEntityNetworkEventQueue
 ================
 */
 void idGameLocal::ServerProcessEntityNetworkEventQueue( void ) {
+	ZoneScoped;
 	idEntity			*ent;
 	entityNetEvent_t	*event;
 	idBitMsg			eventMsg;

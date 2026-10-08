@@ -29,6 +29,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "sys/platform.h"
 #include "renderer/ModelManager.h"
 #include "Game_local.h"
+#include <tracy/Tracy.hpp>
 
 #include "SmokeParticles.h"
 
@@ -121,6 +122,7 @@ idSmokeParticles::FreeSmokes
 ================
 */
 void idSmokeParticles::FreeSmokes( void ) {
+	ZoneScoped;
 	for ( int activeStageNum = 0; activeStageNum < activeStages.Num(); activeStageNum++ ) {
 		singleSmoke_t *smoke, *next, *last;
 

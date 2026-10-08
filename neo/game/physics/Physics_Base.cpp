@@ -29,6 +29,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "sys/platform.h"
 #include "physics/Force.h"
 #include "Entity.h"
+#include <tracy/Tracy.hpp>
 
 #include "physics/Physics_Base.h"
 
@@ -522,6 +523,7 @@ idPhysics_Base::GetContact
 ================
 */
 const contactInfo_t &idPhysics_Base::GetContact( int num ) const {
+	ZoneScoped;
 	return contacts[num];
 }
 
@@ -595,6 +597,7 @@ idPhysics_Base::HasGroundContacts
 ================
 */
 bool idPhysics_Base::HasGroundContacts( void ) const {
+	ZoneScoped;
 	int i;
 
 	for ( i = 0; i < contacts.Num(); i++ ) {

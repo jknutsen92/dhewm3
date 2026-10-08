@@ -37,6 +37,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "sys/platform.h"
 
 #include "cm/CollisionModel_local.h"
+#include <tracy/Tracy.hpp>
 
 /*
 ===============================================================================
@@ -104,6 +105,7 @@ idCollisionModelManagerLocal::TraceThroughAxialBSPTree_r
 //#define NO_SPATIAL_SUBDIVISION
 
 void idCollisionModelManagerLocal::TraceThroughAxialBSPTree_r( cm_traceWork_t *tw, cm_node_t *node, float p1f, float p2f, idVec3 &p1, idVec3 &p2) {
+	ZoneScoped;
 	float		t1, t2, offset;
 	float		frac, frac2;
 	float		idist;
@@ -213,27 +215,32 @@ idCollisionModelManagerLocal::TraceThroughModel
 ================
 */
 void idCollisionModelManagerLocal::TraceThroughModel( cm_traceWork_t *tw ) {
+	ZoneScoped;
 	float d;
 	int i, numSteps;
 	idVec3 start, end;
 	idRotation rot;
 
 	if ( !tw->rotation ) {
+		ZoneScopedN("no_rotation");
 		// trace through spatial subdivision and then through leafs
 		idCollisionModelManagerLocal::TraceThroughAxialBSPTree_r( tw, tw->model->node, 0, 1, tw->start, tw->end );
 	}
 	else {
+		ZoneScopedN("rotation");
 		// approximate the rotation with a series of straight line movements
 		// total length covered along circle
 		d = tw->radius * DEG2RAD( tw->angle );
 		// if more than one step
 		if ( d > CIRCLE_APPROXIMATION_LENGTH ) {
+			ZoneScopedN("d_gt_circ_approx_length");
 			// number of steps for the approximation
 			numSteps = (int) (CIRCLE_APPROXIMATION_LENGTH / d);
 			// start of approximation
 			start = tw->start;
 			// trace circle approximation steps through the BSP tree
 			for ( i = 0; i < numSteps; i++ ) {
+				ZoneScopedN("trace_steps");
 				// calculate next point on approximated circle
 				rot.Set( tw->origin, tw->axis, tw->angle * ((float) (i+1) / numSteps) );
 				end = start * rot;

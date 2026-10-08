@@ -4724,6 +4724,7 @@ idAI::UpdateAnimationControllers
 ================
 */
 bool idAI::UpdateAnimationControllers( void ) {
+	ZoneScoped;
 	idVec3		local;
 	idVec3		focusPos;
 	idQuat		jawQuat;

@@ -32,6 +32,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "gamesys/SysCvar.h"
 #include "physics/Force.h"
 #include "Entity.h"
+#include <tracy/Tracy.hpp>
 
 #include "physics/Physics_StaticMulti.h"
 
@@ -841,6 +842,7 @@ idPhysics_StaticMulti::GetContact
 ================
 */
 const contactInfo_t &idPhysics_StaticMulti::GetContact( int num ) const {
+	ZoneScoped;
 	static contactInfo_t info;
 	memset( &info, 0, sizeof( info ) );
 	return info;

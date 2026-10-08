@@ -85,6 +85,7 @@ idPush::RestorePushedEntityPositions
 ============
 */
 void idPush::RestorePushedEntityPositions( void ) {
+	ZoneScoped;
 	int i;
 
 	for ( i = 0; i < numPushed; i++ ) {

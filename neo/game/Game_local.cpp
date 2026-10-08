@@ -58,6 +58,10 @@ If you have questions concerning this license or the applicable additional terms
 #include "tools/compilers/aas/AASFileManager.h"
 #endif
 
+#ifdef TRACY_ENABLE
+#include <tracy/Tracy.hpp>
+#endif
+
 const int NUM_RENDER_PORTAL_BITS	= idMath::BitsForInteger( PS_BLOCK_ALL );
 
 const float	DEFAULT_GRAVITY			= 1066.0f;
@@ -2018,6 +2022,7 @@ be correct for single player.
 ================
 */
 idPlayer *idGameLocal::GetLocalPlayer() const {
+	ZoneScoped;
 	if ( localClientNum < 0 ) {
 		return NULL;
 	}
@@ -2050,6 +2055,7 @@ idGameLocal::SetupPlayerPVS
 ================
 */
 void idGameLocal::SetupPlayerPVS( void ) {
+	ZoneScoped;
 	int			i;
 	idEntity *	ent;
 	idPlayer *	player;
@@ -2092,6 +2098,7 @@ idGameLocal::FreePlayerPVS
 ================
 */
 void idGameLocal::FreePlayerPVS( void ) {
+	ZoneScoped;
 	if ( playerPVS.i != -1 ) {
 		pvs.FreeCurrentPVS( playerPVS );
 		playerPVS.i = -1;
@@ -2136,6 +2143,7 @@ idGameLocal::UpdateGravity
 ================
 */
 void idGameLocal::UpdateGravity( void ) {
+	ZoneScoped;
 	idEntity *ent;
 
 	if ( g_gravity.IsModified() ) {
@@ -2175,6 +2183,7 @@ idGameLocal::SortActiveEntityList
 ================
 */
 void idGameLocal::SortActiveEntityList( void ) {
+	ZoneScoped;
 	idEntity *ent, *next_ent, *master, *part;
 
 	// if the active entity list needs to be reordered to place physics team masters at the front
@@ -2249,6 +2258,8 @@ idGameLocal::RunFrame
 ================
 */
 gameReturn_t idGameLocal::RunFrame( const usercmd_t *clientCmds ) {
+	ZoneScopedS(20);
+
 	idEntity *			ent;
 	int					num;
 	float				ms;
@@ -2331,6 +2342,7 @@ gameReturn_t idGameLocal::RunFrame( const usercmd_t *clientCmds ) {
 
 		// let entities think
 		if ( g_timeentities.GetFloat() ) {
+			ZoneScopedN("Entities.Think")
 			num = 0;
 			for( ent = activeEntities.Next(); ent != NULL; ent = ent->activeNode.Next() ) {
 				if ( g_cinematic.GetBool() && inCinematic && !ent->cinematic ) {
@@ -2348,6 +2360,7 @@ gameReturn_t idGameLocal::RunFrame( const usercmd_t *clientCmds ) {
 				num++;
 			}
 		} else {
+			ZoneScopedN("Entities.Think")
 			if ( inCinematic ) {
 				num = 0;
 				for( ent = activeEntities.Next(); ent != NULL; ent = ent->activeNode.Next() ) {
@@ -2369,6 +2382,7 @@ gameReturn_t idGameLocal::RunFrame( const usercmd_t *clientCmds ) {
 
 		// remove any entities that have stopped thinking
 		if ( numEntitiesToDeactivate ) {
+			ZoneScopedN("Remove_Entities")
 			idEntity *next_ent;
 			int c = 0;
 			for( ent = activeEntities.Next(); ent != NULL; ent = next_ent ) {

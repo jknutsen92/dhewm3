@@ -813,6 +813,7 @@ idAFEntity_Base::UpdateAnimationControllers
 ================
 */
 bool idAFEntity_Base::UpdateAnimationControllers( void ) {
+	ZoneScoped;
 	if ( af.IsActive() ) {
 		if ( af.UpdateAnimation() ) {
 			return true;

@@ -42,6 +42,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "WorldSpawn.h"
 #include "Fx.h"
 #include "../framework/DeclSkin.h"
+#include <tracy/Tracy.hpp>
 
 #include "Actor.h"
 
@@ -1743,6 +1744,7 @@ idActor::UpdateAnimationControllers
 ================
 */
 bool idActor::UpdateAnimationControllers( void ) {
+	ZoneScoped;
 
 	if ( af.IsActive() ) {
 		return idAFEntity_Base::UpdateAnimationControllers();

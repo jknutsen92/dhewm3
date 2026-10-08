@@ -30,6 +30,7 @@ If you have questions concerning this license or the applicable additional terms
 #define __MATH_MATRIX_H__
 
 #include "idlib/math/Vector.h"
+#include <tracy/Tracy.hpp>
 #ifdef _WIN32
  #include <malloc.h>
 #endif
@@ -637,6 +638,7 @@ ID_INLINE bool idMat3::IsDiagonal( const float epsilon ) const {
 }
 
 ID_INLINE bool idMat3::IsRotated( void ) const {
+	ZoneScoped;
 	return !Compare( mat3_identity );
 }
 

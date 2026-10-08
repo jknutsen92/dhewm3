@@ -648,6 +648,7 @@ idPhysics_Static::GetContact
 ================
 */
 const contactInfo_t &idPhysics_Static::GetContact( int num ) const {
+	ZoneScoped;
 	static contactInfo_t info;
 	memset( &info, 0, sizeof( info ) );
 	return info;

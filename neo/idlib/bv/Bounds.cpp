@@ -38,6 +38,7 @@ idBounds::GetRadius
 ============
 */
 float idBounds::GetRadius( void ) const {
+	ZoneScoped;
 	int		i;
 	float	total, b0, b1;
 
@@ -267,6 +268,7 @@ idBounds::FromPointTranslation
 ============
 */
 void idBounds::FromPointTranslation( const idVec3 &point, const idVec3 &translation ) {
+	ZoneScoped;
 	int i;
 
 	for ( i = 0; i < 3; i++ ) {
@@ -289,6 +291,7 @@ idBounds::FromBoundsTranslation
 ============
 */
 void idBounds::FromBoundsTranslation( const idBounds &bounds, const idVec3 &origin, const idMat3 &axis, const idVec3 &translation ) {
+	ZoneScoped;
 	int i;
 
 	if ( axis.IsRotated() ) {

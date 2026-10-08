@@ -31,6 +31,7 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "gamesys/SysCvar.h"
 #include "Mover.h"
+#include <tracy/Tracy.hpp>
 
 #include "IK.h"
 
@@ -183,6 +184,7 @@ idIK::SolveTwoBones
 ================
 */
 bool idIK::SolveTwoBones( const idVec3 &startPos, const idVec3 &endPos, const idVec3 &dir, float len0, float len1, idVec3 &jointPos ) {
+	ZoneScoped;
 	float length, lengthSqr, lengthInv, x, y;
 	idVec3 vec0, vec1;
 
@@ -215,6 +217,7 @@ idIK::GetBoneAxis
 ================
 */
 float idIK::GetBoneAxis( const idVec3 &startPos, const idVec3 &endPos, const idVec3 &dir, idMat3 &axis ) {
+	ZoneScoped;
 	float length;
 	axis[0] = endPos - startPos;
 	length = axis[0].Normalize();
@@ -564,6 +567,7 @@ idIK_Walk::Evaluate
 ================
 */
 void idIK_Walk::Evaluate( void ) {
+	ZoneScoped;
 	int i, newPivotFoot = 0;
 	float modelHeight, jointHeight, lowestHeight, floorHeights[MAX_LEGS];
 	float shift, smallestShift, newHeight, step, newPivotYaw, height, largestAnkleHeight;
@@ -605,7 +609,7 @@ void idIK_Walk::Evaluate( void ) {
 	}
 
 	if ( usePivot ) {
-
+		ZoneScopedN("use_pivot")
 		newPivotYaw = modelAxis[0].ToYaw();
 
 		// change pivot foot
@@ -622,7 +626,7 @@ void idIK_Walk::Evaluate( void ) {
 
 	// get the floor heights for the feet
 	for ( i = 0; i < numLegs; i++ ) {
-
+		ZoneScopedN("get_floor_heights");
 		if ( !( enabledLegs & ( 1 << i ) ) ) {
 			continue;
 		}
@@ -660,6 +664,7 @@ void idIK_Walk::Evaluate( void ) {
 	smallestShift = idMath::INFINITY;
 	largestAnkleHeight = -idMath::INFINITY;
 	for ( i = 0; i < numLegs; i++ ) {
+		ZoneScopedN("transform_legs");
 
 		if ( onGround && ( enabledLegs & ( 1 << i ) ) ) {
 			shift = floorHeights[i] - modelHeight + footShift;
@@ -699,6 +704,7 @@ void idIK_Walk::Evaluate( void ) {
 
 	// if the waist should be at least a certain distance above the floor
 	if ( minWaistFloorDist > 0.0f && waistOffset * normal < 0.0f ) {
+		ZoneScopedN("waist_check");
 		start = waistOrigin;
 		end = waistOrigin + waistOffset - normal * minWaistFloorDist;
 		gameLocal.clip.Translation( results, start, end, footModel, modelAxis, CONTENTS_SOLID|CONTENTS_IKCLIP, self );
@@ -710,6 +716,7 @@ void idIK_Walk::Evaluate( void ) {
 
 	// if the waist should be at least a certain distance above the ankles
 	if ( minWaistAnkleDist > 0.0f ) {
+		ZoneScopedN("waist_check2");
 		height = ( waistOrigin + waistOffset ) * normal;
 		if ( height - largestAnkleHeight < minWaistAnkleDist ) {
 			waistOffset += ( minWaistAnkleDist - ( height - largestAnkleHeight ) ) * normal;
@@ -717,6 +724,7 @@ void idIK_Walk::Evaluate( void ) {
 	}
 
 	if ( oldHeightsValid ) {
+		ZoneScopedN("old_heights_valid");
 		// smoothly adjust height of waist
 		newHeight = ( waistOrigin + waistOffset ) * normal;
 		step = newHeight - oldWaistHeight;
@@ -733,7 +741,7 @@ void idIK_Walk::Evaluate( void ) {
 
 	// solve IK
 	for ( i = 0; i < numLegs; i++ ) {
-
+		ZoneScopedN("solve_ik");
 		// get the position of the hip in world space
 		animator->GetJointTransform( hipJoints[i], gameLocal.time, hipOrigin, axis );
 		hipOrigin = modelOrigin + waistOffset + hipOrigin * modelAxis;

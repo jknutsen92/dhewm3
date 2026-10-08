@@ -477,6 +477,7 @@ idCollisionModelManagerLocal::ContentsTrm
 int idCollisionModelManagerLocal::ContentsTrm( trace_t *results, const idVec3 &start,
 									const idTraceModel *trm, const idMat3 &trmAxis, int contentMask,
 									cmHandle_t model, const idVec3 &modelOrigin, const idMat3 &modelAxis ) {
+	ZoneScoped;
 	int i;
 	bool model_rotated, trm_rotated;
 	idMat3 invModelAxis, tmpAxis;

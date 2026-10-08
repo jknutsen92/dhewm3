@@ -39,6 +39,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "renderer/RenderWorld.h"
 
 #include "cm/CollisionModel_local.h"
+#include <tracy/Tracy.hpp>
 
 /*
 ===============================================================================
@@ -711,6 +712,7 @@ idCollisionModelManagerLocal::SetupTrm
 ================
 */
 void idCollisionModelManagerLocal::SetupTrm( cm_traceWork_t *tw, const idTraceModel *trm ) {
+	ZoneScoped;
 	int i, j;
 
 	// vertices
@@ -746,6 +748,7 @@ idCollisionModelManagerLocal::SetupTranslationHeartPlanes
 ================
 */
 void idCollisionModelManagerLocal::SetupTranslationHeartPlanes( cm_traceWork_t *tw ) {
+	ZoneScoped;
 	idVec3 dir, normal1, normal2;
 
 	// calculate trace heart planes
@@ -766,6 +769,7 @@ idCollisionModelManagerLocal::Translation
 void idCollisionModelManagerLocal::Translation( trace_t *results, const idVec3 &start, const idVec3 &end,
 										const idTraceModel *trm, const idMat3 &trmAxis, int contentMask,
 										cmHandle_t model, const idVec3 &modelOrigin, const idMat3 &modelAxis ) {
+	ZoneScoped;
 
 	int i, j;
 	float dist;
@@ -826,6 +830,7 @@ void idCollisionModelManagerLocal::Translation( trace_t *results, const idVec3 &
 	if ( !trm || ( trm->bounds[1][0] - trm->bounds[0][0] <= 0.0f &&
 					trm->bounds[1][1] - trm->bounds[0][1] <= 0.0f &&
 					trm->bounds[1][2] - trm->bounds[0][2] <= 0.0f ) ) {
+		ZoneScopedN("optimized_point_trace");
 
 		if ( model_rotated ) {
 			// rotate trace instead of model
@@ -881,6 +886,7 @@ void idCollisionModelManagerLocal::Translation( trace_t *results, const idVec3 &
 
 	// the trace fraction is too inaccurate to describe translations over huge distances
 	if ( tw.dir.LengthSqr() > Square( CM_MAX_TRACE_DIST ) ) {
+		ZoneScopedN("trace_fraction_inaccurate");
 		results->fraction = 0.0f;
 		results->endpos = start;
 		results->endAxis = trmAxis;
@@ -955,6 +961,7 @@ void idCollisionModelManagerLocal::Translation( trace_t *results, const idVec3 &
 
 	// setup trm polygons
 	for ( poly = tw.polys, i = 0; i < tw.numPolys; i++, poly++ ) {
+		ZoneScopedN("setup_trm_polygons");
 		// if the trm poly plane is facing in the movement direction
 		dist = poly->plane.Normal() * tw.dir;
 		if ( dist > 0.0f || ( !trm->isConvex && dist == 0.0f ) ) {
@@ -971,6 +978,7 @@ void idCollisionModelManagerLocal::Translation( trace_t *results, const idVec3 &
 
 	// setup trm vertices
 	for ( vert = tw.vertices, i = 0; i < tw.numVerts; i++, vert++ ) {
+		ZoneScopedN("setup_trm_vertices");
 		if ( !vert->used ) {
 			continue;
 		}
@@ -984,6 +992,7 @@ void idCollisionModelManagerLocal::Translation( trace_t *results, const idVec3 &
 
 	// setup trm edges
 	for ( edge = tw.edges + 1, i = 1; i <= tw.numEdges; i++, edge++ ) {
+		ZoneScopedN("setup_trm_edges");
 		if ( !edge->used ) {
 			continue;
 		}
@@ -1002,6 +1011,7 @@ void idCollisionModelManagerLocal::Translation( trace_t *results, const idVec3 &
 
 	// set trm plane distances
 	for ( poly = tw.polys, i = 0; i < tw.numPolys; i++, poly++ ) {
+		ZoneScopedN("set_trm_plane_distances");
 		if ( poly->used ) {
 			poly->plane.FitThroughPoint( tw.edges[abs(poly->edges[0])].start );
 		}
@@ -1009,6 +1019,7 @@ void idCollisionModelManagerLocal::Translation( trace_t *results, const idVec3 &
 
 	// bounds for full trace, a little bit larger for epsilons
 	for ( i = 0; i < 3; i++ ) {
+		ZoneScopedN("full_trace_bounds");
 		if ( tw.start[i] < tw.end[i] ) {
 			tw.bounds[0][i] = tw.start[i] + tw.size[0][i] - CM_BOX_EPSILON;
 			tw.bounds[1][i] = tw.end[i] + tw.size[1][i] + CM_BOX_EPSILON;
@@ -1029,6 +1040,7 @@ void idCollisionModelManagerLocal::Translation( trace_t *results, const idVec3 &
 	tw.maxDistFromHeartPlane2 = 0;
 	// calculate maximum trm vertex distance from both heart planes
 	for ( vert = tw.vertices, i = 0; i < tw.numVerts; i++, vert++ ) {
+		ZoneScopedN("calc_max_trm_distance_heart_planes");
 		if ( !vert->used ) {
 			continue;
 		}
@@ -1050,6 +1062,7 @@ void idCollisionModelManagerLocal::Translation( trace_t *results, const idVec3 &
 
 	// if we're getting contacts
 	if ( tw.getContacts ) {
+		ZoneScopedN("contacts");
 		// move all contacts to world space
 		if ( model_rotated ) {
 			for ( i = 0; i < tw.numContacts; i++ ) {
@@ -1065,6 +1078,7 @@ void idCollisionModelManagerLocal::Translation( trace_t *results, const idVec3 &
 		}
 		idCollisionModelManagerLocal::numContacts = tw.numContacts;
 	} else {
+		ZoneScopedN("no_contacts");
 		// store results
 		*results = tw.trace;
 		results->endpos = start + results->fraction * ( end - start );
@@ -1088,6 +1102,7 @@ void idCollisionModelManagerLocal::Translation( trace_t *results, const idVec3 &
 #ifdef _DEBUG
 	// test for collisions
 	if ( cm_debugCollision.GetBool() ) {
+		ZoneScopedN("debug_collisions");
 		if (!idCollisionModelManagerLocal::getContacts ) {
 			// if the trm is stuck in the model
 			if ( idCollisionModelManagerLocal::Contents( results->endpos, trm, trmAxis, -1, model, modelOrigin, modelAxis ) & contentMask ) {

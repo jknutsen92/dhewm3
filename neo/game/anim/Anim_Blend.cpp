@@ -39,6 +39,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "Game_local.h"
 
 #include "anim/Anim.h"
+#include <tracy/Tracy.hpp>
 
 static const char *channelNames[ ANIM_NumAnimChannels ] = {
 	"all", "torso", "legs", "head", "eyelids"
@@ -3572,6 +3573,7 @@ idAnimator::SetJointPos
 =====================
 */
 void idAnimator::SetJointPos( jointHandle_t jointnum, jointModTransform_t transform_type, const idVec3 &pos ) {
+	ZoneScoped;
 	int i;
 	jointMod_t *jointMod;
 
@@ -3612,6 +3614,7 @@ idAnimator::SetJointAxis
 =====================
 */
 void idAnimator::SetJointAxis( jointHandle_t jointnum, jointModTransform_t transform_type, const idMat3 &mat ) {
+	ZoneScoped;
 	int i;
 	jointMod_t *jointMod;
 
@@ -4175,6 +4178,7 @@ idAnimator::CreateFrame
 =====================
 */
 bool idAnimator::CreateFrame( int currentTime, bool force ) {
+	ZoneScoped;
 	int					i, j;
 	int					numJoints;
 	int					parentNum;
@@ -4440,6 +4444,7 @@ idAnimator::GetJointTransform>	gamex86.dll!idAnimator::ForceUpdate()  Line 4268	
 =====================
 */
 bool idAnimator::GetJointTransform( jointHandle_t jointHandle, int currentTime, idVec3 &offset, idMat3 &axis ) {
+	ZoneScoped;
 	if ( !modelDef || ( jointHandle < 0 ) || ( jointHandle >= modelDef->NumJoints() ) ) {
 		return false;
 	}

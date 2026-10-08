@@ -30,6 +30,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "gamesys/SaveGame.h"
 #include "Entity.h"
 #include "Game_local.h"
+#include <tracy/Tracy.hpp>
 
 #include "physics/Clip.h"
 
@@ -870,6 +871,7 @@ idClip::GetTraceClipModels
 ====================
 */
 int idClip::GetTraceClipModels( const idBounds &bounds, int contentMask, const idEntity *passEntity, idClipModel **clipModelList ) const {
+	ZoneScoped;
 	int i, num;
 	idClipModel	*cm;
 	idEntity *passOwner;
@@ -913,6 +915,7 @@ idClip::TraceRenderModel
 ============
 */
 void idClip::TraceRenderModel( trace_t &trace, const idVec3 &start, const idVec3 &end, const float radius, const idMat3 &axis, idClipModel *touch ) const {
+	ZoneScoped;
 	trace.fraction = 1.0f;
 
 	// if the trace is passing through the bounds
@@ -944,6 +947,7 @@ idClip::TraceModelForClipModel
 ============
 */
 const idTraceModel *idClip::TraceModelForClipModel( const idClipModel *mdl ) const {
+	ZoneScoped;
 	if ( !mdl ) {
 		return NULL;
 	} else {
@@ -964,6 +968,7 @@ idClip::TestHugeTranslation
 ============
 */
 ID_INLINE bool TestHugeTranslation( trace_t &results, const idClipModel *mdl, const idVec3 &start, const idVec3 &end, const idMat3 &trmAxis ) {
+	ZoneScoped;
 	if ( mdl != NULL && ( end - start ).LengthSqr() > Square( CM_MAX_TRACE_DIST ) ) {
 		// assert( 0 ); DG: this was annoying and not really necessary, a Warning should suffice.
 
@@ -1055,6 +1060,7 @@ idClip::Translation
 */
 bool idClip::Translation( trace_t &results, const idVec3 &start, const idVec3 &end,
 						const idClipModel *mdl, const idMat3 &trmAxis, int contentMask, const idEntity *passEntity ) {
+	ZoneScoped;
 	int i, num;
 	idClipModel *touch, *clipModelList[MAX_GENTITIES];
 	idBounds traceBounds;
@@ -1069,6 +1075,7 @@ bool idClip::Translation( trace_t &results, const idVec3 &start, const idVec3 &e
 	trm = TraceModelForClipModel( mdl );
 
 	if ( !passEntity || passEntity->entityNumber != ENTITYNUM_WORLD ) {
+		ZoneScopedN("test_world_no_pass_entity");
 		// test world
 		idClip::numTranslations++;
 		collisionModelManager->Translation( &results, start, end, trm, trmAxis, contentMask, 0, vec3_origin, mat3_default );
@@ -1077,6 +1084,7 @@ bool idClip::Translation( trace_t &results, const idVec3 &start, const idVec3 &e
 			return true;		// blocked immediately by the world
 		}
 	} else {
+		ZoneScopedN("test_world");
 		memset( &results, 0, sizeof( results ) );
 		results.fraction = 1.0f;
 		results.endpos = end;
@@ -1094,6 +1102,7 @@ bool idClip::Translation( trace_t &results, const idVec3 &start, const idVec3 &e
 	num = GetTraceClipModels( traceBounds, contentMask, passEntity, clipModelList );
 
 	for ( i = 0; i < num; i++ ) {
+		ZoneScopedN("evaluate_touches");
 		touch = clipModelList[i];
 
 		if ( !touch ) {

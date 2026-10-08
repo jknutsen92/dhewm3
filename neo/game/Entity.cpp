@@ -43,6 +43,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "Mover.h"
 #include "WorldSpawn.h"
 #include "SmokeParticles.h"
+#include <tracy/Tracy.hpp>
 
 #include "Entity.h"
 
@@ -848,6 +849,7 @@ idEntity::Think
 ================
 */
 void idEntity::Think( void ) {
+	ZoneScoped;
 	RunPhysics();
 	Present();
 }
@@ -955,6 +957,7 @@ idEntity::BecomeActive
 ================
 */
 void idEntity::BecomeActive( int flags ) {
+	ZoneScoped;
 	if ( ( flags & TH_PHYSICS ) ) {
 		// enable the team master if this entity is part of a physics team
 		if ( teamMaster && teamMaster != this ) {
@@ -1100,6 +1103,7 @@ idEntity::UpdateAnimationControllers
 ================
 */
 bool idEntity::UpdateAnimationControllers( void ) {
+
 	// any ragdoll and IK animation controllers should be updated here
 	return false;
 }
@@ -1412,6 +1416,7 @@ Present is called to allow entities to generate refEntities, lights, etc for the
 ================
 */
 void idEntity::Present( void ) {
+	ZoneScoped;
 
 	if ( !gameLocal.isNewFrame ) {
 		return;
@@ -2553,12 +2558,16 @@ idEntity::RunPhysics
 ================
 */
 bool idEntity::RunPhysics( void ) {
+	ZoneScoped;
+	ZoneText(GetName(), strlen(GetName()));
+	ZoneValue(entityNumber);
 	int			i, reachedTime, startTime, endTime;
 	idEntity *	part, *blockedPart, *blockingEntity;
 	bool		moved;
 
 	// don't run physics if not enabled
 	if ( !( thinkFlags & TH_PHYSICS ) ) {
+		ZoneScopedN("disabled_physics")
 		// however do update any animation controllers
 		if ( UpdateAnimationControllers() ) {
 			BecomeActive( TH_ANIMATE );
@@ -2579,6 +2588,7 @@ bool idEntity::RunPhysics( void ) {
 
 	// save the physics state of the whole team and disable the team for collision detection
 	for ( part = this; part != NULL; part = part->teamChain ) {
+		ZoneScopedN("save_team_physics_state");
 		if ( part->physics ) {
 			if ( !part->fl.solidForTeam ) {
 				part->physics->DisableClip();
@@ -2589,7 +2599,7 @@ bool idEntity::RunPhysics( void ) {
 
 	// move the whole team
 	for ( part = this; part != NULL; part = part->teamChain ) {
-
+		ZoneScopedN("move_the_team");
 		if ( part->physics ) {
 
 			// run physics
@@ -2617,6 +2627,7 @@ bool idEntity::RunPhysics( void ) {
 
 	// enable the whole team for collision detection
 	for ( part = this; part != NULL; part = part->teamChain ) {
+		ZoneScopedN("enable_collision");
 		if ( part->physics ) {
 			if ( !part->fl.solidForTeam ) {
 				part->physics->EnableClip();
@@ -2626,6 +2637,7 @@ bool idEntity::RunPhysics( void ) {
 
 	// if one of the team entities is a pusher and blocked
 	if ( blockedPart ) {
+		ZoneScopedN("blocked_part")
 		// move the parts back to the previous position
 		for ( part = this; part != blockedPart; part = part->teamChain ) {
 
@@ -2662,6 +2674,7 @@ bool idEntity::RunPhysics( void ) {
 
 	// set pushed
 	for ( i = 0; i < gameLocal.push.GetNumPushedEntities(); i++ ) {
+		ZoneScopedN("set_pushed");
 		idEntity *ent = gameLocal.push.GetPushedEntity( i );
 		ent->physics->SetPushed( endTime - startTime );
 	}
@@ -2672,7 +2685,7 @@ bool idEntity::RunPhysics( void ) {
 
 	// post reached event if the current time is at or past the end point of the motion
 	for ( part = this; part != NULL; part = part->teamChain ) {
-
+		ZoneScopedN("post_event");
 		if ( part->physics ) {
 
 			reachedTime = part->physics->GetLinearEndTime();
@@ -3291,6 +3304,7 @@ idEntity::Signal
 ================
 */
 void idEntity::Signal( signalNum_t signalnum ) {
+	ZoneScoped;
 	assert( ( signalnum >= 0 ) && ( signalnum < NUM_SIGNALS ) );
 
 	if ( !signals ) {
