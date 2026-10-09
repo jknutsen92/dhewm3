@@ -345,8 +345,6 @@ private:
 	void					Event_SetState( const char *name );
 	void					Event_GetState( void );
 	void					Event_GetHead( void );
-	void					Event_EnableTargeting(void);
-	void 					Event_DisableTargeting(void);
 	void					Event_GetTeam(void);
 	void 					Event_SetTeam(int newTeam);
 };
