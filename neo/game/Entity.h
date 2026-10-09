@@ -105,7 +105,7 @@ typedef enum {
 #define MAX_SIGNAL_THREADS 16		// probably overkill, but idList uses a granularity of 16
 
 struct signal_t {
-	idThread* 			thread;
+	int 				threadnum;
 	const function_t	*function;
 };
 
