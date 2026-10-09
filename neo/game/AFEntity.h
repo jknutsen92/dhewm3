@@ -192,6 +192,9 @@ public:
 
 	static void				DropAFs( idEntity *ent, const char *type, idList<idEntity *> *list );
 
+	// Starts the resurrection process
+	virtual idEntity*		StartResurrection(const idDict rezEntSpawnArgs);
+
 protected:
 	idAF					af;				// articulated figure
 	idClipModel *			combatModel;	// render model for hit detection
@@ -200,7 +203,11 @@ protected:
 	idMat3					spawnAxis;		// rotation axis used when spawned
 	int						nextSoundTime;	// next time this can make a sound
 
+	idEntityFx*				rezDissolveFx;	// FX that plays during corpse resurrection
+	idEntity*				rezEntity;		// Entity that will be spawned after the dissolve
+
 	void					Event_SetConstraintPosition( const char *name, const idVec3 &pos );
+	void					CompleteResurrection(void);
 };
 
 /*

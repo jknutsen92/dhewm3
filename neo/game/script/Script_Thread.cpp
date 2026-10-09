@@ -26,8 +26,10 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
+#include "Entity.h"
+#include "idlib/math/Rotation.h"
 #include "sys/platform.h"
-
+#include "Fx.h"
 #include "game/gamesys/SysCvar.h"
 #include "game/Player.h"
 #include "game/Camera.h"
@@ -51,11 +53,13 @@ const idEventDef EV_Thread_Assert( "assert", "f" );
 const idEventDef EV_Thread_Trigger( "trigger", "e" );
 const idEventDef EV_Thread_SetCvar( "setcvar", "ss" );
 const idEventDef EV_Thread_GetCvar( "getcvar", "s", 's' );
+const idEventDef EV_Thread_ExecCfg("execCfg", "s");
 const idEventDef EV_Thread_Random( "random", "f", 'f' );
 const idEventDef EV_Thread_GetTime( "getTime", NULL, 'f' );
 const idEventDef EV_Thread_KillThread( "killthread", "s" );
 const idEventDef EV_Thread_SetThreadName( "threadname", "s" );
 const idEventDef EV_Thread_GetEntity( "getEntity", "s", 'e' );
+const idEventDef EV_Thread_ResurrectRagdoll("resurrectRagdoll", "e", 'e');
 const idEventDef EV_Thread_Spawn( "spawn", "s", 'e' );
 const idEventDef EV_Thread_CopySpawnArgs( "copySpawnArgs", "e" );
 const idEventDef EV_Thread_SetSpawnArg( "setSpawnArg", "ss" );
@@ -70,9 +74,11 @@ const idEventDef EV_Thread_GetPersistantVector( "getPersistantVector", "s", 'v' 
 const idEventDef EV_Thread_AngToForward( "angToForward", "v", 'v' );
 const idEventDef EV_Thread_AngToRight( "angToRight", "v", 'v' );
 const idEventDef EV_Thread_AngToUp( "angToUp", "v", 'v' );
+const idEventDef EV_Thread_GetRotatedVec("getRotatedVec", "vvvf", 'v');
 const idEventDef EV_Thread_Sine( "sin", "f", 'f' );
 const idEventDef EV_Thread_Cosine( "cos", "f", 'f' );
 const idEventDef EV_Thread_SquareRoot( "sqrt", "f", 'f' );
+const idEventDef EV_Thread_Round("round", "f", 'f');
 const idEventDef EV_Thread_Normalize( "vecNormalize", "v", 'v' );
 const idEventDef EV_Thread_VecLength( "vecLength", "v", 'f' );
 const idEventDef EV_Thread_VecDotProduct( "DotProduct", "vv", 'f' );
@@ -129,11 +135,13 @@ CLASS_DECLARATION( idClass, idThread )
 	EVENT( EV_Thread_Trigger,				idThread::Event_Trigger )
 	EVENT( EV_Thread_SetCvar,				idThread::Event_SetCvar )
 	EVENT( EV_Thread_GetCvar,				idThread::Event_GetCvar )
+	EVENT( EV_Thread_ExecCfg,				idThread::Event_ExecCfg)
 	EVENT( EV_Thread_Random,				idThread::Event_Random )
 	EVENT( EV_Thread_GetTime,				idThread::Event_GetTime )
 	EVENT( EV_Thread_KillThread,			idThread::Event_KillThread )
 	EVENT( EV_Thread_SetThreadName,			idThread::Event_SetThreadName )
 	EVENT( EV_Thread_GetEntity,				idThread::Event_GetEntity )
+	EVENT( EV_Thread_ResurrectRagdoll,		idThread::Event_ResurrectRagdoll )
 	EVENT( EV_Thread_Spawn,					idThread::Event_Spawn )
 	EVENT( EV_Thread_CopySpawnArgs,			idThread::Event_CopySpawnArgs )
 	EVENT( EV_Thread_SetSpawnArg,			idThread::Event_SetSpawnArg )
@@ -148,9 +156,11 @@ CLASS_DECLARATION( idClass, idThread )
 	EVENT( EV_Thread_AngToForward,			idThread::Event_AngToForward )
 	EVENT( EV_Thread_AngToRight,			idThread::Event_AngToRight )
 	EVENT( EV_Thread_AngToUp,				idThread::Event_AngToUp )
+	EVENT( EV_Thread_GetRotatedVec,			idThread::Event_GetRotatedVec)
 	EVENT( EV_Thread_Sine,					idThread::Event_GetSine )
 	EVENT( EV_Thread_Cosine,				idThread::Event_GetCosine )
 	EVENT( EV_Thread_SquareRoot,			idThread::Event_GetSquareRoot )
+	EVENT( EV_Thread_Round,					idThread::Event_Round)
 	EVENT( EV_Thread_Normalize,				idThread::Event_VecNormalize )
 	EVENT( EV_Thread_VecLength,				idThread::Event_VecLength )
 	EVENT( EV_Thread_VecDotProduct,			idThread::Event_VecDotProduct )
@@ -1058,6 +1068,12 @@ void idThread::Event_GetCvar( const char *name ) const {
 	ReturnString( cvarSystem->GetCVarString( name ) );
 }
 
+void idThread::Event_ExecCfg(const char* filename) {
+	idStr commandText = va("exec %s\n", filename);
+	cmdSystem->BufferCommandText( CMD_EXEC_APPEND, commandText );
+	cmdSystem->ExecuteCommandBuffer();
+}
+
 /*
 ================
 idThread::Event_Random
@@ -1122,6 +1138,11 @@ void idThread::Event_Spawn( const char *classname ) {
 	spawnArgs.Set( "classname", classname );
 	gameLocal.SpawnEntityDef( spawnArgs, &ent );
 	ReturnEntity( ent );
+	spawnArgs.Clear();
+}
+
+void idThread::Event_ResurrectRagdoll(idEntity* ragdoll) {
+	idThread::ReturnEntity(ragdoll->StartResurrection(spawnArgs));
 	spawnArgs.Clear();
 }
 
@@ -1267,6 +1288,13 @@ void idThread::Event_AngToUp( idAngles &ang ) {
 	ReturnVector( vec );
 }
 
+void idThread::Event_GetRotatedVec(idVec3& vec, idVec3& origin, idVec3& axis, float angle) {
+	axis.Normalize();
+	idRotation rotation = idRotation(origin, axis, angle);
+	idVec3 rotatedVec = rotation * vec;
+	ReturnVector(rotatedVec);
+}
+
 /*
 ================
 idThread::Event_GetSine
@@ -1292,6 +1320,10 @@ idThread::Event_GetSquareRoot
 */
 void idThread::Event_GetSquareRoot( float theSquare ) {
 	ReturnFloat( idMath::Sqrt( theSquare ) );
+}
+
+void idThread::Event_Round(float number) {
+	ReturnFloat(floor(number + 0.5f));
 }
 
 /*

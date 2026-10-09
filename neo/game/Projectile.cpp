@@ -690,7 +690,7 @@ void idProjectile::AddDefaultDamageEffect( const trace_t &collision, const idVec
 idProjectile::Killed
 ================
 */
-void idProjectile::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location ) {
+void idProjectile::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat ) {
 	if ( spawnArgs.GetBool( "detonate_on_death" ) ) {
 		trace_t collision;
 
@@ -2290,7 +2290,7 @@ void idDebris::Think( void ) {
 idDebris::Killed
 ================
 */
-void idDebris::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location ) {
+void idDebris::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat ) {
 	if ( spawnArgs.GetBool( "detonate_on_death" ) ) {
 		Explode();
 	} else {

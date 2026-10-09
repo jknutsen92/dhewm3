@@ -138,6 +138,7 @@ void idDeclFX::ParseSingleFXAction( idLexer &src, idFXSingleAction& FXAction ) {
 	FXAction.particleTrackVelocity = false;
 	FXAction.trackOrigin = false;
 	FXAction.soundStarted = false;
+	FXAction.boundLightAndParm = false;
 
 	while (1) {
 		if ( !src.ReadToken( &token ) ) {
@@ -204,6 +205,12 @@ void idDeclFX::ParseSingleFXAction( idLexer &src, idFXSingleAction& FXAction ) {
 
 		if ( !token.Icmp( "trackorigin" ) ) {
 			FXAction.trackOrigin = src.ParseBool();
+			continue;
+		}
+
+		if ( !token.Icmp( "boundlightandparm" ) ) {
+			FXAction.boundLightAndParm = src.ParseBool();
+			FXAction.boundLightAndParm = true;
 			continue;
 		}
 
@@ -401,7 +408,7 @@ void idDeclFX::ParseSingleFXAction( idLexer &src, idFXSingleAction& FXAction ) {
 			continue;
 		}
 
-		src.Warning( "FX File: bad token" );
+		src.Warning( "FX File: bad token: %s", token.c_str() );
 		continue;
 	}
 }

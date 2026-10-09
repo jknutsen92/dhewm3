@@ -26,6 +26,8 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
+#include "idlib/bv/Sphere.h"
+#include "idlib/math/Math.h"
 #include "sys/platform.h"
 #include "idlib/LangDict.h"
 #include "idlib/Timer.h"
@@ -48,6 +50,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "Trigger.h"
 
 #include "framework/Licensee.h" // DG: for ID__DATE__
+#include <cstddef>
 
 #include "Game_local.h"
 
@@ -230,7 +233,7 @@ void idGameLocal::Clear( void ) {
 	aasNames.Clear();
 	lastAIAlertEntity = NULL;
 	lastAIAlertTime = 0;
-	spawnArgs.Clear();
+	// spawnArgs.Clear();
 	gravity.Set( 0, 0, -1 );
 	playerPVS.h = (unsigned int)-1;
 	playerConnectedAreas.h = (unsigned int)-1;
@@ -606,7 +609,7 @@ void idGameLocal::SaveGame( idFile *f ) {
 	lastAIAlertEntity.Save( &savegame );
 	savegame.WriteInt( lastAIAlertTime );
 
-	savegame.WriteDict( &spawnArgs );
+	// savegame.WriteDict( &spawnArgs );
 
 	savegame.WriteInt( playerPVS.i );
 	savegame.WriteInt( playerPVS.h );
@@ -965,7 +968,7 @@ void idGameLocal::LoadMap( const char *mapName, int randseed ) {
 
 	gravity.Set( 0, 0, -g_gravity.GetFloat() );
 
-	spawnArgs.Clear();
+	// spawnArgs.Clear();
 
 	skipCinematic = false;
 	inCinematic = false;
@@ -1456,7 +1459,7 @@ bool idGameLocal::InitFromSaveGame( const char *mapName, idRenderWorld *renderWo
 	lastAIAlertEntity.Restore( &savegame );
 	savegame.ReadInt( lastAIAlertTime );
 
-	savegame.ReadDict( &spawnArgs );
+	// savegame.ReadDict( &spawnArgs );
 
 	savegame.ReadInt( playerPVS.i );
 	savegame.ReadInt( (int &)playerPVS.h );
@@ -3011,13 +3014,21 @@ idGameLocal::RegisterEntity
 ===================
 */
 void idGameLocal::RegisterEntity( idEntity *ent ) {
-	int spawn_entnum;
-
 	if ( spawnCount >= ( 1 << ( 32 - GENTITYNUM_BITS ) ) ) {
 		Error( "idGameLocal::RegisterEntity: spawn count overflow" );
 	}
 
-	if ( !spawnArgs.GetInt( "spawn_entnum", "0", spawn_entnum ) ) {
+	// Add to the entity list if necessary
+	if (ent->entityNumber == ENTITYNUM_NONE) {
+		AddToEntityList(ent);
+	}
+
+	AddToSpawnList(ent);
+}
+
+void idGameLocal::AddToEntityList(idEntity* ent) {
+	int spawn_entnum;
+	if ( !ent->spawnArgs.GetInt( "spawn_entnum", "0", spawn_entnum ) ) {
 		while( entities[firstFreeIndex] && firstFreeIndex < ENTITYNUM_MAX_NORMAL ) {
 			firstFreeIndex++;
 		}
@@ -3028,14 +3039,15 @@ void idGameLocal::RegisterEntity( idEntity *ent ) {
 	}
 
 	entities[ spawn_entnum ] = ent;
-	spawnIds[ spawn_entnum ] = spawnCount++;
 	ent->entityNumber = spawn_entnum;
-	ent->spawnNode.AddToEnd( spawnedEntities );
-	ent->spawnArgs.TransferKeyValues( spawnArgs );
-
 	if ( spawn_entnum >= num_entities ) {
 		num_entities++;
 	}
+}
+
+void idGameLocal::AddToSpawnList(idEntity* ent) {
+	spawnIds[ ent->entityNumber ] = spawnCount++;
+	ent->spawnNode.AddToEnd( spawnedEntities );
 }
 
 /*
@@ -3080,19 +3092,16 @@ idEntity *idGameLocal::SpawnEntityType( const idTypeInfo &classdef, const idDict
 	}
 
 	try {
-		if ( args ) {
-			spawnArgs = *args;
-		} else {
-			spawnArgs.Clear();
-		}
 		obj = classdef.CreateInstance();
+		if ( args ) {
+			obj->spawnArgs = *args;
+		}
 		obj->CallSpawn();
 	}
 
 	catch( idAllocError & ) {
 		obj = NULL;
 	}
-	spawnArgs.Clear();
 
 	return static_cast<idEntity *>(obj);
 }
@@ -3112,6 +3121,7 @@ bool idGameLocal::SpawnEntityDef( const idDict &args, idEntity **ent, bool setDe
 	idClass		*obj;
 	idStr		error;
 	const char  *name;
+	idDict 		spawnArgs;
 
 	if ( ent ) {
 		*ent = NULL;
@@ -3149,7 +3159,7 @@ bool idGameLocal::SpawnEntityDef( const idDict &args, idEntity **ent, bool setDe
 			Warning( "Could not spawn '%s'. Instance could not be created%s.", classname, error.c_str() );
 			return false;
 		}
-
+		obj->spawnArgs = spawnArgs;
 		obj->CallSpawn();
 
 		if ( ent && obj->IsType( idEntity::Type ) ) {
@@ -3174,6 +3184,53 @@ bool idGameLocal::SpawnEntityDef( const idDict &args, idEntity **ent, bool setDe
 
 	Warning( "%s doesn't include a spawnfunc or spawnclass%s.", classname, error.c_str() );
 	return false;
+}
+
+idEntity* idGameLocal::CreateEntityDef(const idDict& args) {
+	idStr		error;
+
+	const char* classname;
+	args.GetString("classname", "", &classname);
+
+	// Validate spawn class
+	const idDeclEntityDef* def = FindEntityDef(classname, false);
+	if (!def) {
+		Warning( "Unknown classname '%s'%s.", classname, error.c_str() );
+		return nullptr;
+	}
+
+	idDict spawnArgs = args;
+	// Sets defaults if keys not present
+	spawnArgs.SetDefaults(&def->dict);
+
+	// Instance an idClass, if applicable
+	const char* spawn;
+	spawnArgs.GetString("spawnclass", "", &spawn);
+	if (spawn) {
+		idTypeInfo*	cls = idClass::GetClass(spawn);
+		if (!cls) {
+			Warning( "Could not spawn '%s'.  Class '%s' not found%s.", classname, spawn, error.c_str() );
+			return nullptr;
+		}
+
+		idClass* obj = cls->CreateInstance();
+		if (!obj) {
+			Warning( "Could not spawn '%s'. Instance could not be created%s.", classname, error.c_str() );
+			return nullptr;	
+		}
+		obj->spawnArgs = spawnArgs;
+
+		if (!obj->IsType(idEntity::Type)) {
+			Warning("spawnclass %s doesn't inherit from idEntity", spawn);
+			return nullptr;
+		}
+		return static_cast<idEntity*>(obj);
+	}
+}
+
+void idGameLocal::SpawnEntity(idEntity* ent) {
+	idClass* obj = reinterpret_cast<idClass*>(ent);
+	obj->CallSpawn();
 }
 
 /*
@@ -3642,7 +3699,8 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 	int			numListedEntities;
 	idBounds	bounds;
 	idVec3		v, damagePoint, dir;
-	int			i, e, damage, radius, push;
+	int			i, e, baseDamage, radius, push;
+	float 		heat;
 
 	const idDict *damageDef = FindEntityDefDict( damageDefName, false );
 	if ( !damageDef ) {
@@ -3650,11 +3708,36 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 		return;
 	}
 
-	damageDef->GetInt( "damage", "20", damage );
+	damageDef->GetInt( "damage", "20", baseDamage );
 	damageDef->GetInt( "radius", "50", radius );
-	damageDef->GetInt( "push", va( "%d", damage * 100 ), push );
+	damageDef->GetInt( "push", va( "%d", baseDamage * 100 ), push );
 	damageDef->GetFloat( "attackerDamageScale", "0.5", attackerDamageScale );
 	damageDef->GetFloat( "attackerPushScale", "0", attackerPushScale );
+	heat = damageDef->GetFloat("heat");
+	
+	// TODO: Redesign this dogshit
+	if (damageDef->GetBool("massScale")) {						// Effectiveness of overheat bomb scales with the size of the entity
+		if (g_debugDamage.GetBool()) {
+			common->Printf("MassScale enabled - pre-scaled values: push=%d,damage=%d,heat=%f,radius=%d\n", push, baseDamage, heat, radius);
+		}
+		float mass = ignoreDamage->spawnArgs.GetFloat("mass");
+		push 		= (int)ceil(mass * push * g_pMassPushScale.GetFloat());
+		dmgPower	= dmgPower * mass * g_pAreaDmgScale.GetFloat();
+		heat 		= mass * heat * g_pAreaHeatScale.GetFloat();
+		radius 		= mass * radius * g_pMassRadiusScale.GetFloat() + 100.0f;
+	}
+	else {
+		push = push * dmgPower;
+	}
+
+	if (g_debugDamage.GetBool() && attacker) {
+		common->Printf("Radial damage from %s: push=%d,damage=%d,heat=%f,radius=%d\n", attacker->GetName(), push, baseDamage, heat, radius);
+		if (!damageDef->GetBool("exclude_debug_draw")) {
+			idVec4 debugColor = idVec4(1, 0, 0, 0.75);
+			idSphere debugSphere = idSphere(origin, radius);
+			gameRenderWorld->DebugSphere(debugColor, debugSphere, 2000);
+		}
+	}
 
 	if ( radius < 1 ) {
 		radius = 1;
@@ -3677,7 +3760,7 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 
 	// apply damage to the entities
 	for ( e = 0; e < numListedEntities; e++ ) {
-		ent = entityList[ e ];
+	ent = entityList[ e ];
 		assert( ent );
 
 		if ( !ent->fl.takedamage ) {
@@ -3720,18 +3803,23 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 			dir[ 2 ] += 24;
 
 			// get the damage scale
-			damageScale = dmgPower * ( 1.0f - dist / radius );
+			float distScale = ( 1.0f - dist / radius );
+			damageScale = dmgPower * distScale;
 			if ( ent == attacker || ( ent->IsType( idAFAttachment::Type ) && static_cast<idAFAttachment*>(ent)->GetBody() == attacker ) ) {
 				damageScale *= attackerDamageScale;
 			}
 
 			ent->Damage( inflictor, attacker, dir, damageDefName, damageScale, INVALID_JOINT );
+			
+			if (!ent->IsType( idPlayer::Type) && ent->isPlasmaHeatable) {
+				ent->ApplyHeat(inflictor, attacker, 0, dir, 0, damageDefName, floor(heat * distScale));
+			}
 		}
 	}
 
 	// push physics objects
 	if ( push ) {
-		RadiusPush( origin, radius, push * dmgPower, attacker, ignorePush, attackerPushScale, false );
+		RadiusPush( origin, radius, push, attacker, ignorePush, attackerPushScale, false );
 	}
 }
 

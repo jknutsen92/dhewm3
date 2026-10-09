@@ -26,10 +26,13 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
+#include "Entity.h"
+#include "Game_local.h"
+#include "framework/DeclEntityDef.h"
 #include "sys/platform.h"
 #include "idlib/geometry/JointTransform.h"
 #include "renderer/ModelManager.h"
-
+#include "Fx.h"
 #include "gamesys/SysCvar.h"
 #include "Item.h"
 #include "Player.h"
@@ -536,6 +539,8 @@ idAFEntity_Base::idAFEntity_Base( void ) {
 	combatModel = NULL;
 	combatModelContents = 0;
 	nextSoundTime = 0;
+	rezDissolveFx = nullptr;
+	rezEntity = nullptr;
 	spawnOrigin.Zero();
 	spawnAxis.Identity();
 }
@@ -630,10 +635,29 @@ idAFEntity_Base::Think
 void idAFEntity_Base::Think( void ) {
 	RunPhysics();
 	UpdateAnimation();
+	
+	// smolspacer - TODO: We can put corpse timers in here too
+	if (rezDissolveFx && rezDissolveFx->Done()) {
+		CompleteResurrection();
+	}
+
 	if ( thinkFlags & TH_UPDATEVISUALS ) {
 		Present();
 		LinkCombat();
 	}
+}
+
+void idAFEntity_Base::CompleteResurrection() {
+	// Spawn monster
+	gameLocal.SpawnEntity(rezEntity);
+
+	// Trigger monster
+	rezEntity->Signal( SIG_TRIGGER );
+	rezEntity->ProcessEvent( &EV_Activate, gameLocal.GetLocalPlayer() );
+	rezEntity->TriggerGuis();
+
+	// Clean up the dissolved ragdoll after spawning the resurrected creature
+	delete this;
 }
 
 /*
@@ -930,6 +954,30 @@ void idAFEntity_Base::DropAFs( idEntity *ent, const char *type, idList<idEntity 
 	}
 }
 
+idEntity* idAFEntity_Base::StartResurrection(const idDict rezEntSpawnArgs) {
+	idDict args = rezEntSpawnArgs;
+	// Override resurrection specific args
+	args.Set("teleport", "1");
+	args.Set("origin", GetPhysics()->GetOrigin().ToString());
+	args.Set("angle", va("%f", GetPhysics()->GetAxis().ToAngles().yaw));
+	// Create the entity
+	rezEntity = gameLocal.CreateEntityDef(args);
+	if (!rezEntity) {
+		common->Warning("Unable to spawn %s from %s\n", args.GetString("classname"), GetName());
+		return nullptr;
+	}
+	// Doesn't spawn, but we need to reserve a spot on the entity list in order for the scripting to work
+	gameLocal.AddToEntityList(rezEntity);
+	
+	// TODO: Find and apply dissolve skin
+	// TODO: Update shaderparm 7
+
+	// Play the FX
+	rezDissolveFx = idEntityFx::StartFx("fx/resurrect.fx", &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, false);
+
+	return rezEntity;
+}
+
 /*
 ================
 idAFEntity_Base::Event_SetConstraintPosition
@@ -1092,7 +1140,8 @@ void idAFEntity_Gibbable::Damage( idEntity *inflictor, idEntity *attacker, const
 		return;
 	}
 	idAFEntity_Base::Damage( inflictor, attacker, dir, damageDefName, damageScale, location );
-	if ( health < -20 && spawnArgs.GetBool( "gib" ) ) {
+	const idDict* damageDef = gameLocal.FindEntityDefDict( damageDefName ); 
+	if ( health < -20 && spawnArgs.GetBool( "gib" ) && damageDef->GetBool("gib")) {
 		Gib( dir, damageDefName );
 	}
 }

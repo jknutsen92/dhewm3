@@ -28,10 +28,10 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "sys/platform.h"
 #include "idlib/math/Quat.h"
-
 #include "gamesys/SysCvar.h"
 #include "Moveable.h"
 #include "SmokeParticles.h"
+#include "Fx.h"
 
 #include "ai/AI.h"
 
@@ -1049,6 +1049,7 @@ idAI::Think
 =====================
 */
 void idAI::Think( void ) {
+	idActor::Think();
 	// if we are completely closed off from the player, don't do anything at all
 	if ( CheckDormant() ) {
 		return;
@@ -1170,6 +1171,8 @@ void idAI::LinkScriptVariables( void ) {
 	AI_TALK.LinkTo(				scriptObject, "AI_TALK" );
 	AI_DAMAGE.LinkTo(			scriptObject, "AI_DAMAGE" );
 	AI_PAIN.LinkTo(				scriptObject, "AI_PAIN" );
+	AI_DAMAGE_LOCATION.LinkTo(	scriptObject, "AI_DAMAGE_LOCATION");
+	AI_DAMAGE_VALUE.LinkTo(		scriptObject, "AI_DAMAGE_VALUE");
 	AI_SPECIAL_DAMAGE.LinkTo(	scriptObject, "AI_SPECIAL_DAMAGE" );
 	AI_DEAD.LinkTo(				scriptObject, "AI_DEAD" );
 	AI_ENEMY_VISIBLE.LinkTo(	scriptObject, "AI_ENEMY_VISIBLE" );
@@ -3198,6 +3201,12 @@ int idAI::ReactionTo( const idEntity *ent ) {
 }
 
 
+void idAI::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir, const char *damageDefName, const float damageScale, const int location ) {
+	idActor::Damage(inflictor, attacker, dir, damageDefName, damageScale, location);
+	AI_DAMAGE_LOCATION = location;
+}
+
+
 /*
 =====================
 idAI::Pain
@@ -3208,6 +3217,7 @@ bool idAI::Pain( idEntity *inflictor, idEntity *attacker, int damage, const idVe
 
 	AI_PAIN = idActor::Pain( inflictor, attacker, damage, dir, location );
 	AI_DAMAGE = true;
+	AI_DAMAGE_VALUE = AI_DAMAGE_VALUE + damage;
 
 	// force a blink
 	blink_time = 0;
@@ -3304,10 +3314,11 @@ const idDeclParticle *idAI::SpawnParticlesOnJoint( particleEmitter_t &pe, const 
 idAI::Killed
 =====================
 */
-void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location ) {
+void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat ) {
 	idAngles ang;
 	const char *modelDeath;
-
+	
+	isAlive = false;
 	// make sure the monster is activated
 	EndAttack();
 
@@ -3326,6 +3337,14 @@ void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const id
 		AI_PAIN = true;
 		AI_DAMAGE = true;
 		return;
+	}
+
+	if (isOverheat) {				// smolspacer - apply AOE damage and FX
+		fl.takedamage = 0;			// Prevents recursive calling of Killed by multiple enemies heatblasting nearby each other
+		SetSkin(0);
+		idEntityFx::StartFx(spawnArgs.GetString("heatblast_fx"), &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, false);
+		//gameLocal.ProjectDecal( GetPhysics()->GetOrigin(), GetPhysics()->GetGravity(), 8.0f, true, 300, "textures/decals/ballburn01");
+		gameLocal.RadiusDamage(GetPhysics()->GetOrigin(), inflictor, attacker, this, nullptr, "damage_heatblast", 1.0f);
 	}
 
 	// stop all voice sounds
@@ -4205,7 +4224,7 @@ FIXME: This gets called when we call idPlayer::CalcDamagePoints from idAI::Attac
 possibly forcing a miss.  This is harmless behavior ATM, but is not intuitive.
 ================
 */
-void idAI::DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage ) {
+void idAI::DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, float damageZoneScale, float heatRatio ) {
 	if ( ( victim == this ) && inflictor->IsType( idProjectile::Type ) ) {
 		// monsters only get half damage from their own projectiles
 		damage = ( damage + 1 ) / 2;  // round up so we don't do 0 damage

@@ -33,6 +33,8 @@ If you have questions concerning this license or the applicable additional terms
 #include "IK.h"
 #include "PlayerView.h"
 
+#define SIZZLE_SND_CHANNEL SND_CHANNEL_BODY3
+
 /*
 ===============================================================================
 
@@ -56,6 +58,8 @@ extern const idEventDef AI_PlayCycle;
 extern const idEventDef AI_AnimDone;
 extern const idEventDef AI_SetBlendFrames;
 extern const idEventDef AI_GetBlendFrames;
+extern const idEventDef AI_GetTeam;
+extern const idEventDef AI_SetTeam;
 
 class idDeclParticle;
 
@@ -165,8 +169,10 @@ public:
 
 							// damage
 	void					SetupDamageGroups( void );
+	int 					CalcDamagePoints(idEntity *inflictor, idEntity *attacker, const idDict *damageDef, const float damageScale, const int location, float& dmgZoneScale, float& heatRatio);
 	virtual	void			Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir, const char *damageDefName, const float damageScale, const int location );
 	int						GetDamageForLocation( int damage, int location );
+	float					GetDamageLocationScale( int location );
 	const char *			GetDamageGroup( int location );
 	void					ClearPain( void );
 	virtual bool			Pain( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location );
@@ -208,9 +214,20 @@ public:
 	void					SetWaitState( const char *_waitstate );
 	bool					AnimDone( int channel, int blendFrames ) const;
 	virtual void			SpawnGibs( const idVec3 &dir, const char *damageDefName );
+	void 					ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, int areaHeat = 0);
 
 protected:
 	friend class			idAnimState;
+
+	// smolspacer
+	float 					heat;				// How much heat this entity currently has
+	float 					maxHeat;			// The point at which the entity overheats and detonates
+	float					heatDecayRate;		// How much heat per second the entity sheds
+	idDeclSkin*				previousSkinBody;	// Skin the character had before he was heated
+	idDeclSkin*				heatedSkinBody;		// Material that makes the heated entity glow
+	idDeclSkin*				previousSkinHead;	
+	idDeclSkin*				heatedSkinHead;		// Some characters have separate entities for the head
+	idEntityFx*				heatGlowFx;			// Glow from the entity radiating visible light
 
 	float					fovDot;				// cos( fovDegrees )
 	idVec3					eyeOffset;			// offset of eye relative to physics origin
@@ -251,6 +268,7 @@ protected:
 
 	// script variables
 	idThread *				scriptThread;
+
 	idStr					waitState;
 	idAnimState				headAnim;
 	idAnimState				torsoAnim;
@@ -266,17 +284,26 @@ protected:
 
 	virtual void			Gib( const idVec3 &dir, const char *damageDefName );
 
+	virtual void 			InflictHeat( float heatToInflict ); 
+
 							// removes attachments with "remove" set for when character dies
 	void					RemoveAttachments( void );
 
 							// copies animation from body to head joints
 	void					CopyJointsFromBodyToHead( void );
 
+	bool 					IsWeakpointGroup(const char* damageGroup);
+	idStr					GetWeakpointSoundShader(idEntity* inflictor);
+
 private:
 	void					SyncAnimChannels( int channel, int syncToChannel, int blendFrames );
 	void					FinishSetup( void );
 	void					SetupHead( void );
 	void					PlayFootStepSound( void );
+	void					UpdateHeatState( void );
+	void 					ApplyHeatFx( idDeclSkin* currentSkin );
+	void					RemoveHeatFx( void );
+	void					UpdateHeatShaderParms( float heatRatio );
 
 	void					Event_EnableEyeFocus( void );
 	void					Event_DisableEyeFocus( void );
@@ -318,6 +345,10 @@ private:
 	void					Event_SetState( const char *name );
 	void					Event_GetState( void );
 	void					Event_GetHead( void );
+	void					Event_EnableTargeting(void);
+	void 					Event_DisableTargeting(void);
+	void					Event_GetTeam(void);
+	void 					Event_SetTeam(int newTeam);
 };
 
 #endif /* !__GAME_ACTOR_H__ */

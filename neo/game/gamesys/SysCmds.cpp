@@ -26,6 +26,9 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
+#include "Game_local.h"
+#include "framework/CmdSystem.h"
+#include "renderer/Material.h"
 #include "sys/platform.h"
 #include "idlib/LangDict.h"
 #include "framework/async/NetworkSystem.h"
@@ -2295,6 +2298,36 @@ void Cmd_TestId_f( const idCmdArgs &args ) {
 	gameLocal.mpGame.AddChatLine( common->GetLanguageDict()->GetString( id ), "<nothing>", "<nothing>", "<nothing>" );
 }
 
+void Cmd_RezTarget_f(const idCmdArgs &args) {
+	// Check player and cheats
+	idPlayer* player = gameLocal.GetLocalPlayer();
+	if (!player || !gameLocal.CheatsOk()) {
+		return;
+	}
+
+	// Check args
+	const char* classname = args.Argv(1);
+	if (!classname[0]) {
+		common->Printf("usage: rezTarget <classname>\n");
+		return;
+	}
+	
+	// Pick ragdoll from player reticle
+	trace_t trace;
+	const idVec3 start = player->GetEyePosition();
+	const idVec3 end = start + player->viewAngles.ToForward() * 1000.0f;
+	gameLocal.clip.TracePoint(trace, start, end, CONTENTS_CORPSE, player);
+	
+	idEntity* target = gameLocal.GetTraceEntity(trace);
+	if (!target) {
+		common->Printf("no target ragdoll for resurrection");
+		return;
+	}
+	idDict spawnArgs;
+	spawnArgs.Set("classname", classname);
+	target->StartResurrection(spawnArgs);
+}
+
 /*
 =================
 idGameLocal::InitConsoleCommands
@@ -2403,6 +2436,9 @@ void idGameLocal::InitConsoleCommands( void ) {
 	// localization help commands
 	cmdSystem->AddCommand( "nextGUI",				Cmd_NextGUI_f,				CMD_FL_GAME|CMD_FL_CHEAT,	"teleport the player to the next func_static with a gui" );
 	cmdSystem->AddCommand( "testid",				Cmd_TestId_f,				CMD_FL_GAME|CMD_FL_CHEAT,	"output the string for the specified id." );
+
+	// smolspacer
+	cmdSystem->AddCommand("rezTarget",				Cmd_RezTarget_f, 			CMD_FL_GAME | CMD_FL_CHEAT,	"Resurrects the target under the reticle");
 }
 
 /*

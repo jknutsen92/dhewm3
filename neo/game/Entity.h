@@ -68,6 +68,7 @@ extern const idEventDef EV_SetSkin;
 extern const idEventDef EV_StartSoundShader;
 extern const idEventDef EV_StopSound;
 extern const idEventDef EV_CacheSoundShader;
+extern const idEventDef EV_IsSpawned;
 
 // Think flags
 enum {
@@ -104,7 +105,7 @@ typedef enum {
 #define MAX_SIGNAL_THREADS 16		// probably overkill, but idList uses a granularity of 16
 
 struct signal_t {
-	int					threadnum;
+	int 				threadnum;
 	const function_t	*function;
 };
 
@@ -129,7 +130,6 @@ public:
 	int						snapshotBits;			// number of bits this entity occupied in the last snapshot
 
 	idStr					name;					// name of entity
-	idDict					spawnArgs;				// key/value pairs used to spawn and initialize entity
 	idScriptObject			scriptObject;			// contains all script defined data for this entity
 
 	int						thinkFlags;				// TH_? flags
@@ -142,6 +142,8 @@ public:
 	idList< idEntityPtr<idEntity> >	targets;		// when this entity is activated these entities entity are activated
 
 	int						health;					// FIXME: do all objects really need health?
+	bool					isAlive;				// Used to fix some skin glitches with the heat system
+	bool					isPlasmaHeatable;		// Used to differentiate entities that can be heated with the plasmagun
 
 	struct entityFlags_s {
 		bool				notarget			:1;	// if true never attack or target this entity
@@ -184,6 +186,7 @@ public:
 	virtual	void			DormantBegin( void );	// called when entity becomes dormant
 	virtual	void			DormantEnd( void );		// called when entity wakes from being dormant
 	bool					IsActive( void ) const;
+	bool 					IsSpawned(void) const;
 	void					BecomeActive( int flags );
 	void					BecomeInactive( int flags );
 	void					UpdatePVSAreas( const idVec3 &pos );
@@ -306,11 +309,15 @@ public:
 							// adds a damage effect like overlays, blood, sparks, debris etc.
 	virtual void			AddDamageEffect( const trace_t &collision, const idVec3 &velocity, const char *damageDefName );
 							// callback function for when another entity received damage from this entity.  damage can be adjusted and returned to the caller.
-	virtual void			DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage );
+	virtual void			DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, float damageZoneScale = 1.0f, float heatRatio = 0.0f );
 							// notifies this entity that it is in pain
 	virtual bool			Pain( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location );
 							// notifies this entity that is has been killed
-	virtual void			Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location );
+	virtual void			Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat = false );
+
+	virtual void			InflictHeat( float heatToInflict );
+	virtual void 			ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, int areaHeat = 0);
+
 
 	// scripting
 	virtual bool			ShouldConstructScriptObjectAtSpawn( void ) const;
@@ -360,6 +367,8 @@ public:
 
 	void					ServerSendEvent( int eventId, const idBitMsg *msg, bool saveEvent, int excludeClient ) const;
 	void					ClientSendEvent( int eventId, const idBitMsg *msg ) const;
+
+	virtual idEntity*		StartResurrection(const idDict corpseSpawnArgs);
 
 protected:
 	renderEntity_t			renderEntity;						// used to present a model to the renderer
@@ -465,6 +474,7 @@ private:
 	void					Event_HasFunction( const char *name );
 	void					Event_CallFunction( const char *name );
 	void					Event_SetNeverDormant( int enable );
+	void					Event_IsSpawned(void);
 };
 
 /*

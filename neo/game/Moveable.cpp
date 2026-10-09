@@ -306,7 +306,7 @@ bool idMoveable::Collide( const trace_t &collision, const idVec3 &velocity ) {
 idMoveable::Killed
 ============
 */
-void idMoveable::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location ) {
+void idMoveable::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat ) {
 	if ( unbindOnDeath ) {
 		Unbind();
 	}
@@ -982,7 +982,7 @@ void idExplodingBarrel::ExplodingEffects( void ) {
 idExplodingBarrel::Killed
 ================
 */
-void idExplodingBarrel::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location ) {
+void idExplodingBarrel::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat ) {
 
 	if ( IsHidden() || state == EXPLODING || state == BURNING ) {
 		return;

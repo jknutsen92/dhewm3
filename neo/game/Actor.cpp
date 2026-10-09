@@ -26,6 +26,13 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
+#include "Entity.h"
+#include "Game_local.h"
+#include "d3xp/script/Script_Program.h"
+#include "framework/DeclManager.h"
+#include "idlib/Dict.h"
+#include "idlib/math/Vector.h"
+#include "physics/Clip.h"
 #include "sys/platform.h"
 #include "gamesys/SysCvar.h"
 #include "script/Script_Thread.h"
@@ -33,6 +40,8 @@ If you have questions concerning this license or the applicable additional terms
 #include "Light.h"
 #include "Projectile.h"
 #include "WorldSpawn.h"
+#include "Fx.h"
+#include "../framework/DeclSkin.h"
 
 #include "Actor.h"
 
@@ -365,6 +374,8 @@ const idEventDef AI_SetNextState( "setNextState", "s" );
 const idEventDef AI_SetState( "setState", "s" );
 const idEventDef AI_GetState( "getState", NULL, 's' );
 const idEventDef AI_GetHead( "getHead", NULL, 'e' );
+const idEventDef AI_GetTeam("getTeam", NULL, 'd');
+const idEventDef AI_SetTeam("setTeam", "d");
 
 CLASS_DECLARATION( idAFEntity_Gibbable, idActor )
 	EVENT( AI_EnableEyeFocus,			idActor::Event_EnableEyeFocus )
@@ -408,6 +419,8 @@ CLASS_DECLARATION( idAFEntity_Gibbable, idActor )
 	EVENT( AI_SetState,					idActor::Event_SetState )
 	EVENT( AI_GetState,					idActor::Event_GetState )
 	EVENT( AI_GetHead,					idActor::Event_GetHead )
+	EVENT( AI_GetTeam,					idActor::Event_GetTeam )
+	EVENT( AI_SetTeam,					idActor::Event_SetTeam )
 END_CLASS
 
 /*
@@ -444,6 +457,15 @@ idActor::idActor( void ) {
 	painTime			= 0;
 	allowPain			= false;
 	allowEyeFocus		= false;
+
+	heat 				= 0;
+	maxHeat				= 0;
+	heatDecayRate		= 0;
+	previousSkinBody 	= nullptr;
+	heatedSkinBody		= nullptr;
+	previousSkinHead	= nullptr;
+	heatedSkinHead		= nullptr;
+	heatGlowFx			= nullptr;
 
 	waitState			= "";
 
@@ -627,6 +649,24 @@ void idActor::Spawn( void ) {
 
 	finalBoss = spawnArgs.GetBool( "finalBoss" );
 
+	// smolspacer
+	heatDecayRate = spawnArgs.GetFloat("heat_decay_rate");
+	isPlasmaHeatable = spawnArgs.GetBool("plasma_heatable");
+	previousSkinBody = (idDeclSkin*)GetSkin();
+	heatedSkinBody = (idDeclSkin*)declManager->FindSkin(spawnArgs.GetString("body_skin_heated"));
+	if (!heatedSkinBody) {
+		common->Warning("Invalid heated skin %s", spawnArgs.GetString("body_skin_heated"));
+	}
+	if (headEnt) {
+		previousSkinHead = (idDeclSkin*)GetSkin();
+		heatedSkinHead = (idDeclSkin*)declManager->FindSkin(spawnArgs.GetString("head_skin_heated"));
+		if (!heatedSkinHead) {
+			common->Warning("Invalid heated skin %s", spawnArgs.GetString("head_skin_heated"));
+		}
+	}
+	maxHeat = g_pMassHeatScale.GetFloat() * spawnArgs.GetFloat("mass");
+
+	// Sets up script object
 	FinishSetup();
 }
 
@@ -777,6 +817,16 @@ void idActor::Save( idSaveGame *savefile ) const {
 		savefile->WriteObject( ent );
 	}
 
+	// smolspacer heat properties
+	savefile->WriteBool(isPlasmaHeatable);
+	savefile->WriteFloat(heat);
+	savefile->WriteFloat(maxHeat);
+	savefile->WriteFloat(heatDecayRate);
+	savefile->WriteSkin(previousSkinBody);
+	savefile->WriteSkin(heatedSkinBody);
+	savefile->WriteSkin(previousSkinHead);
+	savefile->WriteSkin(heatedSkinHead);
+
 	savefile->WriteFloat( fovDot );
 	savefile->WriteVec3( eyeOffset );
 	savefile->WriteVec3( modelOffset );
@@ -881,6 +931,11 @@ unarchives object from save game file
 void idActor::Restore( idRestoreGame *savefile ) {
 	int i, num;
 	idActor *ent;
+	const idDeclSkin* psb;
+	const idDeclSkin* hsb;
+	const idDeclSkin* psh;
+	const idDeclSkin* hsh;
+	idThread* cbThread;
 
 	savefile->ReadInt( team );
 	savefile->ReadInt( rank );
@@ -894,6 +949,20 @@ void idActor::Restore( idRestoreGame *savefile ) {
 			ent->enemyNode.AddToEnd( enemyList );
 		}
 	}
+
+	// smolspacer heat properties
+	savefile->ReadBool(isPlasmaHeatable);
+	savefile->ReadFloat(heat);
+	savefile->ReadFloat(maxHeat);
+	savefile->ReadFloat(heatDecayRate);
+	savefile->ReadSkin(psb);
+	savefile->ReadSkin(hsb);
+	savefile->ReadSkin(psh);
+	savefile->ReadSkin(hsh);
+	previousSkinBody	= (idDeclSkin*)psb;
+	heatedSkinBody 		= (idDeclSkin*)hsb;
+	previousSkinHead	= (idDeclSkin*)psh;
+	heatedSkinHead		= (idDeclSkin*)hsh;
 
 	savefile->ReadFloat( fovDot );
 	savefile->ReadVec3( eyeOffset );
@@ -2013,6 +2082,10 @@ idActor::UpdateAnimState
 =====================
 */
 void idActor::UpdateAnimState( void ) {
+	// smolspacer - heat decay
+	if (isPlasmaHeatable && heat > 0 && isAlive) {
+		UpdateHeatState();
+	}
 	headAnim.UpdateState();
 	torsoAnim.UpdateState();
 	legsAnim.UpdateState();
@@ -2110,6 +2183,59 @@ void idActor::SyncAnimChannels( int channel, int syncToChannel, int blendFrames 
 	}
 }
 
+// smolspacer -- Updates the heat values with the decay amount and also manages the materials
+void idActor::UpdateHeatState() {
+	float deltaTime = float(gameLocal.time - gameLocal.previousTime) / 1000.0;
+	idDeclSkin* currentSkin = (idDeclSkin*)GetSkin();
+	if (heat > 0) {
+		float heatDecay = heatDecayRate * deltaTime;
+		heat = (heat - heatDecay) > 0.0 ? (heat - heatDecay) : 0.0;					// clamp heat to zero
+		if (currentSkin != heatedSkinBody) {
+			ApplyHeatFx(currentSkin);
+			if (g_debugHeat.GetBool()) {
+				common->Printf("Swapping previous skin for heated skin\n");
+			}
+		}
+		UpdateHeatShaderParms(heat / maxHeat);							// Update the shader intensity
+	}
+	if (heat <= 0 && currentSkin == heatedSkinBody) {
+		RemoveHeatFx();
+		UpdateHeatShaderParms(0.0f);
+		if (g_debugHeat.GetBool()) {
+			common->Printf("Swapping heated skin for previous skin\n");
+		}
+	}
+}
+
+void idActor::ApplyHeatFx(idDeclSkin* currentSkin) {
+	// Apply skin
+	previousSkinBody = currentSkin;
+	SetSkin(heatedSkinBody);
+	if (head.GetEntity()) {
+		head.GetEntity()->SetSkin(heatedSkinHead);
+	}
+	// Apply glow fx
+	heatGlowFx = idEntityFx::StartFx("fx/heatglow.fx", &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, true);
+	// Loop sizzle sound
+	StartSoundShader(declManager->FindSound("heat_sizzle"), SIZZLE_SND_CHANNEL, 0, false, nullptr);
+}
+
+void idActor::RemoveHeatFx() {
+	SetSkin(previousSkinBody);
+	if (head.GetEntity()) {
+		head.GetEntity()->SetSkin(previousSkinHead);
+	}	
+	heatGlowFx->Stop();
+	StopSound(SIZZLE_SND_CHANNEL, false);
+}
+
+void idActor::UpdateHeatShaderParms(float heatRatio) {
+	SetShaderParm(SHADERPARM_BEAM_WIDTH, heatRatio);
+	if (head.GetEntity()) {
+		head.GetEntity()->SetShaderParm(SHADERPARM_BEAM_WIDTH, heatRatio);
+	}
+}
+
 /***********************************************************************
 
 	Damage
@@ -2135,6 +2261,10 @@ void idActor::Gib( const idVec3 &dir, const char *damageDefName ) {
 		head.GetEntity()->Hide();
 	}
 	StopSound( SND_CHANNEL_VOICE, false );
+}
+
+void idActor::InflictHeat(float heatToInflict) {
+	heat += heatToInflict;
 }
 
 
@@ -2163,6 +2293,12 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 		return;
 	}
 
+	Signal(SIG_DAMAGE);
+	// if (callbackFuncDamaged) {
+	// 	idThread* thread = GetIdleCallbackThread();
+	// 	thread->CallFunction(this, callbackFuncDamaged, true);
+	// }
+
 	if ( !inflictor ) {
 		inflictor = gameLocal.world;
 	}
@@ -2179,11 +2315,13 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 		gameLocal.Error( "Unknown damageDef '%s'", damageDefName );
 	}
 
-	int	damage = damageDef->GetInt( "damage" ) * damageScale;
-	damage = GetDamageForLocation( damage, location );
+	// smolspacer
+	float dmgZoneScale, heatRatio;
+	int damage = idActor::CalcDamagePoints(inflictor, attacker, damageDef, damageScale, location, dmgZoneScale, heatRatio);
 
-	// inform the attacker that they hit someone
-	attacker->DamageFeedback( this, inflictor, damage );
+	// inform the attacker that they hit someone, and if it was a weakpoint hit
+	attacker->DamageFeedback( this, inflictor, damage, dmgZoneScale, heatRatio );
+
 	if ( damage > 0 ) {
 		health -= damage;
 		if ( health <= 0 ) {
@@ -2206,6 +2344,125 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 			// physics is turned off by calling af.Rest()
 			BecomeActive( TH_PHYSICS );
 		}
+	}
+	
+	if (isPlasmaHeatable && inflictor->spawnArgs.GetBool("heat")) {
+		ApplyHeat(inflictor, attacker, damage, dir, location, damageDefName);
+	}
+}
+
+int idActor::CalcDamagePoints(idEntity *inflictor, idEntity *attacker, const idDict *damageDef, const float damageScale, const int location, float& dmgZoneScale, float& heatRatio) {
+	int damage;
+	int	baseDmg = damageDef->GetInt( "damage" );
+	const char* dmgGroup = GetDamageGroup(location);
+	dmgZoneScale = GetDamageLocationScale(location);
+	if (g_debugDamage.GetBool()) {
+		common->Printf("Target %s - base dmg: %d, location scale (%s): %f, global damage scale: %f. ", this->name.c_str(), baseDmg, dmgGroup, dmgZoneScale, damageScale);
+	}
+	float heatedDmgBonus = 1.0f;
+	heatRatio = 0.0f;
+	if (heat && !inflictor->spawnArgs.GetBool("heat")) {			// Apply damage multiplier if target is pre-heated
+		heatRatio = heat / maxHeat;										// [0,1]
+		heatedDmgBonus = 1.0f + heatRatio;								// [1,2]
+		if (g_extendedSoundFeedback.GetBool()) {
+			StartSoundShader(declManager->FindSound("heat_bonus_hit"), SND_CHANNEL_ANY, 0, false, nullptr);
+		}
+		if (g_debugDamage.GetBool()) {
+			common->Printf("Heated target (%f): Applying dmg bonus of %f. ", heatRatio, heatedDmgBonus);
+		}
+	}
+	idStr weakpointZone = spawnArgs.GetString("weakpoint_zone"); 
+	if (inflictor->spawnArgs.GetBool("weakpoint_bonus") && IsWeakpointGroup(dmgGroup)) {
+		if (g_extendedSoundFeedback.GetBool()) {
+			idStr weakpointSound = GetWeakpointSoundShader(inflictor);
+			StartSoundShader(declManager->FindSound(weakpointSound), SND_CHANNEL_ANY, 0, false, nullptr);
+		}
+		// TODO: Spawn a particle effect for headshot burst
+
+		// Apply damage scaling based on damage_scale head monster spawn args and weakpoint_bonus on the projectile
+		float weapWeakpointBonus = inflictor->spawnArgs.GetFloat("weakpoint_bonus");
+		damage = (int)ceil(baseDmg * weapWeakpointBonus * dmgZoneScale * heatedDmgBonus * damageScale);
+		if (g_debugDamage.GetBool()) {
+			common->Printf("Weakpoint %s hit - weapon crit bonus: %f, final dmg: %d\n", weakpointZone.c_str(), weapWeakpointBonus, damage);
+		}
+	}
+	else if (inflictor->spawnArgs.GetBool("ignore_zone_scaling")) {
+		dmgZoneScale = 1.0f;				// For feedback
+		damage = (int)ceil(baseDmg * heatedDmgBonus * damageScale);
+		if (g_debugDamage.GetBool()) {
+			common->Printf("Final damage (no zone scale): %d\n", damage);
+		}
+	}
+	else {
+		// We only want damage bonuses on a weakpoint hit - so zone penalties only
+		dmgZoneScale = Min(dmgZoneScale, 1.0f);					
+		damage = (int)ceil(baseDmg * dmgZoneScale * heatedDmgBonus * damageScale);
+		if (g_debugDamage.GetBool()) {
+			common->Printf("Final damage (%s capped to %f):  %d\n", dmgGroup, dmgZoneScale, damage);
+		}
+	}
+	return damage;
+}
+
+bool idActor::IsWeakpointGroup(const char* damageGroup) {
+	const idKeyValue* kv;
+	kv = spawnArgs.MatchPrefix("weakpoint_zone");
+	while (kv) {
+		if (!idStr::Icmp(damageGroup, kv->GetValue())) {
+			return true;
+		}
+		kv = spawnArgs.MatchPrefix("weakpoint_zone", kv);
+	}
+	return false;
+}
+
+// smolspacer
+idStr idActor::GetWeakpointSoundShader(idEntity* inflictor) {
+	const char* projectileName = inflictor->GetEntityDefName();
+	if (!idStr::Icmp(projectileName, "projectile_bullet_pistol")) {
+		return spawnArgs.GetString("snd_weakpoint_pistol");
+	}
+	if (!idStr::Icmp(projectileName, "projectile_bullet_shotgun")) {
+		return spawnArgs.GetString("snd_weakpoint_shotgun");
+	}
+	if (!idStr::Icmp(projectileName, "projectile_bullet_machinegun")) {
+		return spawnArgs.GetString("snd_weakpoint_machinegun");
+	}
+	if (!idStr::Icmp(projectileName, "projectile_chaingunbullet")) {
+		return spawnArgs.GetString("snd_weakpoint_chaingun");
+	}
+	if (!idStr::Icmp(projectileName, "projectile_rocket")) {
+		return spawnArgs.GetString("snd_weakpoint_rocket");
+	}
+	common->Error("No sound shader for %s", projectileName);
+	return "";
+}
+
+void idActor::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, int areaHeat) {
+	int projectileHeat = inflictor->spawnArgs.GetInt("heat");
+	InflictHeat(projectileHeat + areaHeat);
+	if (g_debugHeat.GetBool()) {
+		int mass = spawnArgs.GetInt("mass");
+		common->Printf("Target %s (%dKg) current heat: %f/%f - projectile heat: %d\n", (const char*)name, mass, heat, maxHeat, projectileHeat);
+	}
+	if (heat > maxHeat) {
+		StopSound(SIZZLE_SND_CHANNEL, false);
+		if (heatGlowFx) {
+			heatGlowFx->Stop();
+		}
+		Killed( inflictor, attacker, damage, dir, location, true );
+		if (spawnArgs.GetBool("gib") || spawnArgs.GetBool("heatgib")) {
+			if (spawnArgs.GetBool("heatgib")) {
+				Hide();
+			}
+			Gib( dir, damageDefName );
+		}
+		if (g_debugHeat.GetBool()) {
+			common->Printf("%s killed by overheat\n", (const char*)name);
+		}
+	}
+	if (g_debugHeat.GetBool()) {
+		common->Printf("(11) SHADERPARM_BEAM_WIDTH (HEAT): %f ", renderEntity.shaderParms[SHADERPARM_BEAM_WIDTH]);
 	}
 }
 
@@ -2375,6 +2632,13 @@ int idActor::GetDamageForLocation( int damage, int location ) {
 	return (int)ceil( damage * damageScale[ location ] );
 }
 
+float idActor::GetDamageLocationScale(int location) {
+	if (location < 0 || location >= damageScale.Num()) {	
+		return 1.0f;
+	}
+	return damageScale[location];
+}
+
 /*
 =====================
 idActor::GetDamageGroup
@@ -2387,7 +2651,6 @@ const char *idActor::GetDamageGroup( int location ) {
 
 	return damageGroups[ location ];
 }
-
 
 /***********************************************************************
 
@@ -3275,4 +3538,12 @@ idActor::Event_GetHead
 */
 void idActor::Event_GetHead( void ) {
 	idThread::ReturnEntity( head.GetEntity() );
+}
+
+void idActor::Event_GetTeam() {
+	idThread::ReturnInt(team);
+}
+
+void idActor::Event_SetTeam(int newTeam) {
+	team = newTeam;
 }

@@ -31,6 +31,7 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "idlib/math/Interpolate.h"
 
+#include "idlib/math/Vector.h"
 #include "physics/Physics_Player.h"
 #include "Item.h"
 #include "Actor.h"
@@ -56,6 +57,10 @@ extern const idEventDef EV_Player_EnableWeapon;
 extern const idEventDef EV_Player_DisableWeapon;
 extern const idEventDef EV_Player_ExitTeleporter;
 extern const idEventDef EV_Player_SelectWeapon;
+extern const idEventDef EV_Player_GiveItem;
+extern const idEventDef EV_Player_AddArmor;
+extern const idEventDef EV_Player_GetArmor;
+extern const idEventDef EV_Player_GetMaxArmor;
 extern const idEventDef EV_SpectatorTouch;
 
 const float THIRD_PERSON_FOCUS_DISTANCE	= 512.0f;
@@ -186,6 +191,7 @@ public:
 	int						HasAmmo( ammo_t type, int amount );
 	bool					UseAmmo( ammo_t type, int amount );
 	int						HasAmmo( const char *weapon_classname );			// looks up the ammo information for the weapon class first
+	bool 					HasWeapon( int weapon_classname );					// smolspacer - checks if inventory has the weapon
 
 	void					UpdateArmor( void );
 
@@ -236,6 +242,10 @@ public:
 	int						lastHitTime;			// last time projectile fired by player hit target
 	int						lastSndHitTime;			// MP hit sound - != lastHitTime because we throttle
 	int						lastSavingThrowTime;	// for the "free miss" effect
+	idVec3					reticleCritColor;		// Color recticle flashes when hitting a weakpoint
+	idVec3					reticleHitColor;		// Color reticle flashes when hitting a body part with damage scaling of 1
+	idVec3					reticleDimColor;		// Color reticle flashes when hitting a body part with damage scale of 0
+	idVec3					reticleHeatColor;		// Color reticle flashes when hitting a heated enemy. Blended with the others
 
 	idScriptBool			AI_FORWARD;
 	idScriptBool			AI_BACKWARD;
@@ -378,7 +388,7 @@ public:
 
 	virtual void			GetAASLocation( idAAS *aas, idVec3 &pos, int &areaNum ) const;
 	virtual void			GetAIAimTargets( const idVec3 &lastSightPos, idVec3 &headPos, idVec3 &chestPos );
-	virtual void			DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage );
+	virtual void			DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, float damageZoneScale, float heatRatio );
 	void					CalcDamagePoints(  idEntity *inflictor, idEntity *attacker, const idDict *damageDef,
 							   const float damageScale, const int location, int *health, int *armor );
 	virtual	void			Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir, const char *damageDefName, const float damageScale, const int location );
@@ -387,7 +397,7 @@ public:
 	virtual void			Teleport( const idVec3 &origin, const idAngles &angles, idEntity *destination );
 
 	void					Kill( bool delayRespawn, bool nodamage );
-	virtual void			Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location );
+	virtual void			Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat = false );
 	void					StartFxOnBone(const char *fx, const char *bone);
 
 	renderView_t *			GetRenderView( void );
@@ -438,7 +448,7 @@ public:
 	void					StealWeapon( idPlayer *player );
 	void					AddProjectilesFired( int count );
 	void					AddProjectileHits( int count );
-	void					SetLastHitTime( int time );
+	void					SetLastHitTime( int time, float damageZoneScale = 1.0f, float heatRatio = 0.0f );
 	void					LowerWeapon( void );
 	void					RaiseWeapon( void );
 	void					WeaponLoweringCallback( void );
@@ -523,6 +533,7 @@ public:
 
 	bool					SelfSmooth( void );
 	void					SetSelfSmooth( bool b );
+	void 					UpdateDynamicProtection(int damage);
 
 private:
 	jointHandle_t			hipJoint;
@@ -686,6 +697,10 @@ private:
 	void					Event_GetCurrentWeapon( void );
 	void					Event_GetPreviousWeapon( void );
 	void					Event_SelectWeapon( const char *weaponName );
+	void					Event_GiveItem( const char* itemName );
+	void					Event_AddArmor( int amount );
+	void 					Event_GetArmor( void );
+	void 					Event_GetMaxArmor( void );
 	void					Event_GetWeaponEntity( void );
 	void					Event_OpenPDA( void );
 	void					Event_PDAAvailable( void );

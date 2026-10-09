@@ -1160,7 +1160,7 @@ static void InitBindingEntries()
 			// Hack: D3XP uses def_weapon18 for (MP-only) weapon_chainsaw
 			//  and the corresponding impulse is _impulse27
 			// (otherwise def_weaponX corresponds to _impulseX)
-			weapNum = 18;
+			 weapNum = 18;
 			impulseNum = 27;
 		}
 
@@ -1199,7 +1199,7 @@ static void InitBindingEntries()
 
 	firstObscureEntryIndex = bindingEntries.Num();
 
-	bindingEntries.Append( BindingEntry( "_impulse16", "_impulse16" ) );
+	bindingEntries.Append( BindingEntry( "_impulse16", "Pistol+Flashlight" ) );				// smolspacer
 	bindingEntries.Append( BindingEntry( "_impulse21", "_impulse21" ) );
 	// _impulse22 is "spectate", handled in "Other" section
 	bindingEntries.Append( BindingEntry( "_impulse23", "_impulse23" ) );

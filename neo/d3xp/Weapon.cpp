@@ -56,6 +56,7 @@ const idEventDef EV_Weapon_State( "weaponState", "sd" );
 const idEventDef EV_Weapon_UseAmmo( "useAmmo", "d" );
 const idEventDef EV_Weapon_AddToClip( "addToClip", "d" );
 const idEventDef EV_Weapon_AmmoInClip( "ammoInClip", NULL, 'f' );
+const idEventDef EV_Weapon_SetClip( "setClip", "d", 0);
 const idEventDef EV_Weapon_AmmoAvailable( "ammoAvailable", NULL, 'f' );
 const idEventDef EV_Weapon_TotalAmmoCount( "totalAmmoCount", NULL, 'f' );
 const idEventDef EV_Weapon_ClipSize( "clipSize", NULL, 'f' );
@@ -105,6 +106,7 @@ CLASS_DECLARATION( idAnimatedEntity, idWeapon )
 	EVENT( EV_Weapon_WeaponLowering,			idWeapon::Event_WeaponLowering )
 	EVENT( EV_Weapon_UseAmmo,					idWeapon::Event_UseAmmo )
 	EVENT( EV_Weapon_AddToClip,					idWeapon::Event_AddToClip )
+	EVENT( EV_Weapon_SetClip,					idWeapon::Event_SetClip)
 	EVENT( EV_Weapon_AmmoInClip,				idWeapon::Event_AmmoInClip )
 	EVENT( EV_Weapon_AmmoAvailable,				idWeapon::Event_AmmoAvailable )
 	EVENT( EV_Weapon_TotalAmmoCount,			idWeapon::Event_TotalAmmoCount )
@@ -2944,6 +2946,11 @@ void idWeapon::Event_AddToClip( int amount ) {
 	int usedAmmo = ammoClip - oldAmmo;
 	owner->inventory.UseAmmo(ammoType, usedAmmo);
 #endif
+}
+
+// smolspacer
+void idWeapon::Event_SetClip( int amount ) {
+	ammoClip = amount;
 }
 
 /*

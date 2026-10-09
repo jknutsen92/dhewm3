@@ -120,6 +120,7 @@ const idEventDef EV_StartFx( "startFx", "s" );
 const idEventDef EV_HasFunction( "hasFunction", "s", 'd' );
 const idEventDef EV_CallFunction( "callFunction", "s" );
 const idEventDef EV_SetNeverDormant( "setNeverDormant", "d" );
+const idEventDef EV_IsSpawned("isSpawned", NULL, 'd');
 
 ABSTRACT_DECLARATION( idClass, idEntity )
 	EVENT( EV_GetName,				idEntity::Event_GetName )
@@ -185,6 +186,7 @@ ABSTRACT_DECLARATION( idClass, idEntity )
 	EVENT( EV_HasFunction,			idEntity::Event_HasFunction )
 	EVENT( EV_CallFunction,			idEntity::Event_CallFunction )
 	EVENT( EV_SetNeverDormant,		idEntity::Event_SetNeverDormant )
+	EVENT( EV_IsSpawned,			idEntity::Event_IsSpawned )
 END_CLASS
 
 /*
@@ -409,12 +411,14 @@ idEntity::idEntity() {
 	snapshotSequence = -1;
 	snapshotBits = 0;
 
-	thinkFlags		= 0;
-	dormantStart	= 0;
-	cinematic		= false;
-	renderView		= NULL;
-	cameraTarget	= NULL;
-	health			= 0;
+	thinkFlags			= 0;
+	dormantStart		= 0;
+	cinematic			= false;
+	renderView			= NULL;
+	cameraTarget		= NULL;
+	health				= 0;
+	isAlive 			= true;
+	isPlasmaHeatable 	= false;
 
 	physics			= NULL;
 	bindMaster		= NULL;
@@ -930,6 +934,10 @@ idEntity::IsActive
 */
 bool idEntity::IsActive( void ) const {
 	return activeNode.InList();
+}
+
+bool idEntity::IsSpawned(void) const {
+	return spawnNode.InList();
 }
 
 /*
@@ -2958,7 +2966,7 @@ idEntity::DamageFeedback
 callback function for when another entity received damage from this entity.  damage can be adjusted and returned to the caller.
 ================
 */
-void idEntity::DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage ) {
+void idEntity::DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, float damageZoneScale, float heatRatio ) {
 	// implemented in subclasses
 }
 
@@ -3077,7 +3085,15 @@ Called whenever an entity's health is reduced to 0 or less.
 This is a virtual function that subclasses are expected to implement.
 ============
 */
-void idEntity::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location ) {
+void idEntity::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat ) {
+	isAlive = false;
+}
+
+// For subclasses to implement - smolspacer
+void idEntity::InflictHeat( float heatToInflict ) {
+}
+
+void idEntity::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, int areaHeat) {
 }
 
 
@@ -4582,6 +4598,10 @@ void idEntity::Event_SetNeverDormant( int enable ) {
 	dormantStart = 0;
 }
 
+void idEntity::Event_IsSpawned() {
+	idThread::ReturnInt(IsSpawned());
+}
+
 /***********************************************************************
 
    Network
@@ -4869,6 +4889,10 @@ bool idEntity::ClientReceiveEvent( int event, int time, const idBitMsg &msg ) {
 	}
 
 	return false;
+}
+
+idEntity* idEntity::StartResurrection(const idDict corpseSpawnArgs) {
+	return nullptr;
 }
 
 /*

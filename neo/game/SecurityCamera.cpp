@@ -517,7 +517,7 @@ void idSecurityCamera::Event_Pause( void ) {
 idSecurityCamera::Killed
 ============
 */
-void idSecurityCamera::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location ) {
+void idSecurityCamera::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat ) {
 	sweeping = false;
 	StopSound( SND_CHANNEL_ANY, false );
 	const char *fx = spawnArgs.GetString( "fx_destroyed" );

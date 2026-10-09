@@ -40,6 +40,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "Camera.h"
 #include "Fx.h"
 #include "Misc.h"
+#include <cstdio>
 
 const int ASYNC_PLAYER_INV_AMMO_BITS = idMath::BitsForInteger( 999 );	// 9 bits to cover the range [0, 999]
 const int ASYNC_PLAYER_INV_CLIP_BITS = -7;								// -7 bits to cover the range [-1, 60]
@@ -82,6 +83,10 @@ const idEventDef EV_Player_DisableWeapon( "disableWeapon" );
 const idEventDef EV_Player_GetCurrentWeapon( "getCurrentWeapon", NULL, 's' );
 const idEventDef EV_Player_GetPreviousWeapon( "getPreviousWeapon", NULL, 's' );
 const idEventDef EV_Player_SelectWeapon( "selectWeapon", "s" );
+const idEventDef EV_Player_GiveItem("giveItem", "s");
+const idEventDef EV_Player_AddArmor("addArmor", "d");
+const idEventDef EV_Player_GetArmor("getArmor", NULL, 'f');
+const idEventDef EV_Player_GetMaxArmor("getMaxArmor", NULL, 'f');
 const idEventDef EV_Player_GetWeaponEntity( "getWeaponEntity", NULL, 'e' );
 const idEventDef EV_Player_OpenPDA( "openPDA" );
 const idEventDef EV_Player_InPDA( "inPDA", NULL, 'd' );
@@ -102,6 +107,10 @@ CLASS_DECLARATION( idActor, idPlayer )
 	EVENT( EV_Player_GetCurrentWeapon,		idPlayer::Event_GetCurrentWeapon )
 	EVENT( EV_Player_GetPreviousWeapon,		idPlayer::Event_GetPreviousWeapon )
 	EVENT( EV_Player_SelectWeapon,			idPlayer::Event_SelectWeapon )
+	EVENT( EV_Player_GiveItem,				idPlayer::Event_GiveItem)
+	EVENT( EV_Player_AddArmor,				idPlayer::Event_AddArmor)
+	EVENT( EV_Player_GetArmor,				idPlayer::Event_GetArmor)
+	EVENT( EV_Player_GetMaxArmor,			idPlayer::Event_GetMaxArmor)
 	EVENT( EV_Player_GetWeaponEntity,		idPlayer::Event_GetWeaponEntity )
 	EVENT( EV_Player_OpenPDA,				idPlayer::Event_OpenPDA )
 	EVENT( EV_Player_InPDA,					idPlayer::Event_InPDA )
@@ -650,7 +659,7 @@ idInventory::AmmoIndexForAmmoClass
 ==============
 */
 int idInventory::MaxAmmoForAmmoClass( idPlayer *owner, const char *ammo_classname ) const {
-	return owner->spawnArgs.GetInt( va( "max_%s", ammo_classname ), "0" );
+	return owner->spawnArgs.GetInt( va( "max_%s", ammo_classname ), "0" ) * g_maxAmmoScale.GetFloat();		// smolspacer
 }
 
 /*
@@ -749,7 +758,7 @@ bool idInventory::Give( idPlayer *owner, const idDict &spawnArgs, const char *st
 		if ( ammo[ i ] >= max ) {
 			return false;
 		}
-		amount = atoi( value );
+		amount = atoi( value ) * g_itemValueScale.GetFloat();
 		if ( amount ) {
 			ammo[ i ] += amount;
 			if ( ( max > 0 ) && ( ammo[ i ] > max ) ) {
@@ -766,7 +775,7 @@ bool idInventory::Give( idPlayer *owner, const idDict &spawnArgs, const char *st
 		if ( armor >= maxarmor ) {
 			return false;	// can't hold any more, so leave the item
 		}
-		amount = atoi( value );
+		amount = atoi( value ) * g_itemValueScale.GetFloat();
 		if ( amount ) {
 			armor += amount;
 			if ( armor > maxarmor ) {
@@ -928,6 +937,11 @@ bool idInventory::UseAmmo( ammo_t type, int amount ) {
 	return true;
 }
 
+// smolspacer
+bool idInventory::HasWeapon(int index) {
+	return weapons & (1 << index);
+}
+
 /*
 ===============
 idInventory::UpdateArmor
@@ -970,6 +984,10 @@ idPlayer::idPlayer() {
 	lastHitTime				= 0;
 	lastSndHitTime			= 0;
 	lastSavingThrowTime		= 0;
+	reticleCritColor		= idVec3(1.0f, 0.5f, 0.0f);
+	reticleHitColor			= idVec3(0.8f, 0.0f, 0.0f);
+	reticleDimColor			= idVec3(0.15f, 0.00f, 0.05f);
+	reticleHeatColor		= idVec3(0.0, 0.0, 0.8f);
 
 	weapon					= NULL;
 
@@ -1590,9 +1608,9 @@ void idPlayer::Spawn( void ) {
 				g_damageScale.SetFloat( 1.0f );
 			}
 		} else {
-			g_damageScale.SetFloat( 1.0f );
-			g_armorProtection.SetFloat( ( g_skill.GetInteger() < 2 ) ? 0.4f : 0.2f );
-
+			// smolspacer - remove this annoying shit
+			//g_damageScale.SetFloat( 1.0f );		
+			//g_armorProtection.SetFloat( ( g_skill.GetInteger() < 2 ) ? 0.4f : 0.2f );
 			if ( g_skill.GetInteger() == 3 ) {
 				healthTake = true;
 				nextHealthTake = gameLocal.time + g_healthTakeTime.GetInteger() * 1000;
@@ -2867,6 +2885,7 @@ idPlayer::Give
 */
 bool idPlayer::Give( const char *statname, const char *value ) {
 	int amount;
+	bool success;
 
 	if ( AI_DEAD ) {
 		return false;
@@ -2876,7 +2895,7 @@ bool idPlayer::Give( const char *statname, const char *value ) {
 		if ( health >= inventory.maxHealth ) {
 			return false;
 		}
-		amount = atoi( value );
+		amount = atoi( value ) * g_itemValueScale.GetFloat();
 		if ( amount ) {
 			health += amount;
 			if ( health > inventory.maxHealth ) {
@@ -2911,7 +2930,16 @@ bool idPlayer::Give( const char *statname, const char *value ) {
 			airTics = pm_airTics.GetInteger();
 		}
 	} else {
-		return inventory.Give( this, spawnArgs, statname, value, &idealWeapon, true );
+		// smolspacer
+		success = inventory.Give( this, spawnArgs, statname, value, &idealWeapon, true );
+		if (!idStr::Icmp(statname, "weapon")) {
+			if (!idStr::Icmp(value, "weapon_pistol") || !idStr::Icmp(value, "weapon_flashlight")) {
+				if (inventory.HasWeapon(1) && inventory.HasWeapon(11) && !inventory.HasWeapon(13)) {
+					inventory.Give(this, spawnArgs, "weapon", "weapon_pistol_flashlight", &idealWeapon, true);
+				}
+			}
+		}
+		return success;
 	}
 	return true;
 }
@@ -5593,6 +5621,10 @@ void idPlayer::PerformImpulse( int impulse ) {
 			PrevWeapon();
 			break;
 		}
+		case IMPULSE_16: {								// smolspacer
+			SelectWeapon( 13, false );
+			break;
+		}
 		case IMPULSE_17: {
 			if ( gameLocal.isClient || entityNumber == gameLocal.localClientNum ) {
 				gameLocal.mpGame.ToggleReady();
@@ -6305,15 +6337,8 @@ void idPlayer::Think( void ) {
 		// not done on clients for various reasons. don't do it on server and save the sound channel for other things
 		if ( !gameLocal.isMultiplayer ) {
 			SetCurrentHeartRate();
-			float scale = g_damageScale.GetFloat();
-			if ( g_useDynamicProtection.GetBool() && scale < 1.0f && gameLocal.time - lastDmgTime > 500 ) {
-				if ( scale < 1.0f ) {
-					scale += 0.05f;
-				}
-				if ( scale > 1.0f ) {
-					scale = 1.0f;
-				}
-				g_damageScale.SetFloat( scale );
+			if (g_useDynamicProtection.GetBool()) {
+				UpdateDynamicProtection(0);
 			}
 		}
 
@@ -6488,7 +6513,7 @@ void idPlayer::Kill( bool delayRespawn, bool nodamage ) {
 idPlayer::Killed
 ==================
 */
-void idPlayer::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location ) {
+void idPlayer::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat ) {
 	float delay;
 
 	assert( !gameLocal.isClient );
@@ -6597,11 +6622,11 @@ idPlayer::DamageFeedback
 callback function for when another entity received damage from this entity.  damage can be adjusted and returned to the caller.
 ================
 */
-void idPlayer::DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage ) {
+void idPlayer::DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, float damageZoneScale, float heatRatio) {
 	assert( !gameLocal.isClient );
 	damage *= PowerUpModifier( BERSERK );
 	if ( damage && ( victim != this ) && victim->IsType( idActor::Type ) ) {
-		SetLastHitTime( gameLocal.time );
+		SetLastHitTime( gameLocal.time, damageZoneScale, heatRatio );
 	}
 }
 
@@ -6621,28 +6646,6 @@ void idPlayer::CalcDamagePoints( idEntity *inflictor, idEntity *attacker, const 
 
 	damageDef->GetInt( "damage", "20", damage );
 	damage = GetDamageForLocation( damage, location );
-
-	idPlayer *player = attacker->IsType( idPlayer::Type ) ? static_cast<idPlayer*>(attacker) : NULL;
-	if ( !gameLocal.isMultiplayer ) {
-		if ( inflictor != gameLocal.world ) {
-			switch ( g_skill.GetInteger() ) {
-				case 0:
-					damage *= 0.80f;
-					if ( damage < 1 ) {
-						damage = 1;
-					}
-					break;
-				case 2:
-					damage *= 1.70f;
-					break;
-				case 3:
-					damage *= 3.5f;
-					break;
-				default:
-					break;
-			}
-		}
-	}
 
 	damage *= damageScale;
 
@@ -6669,11 +6672,14 @@ void idPlayer::CalcDamagePoints( idEntity *inflictor, idEntity *attacker, const 
 
 	// save some from armor
 	if ( !damageDef->GetBool( "noArmor" ) ) {
-		float armor_protection;
+		float armor_protection = ( gameLocal.isMultiplayer ) ? g_armorProtectionMP.GetFloat() : g_armorProtection.GetFloat();
+		float minArmorCoverage = g_armorCoverageMin.GetFloat();
+		float maxArmorCoverage = g_armorCoverageMax.GetFloat();
 
-		armor_protection = ( gameLocal.isMultiplayer ) ? g_armorProtectionMP.GetFloat() : g_armorProtection.GetFloat();
+		// minArmorCoverage <= armorCoverage <= maxArmorCoverage
+		float armorCoverage = Max(Min((float)inventory.armor / 100.0f, maxArmorCoverage), minArmorCoverage);
 
-		armorSave = ceil( damage * armor_protection );
+		armorSave = ceil( damage * armor_protection * armorCoverage );
 		if ( armorSave >= inventory.armor ) {
 			armorSave = inventory.armor;
 		}
@@ -6691,6 +6697,7 @@ void idPlayer::CalcDamagePoints( idEntity *inflictor, idEntity *attacker, const 
 	}
 
 	// check for team damage
+	idPlayer *player = attacker->IsType( idPlayer::Type ) ? static_cast<idPlayer*>(attacker) : NULL;
 	if ( gameLocal.gameType == GAME_TDM
 		&& !gameLocal.serverInfo.GetBool( "si_teamDamage" )
 		&& !damageDef->GetBool( "noTeam" )
@@ -6730,6 +6737,8 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 	idVec3		localDamageVector;
 	float		attackerPushScale;
 
+	float 		finalDamageScale = damageScale * g_damageScale.GetFloat();
+
 	// damage is only processed on server
 	if ( gameLocal.isClient ) {
 		return;
@@ -6766,7 +6775,7 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 		return;
 	}
 
-	CalcDamagePoints( inflictor, attacker, &damageDef->dict, damageScale, location, &damage, &armorSave );
+	CalcDamagePoints( inflictor, attacker, &damageDef->dict, finalDamageScale, location, &damage, &armorSave );
 
 	// determine knockback
 	damageDef->dict.GetInt( "knockback", "20", knockback );
@@ -6789,7 +6798,9 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 
 	// give feedback on the player view and audibly when armor is helping
 	if ( armorSave ) {
-		inventory.armor -= armorSave;
+		int scaledArmorSave = armorSave * g_armorStripScale.GetFloat();
+		int remainingArmor = inventory.armor - scaledArmorSave;
+		inventory.armor = remainingArmor > 0 ? remainingArmor : 0;
 
 		if ( gameLocal.time > lastArmorPulse + 200 ) {
 			StartSound( "snd_hitArmor", SND_CHANNEL_ITEM, 0, false, NULL );
@@ -6825,21 +6836,11 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 
 	// do the damage
 	if ( damage > 0 ) {
-
 		if ( !gameLocal.isMultiplayer ) {
-			float scale = g_damageScale.GetFloat();
 			if ( g_useDynamicProtection.GetBool() && g_skill.GetInteger() < 2 ) {
-				if ( gameLocal.time > lastDmgTime + 500 && scale > 0.25f ) {
-					scale -= 0.05f;
-					g_damageScale.SetFloat( scale );
-				}
-			}
-
-			if ( scale > 0.0f ) {
-				damage *= scale;
+				UpdateDynamicProtection(damage);
 			}
 		}
-
 		if ( damage < 1 ) {
 			damage = 1;
 		}
@@ -7450,7 +7451,7 @@ void idPlayer::AddProjectileHits( int count ) {
 idPlayer::SetLastHitTime
 =============
 */
-void idPlayer::SetLastHitTime( int time ) {
+void idPlayer::SetLastHitTime( int time, float damageZoneScale, float heatRatio ) {
 	idPlayer *aimed = NULL;
 
 	if ( time && lastHitTime != time ) {
@@ -7466,6 +7467,24 @@ void idPlayer::SetLastHitTime( int time ) {
 		StartSound( "snd_hit_feedback", SND_CHANNEL_ANY, SSF_PRIVATE_SOUND, false, NULL );
 	}
 	if ( cursor ) {
+		idVec3 cursorColor;
+		if (damageZoneScale > 1.0f && g_reticleHighlightWeakp.GetBool()) {			
+			cursorColor = reticleCritColor;
+		}
+		else if (g_reticleHighlightDim.GetBool()) {
+			cursorColor.Lerp(reticleDimColor, reticleHitColor, damageZoneScale);
+		}
+		else {										
+			cursorColor = reticleHitColor;
+		}
+
+		if (heatRatio && g_reticleHighlightHeat.GetBool()) {
+			cursorColor.Lerp(cursorColor, reticleHeatColor, heatRatio);
+		}
+
+		cursor->SetStateFloat("cursorR", cursorColor.x);
+		cursor->SetStateFloat("cursorG", cursorColor.y);
+		cursor->SetStateFloat("cursorB", cursorColor.z);
 		cursor->HandleNamedEvent( "hitTime" );
 	}
 	if ( hud ) {
@@ -7716,6 +7735,34 @@ void idPlayer::Event_SelectWeapon( const char *weaponName ) {
 	idealWeapon = weaponNum;
 
 	UpdateHudWeapon();
+}
+
+// smolspacer
+void idPlayer::Event_GiveItem( const char* itemName) {
+	GiveItem(itemName);
+}
+
+// smolspacer
+void idPlayer::Event_AddArmor( int amount ) {
+	if ( inventory.armor + amount > inventory.maxarmor ) {
+		inventory.armor = inventory.maxarmor;
+	}
+	else if ( inventory.armor + amount < 0) {
+		inventory.armor = 0;
+	}
+	else {
+		inventory.armor += amount;
+	}
+}
+
+// smolspacer
+void idPlayer::Event_GetArmor() {
+	idThread::ReturnFloat(inventory.armor);
+}
+
+// smolspacer
+void idPlayer::Event_GetMaxArmor() {
+	idThread::ReturnFloat(inventory.maxarmor);
 }
 
 /*
@@ -8545,4 +8592,21 @@ idPlayer::NeedsIcon
 bool idPlayer::NeedsIcon( void ) {
 	// local clients don't render their own icons... they're only info for other clients
 	return entityNumber != gameLocal.localClientNum && ( isLagged || isChatting );
+}
+
+void idPlayer::UpdateDynamicProtection(int damage) {
+	float scale = g_damageScale.GetFloat();
+	if ( !damage && scale < 1.0f && gameLocal.time - lastDmgTime > 500 ) {		// Slowly raise damage scale if we haven't taken a hit in a while
+		if ( scale < 1.0f ) {
+			scale += 0.05f;
+		}
+		if ( scale > 1.0f ) {
+			scale = 1.0f;
+		}
+		g_damageScale.SetFloat( scale );
+	}
+	else if (damage && gameLocal.time > lastDmgTime + 500 && scale > 0.25f) {
+		scale -= 0.05f;
+		g_damageScale.SetFloat( scale );
+	}
 }

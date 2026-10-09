@@ -26,6 +26,7 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
+#include "framework/DeclFX.h"
 #include "sys/platform.h"
 #include "renderer/ModelManager.h"
 
@@ -33,6 +34,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "Player.h"
 #include "Projectile.h"
 #include "WorldSpawn.h"
+#include <cmath>
 
 #include "Fx.h"
 
@@ -303,7 +305,7 @@ idEntityFx::Done
 ================
 */
 const bool idEntityFx::Done() {
-	if (started > 0 && gameLocal.time > started + Duration()) {
+	if (started < 0 || (started > 0 && gameLocal.time > started + Duration())) {
 		return true;
 	}
 	return false;
@@ -400,6 +402,17 @@ void idEntityFx::Run( int time ) {
 			}
 		}
 
+		// // smolspacer
+		if (fxaction.type == FX_LIGHT && fxaction.boundLightAndParm && IsBound()) {
+			float shaderParm = GetBindMaster()->GetRenderEntity()->shaderParms[SHADERPARM_BEAM_WIDTH];
+			laction.renderLight.origin 	= GetBindMaster()->GetPhysics()->GetOrigin() + fxaction.offset;
+			laction.renderLight.axis 	= GetBindMaster()->GetPhysics()->GetAxis();
+			laction.renderLight.shaderParms[SHADERPARM_BEAM_WIDTH] = shaderParm;
+			laction.renderLight.lightRadius[0] = fxaction.lightRadius * shaderParm;
+			laction.renderLight.lightRadius[1] = fxaction.lightRadius * shaderParm;
+			laction.renderLight.lightRadius[2] = fxaction.lightRadius * shaderParm;
+		}
+
 		idFXLocalAction *useAction;
 		if ( fxaction.sibling == -1 ) {
 			useAction = &laction;
@@ -468,13 +481,13 @@ void idEntityFx::Run( int time ) {
 			}
 			case FX_SHAKE: {
 				if ( !useAction->shakeStarted ) {
-					idDict args;
-					args.Clear();
-					args.SetFloat( "kick_time", fxaction.shakeTime );
-					args.SetFloat( "kick_amplitude", fxaction.shakeAmplitude );
 					for ( j = 0; j < gameLocal.numClients; j++ ) {
 						idPlayer *player = gameLocal.GetClientByNum( j );
-						if ( player && ( player->GetPhysics()->GetOrigin() - GetPhysics()->GetOrigin() ).LengthSqr() < Square( fxaction.shakeDistance ) ) {
+						idDict args;
+						args.Clear();
+						args.SetFloat( "kick_time", fxaction.shakeTime );
+						args.SetFloat( "kick_amplitude", fxaction.shakeAmplitude );
+						if ( player && ( (GetPhysics()->GetOrigin() - player->GetPhysics()->GetOrigin()).LengthFast() < Square( fxaction.shakeDistance ) ) ) {
 							if ( !gameLocal.isMultiplayer || !fxaction.shakeIgnoreMaster || GetBindMaster() != player ) {
 								player->playerView.DamageImpulse( fxaction.offset, &args );
 							}

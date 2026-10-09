@@ -258,7 +258,7 @@ public:
 	void				ExtractFileBase( idStr &dest ) const;			// copy the filename minus the extension to another string
 	void				ExtractFileExtension( idStr &dest ) const;		// copy the file extension to another string
 	bool				CheckExtension( const char *ext );
-
+	
 	// char * methods to replace library functions
 	static int			Length( const char *s );
 	static char *		ToLower( char *s );

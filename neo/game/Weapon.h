@@ -140,6 +140,7 @@ public:
 	ammo_t					GetAmmoType( void ) const;
 	int						AmmoAvailable( void ) const;
 	int						AmmoInClip( void ) const;
+	void 					SetClip( int ) const;
 	void					ResetAmmoClip( void );
 	int						ClipSize( void ) const;
 	int						LowAmmo( void ) const;
@@ -305,6 +306,10 @@ private:
 	float					weaponOffsetTime;
 	float					weaponOffsetScale;
 
+
+	// Weapon target for melee 
+	idEntity*				lastMeleeTarget;	 
+
 	// flashlight
 	void					AlertMonsters( void );
 
@@ -329,6 +334,8 @@ private:
 	void					Event_UseAmmo( int amount );
 	void					Event_AddToClip( int amount );
 	void					Event_AmmoInClip( void );
+	void					Event_SetClip( int amount );
+	void 					Event_GetLastMeleeTarget();
 	void					Event_AmmoAvailable( void );
 	void					Event_TotalAmmoCount( void );
 	void					Event_ClipSize( void );
