@@ -259,10 +259,6 @@ public:
 	void				ExtractFileExtension( idStr &dest ) const;		// copy the file extension to another string
 	bool				CheckExtension( const char *ext );
 	
-	// namespace methods
-	bool				HasNamespace() const;
-	void				ParseNamespaceAndName(idStr& ns, idStr& name) const;
-
 	// char * methods to replace library functions
 	static int			Length( const char *s );
 	static char *		ToLower( char *s );
