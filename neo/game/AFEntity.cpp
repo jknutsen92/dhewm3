@@ -955,6 +955,11 @@ void idAFEntity_Base::DropAFs( idEntity *ent, const char *type, idList<idEntity 
 }
 
 idEntity* idAFEntity_Base::StartResurrection(const idDict rezEntSpawnArgs) {
+	if (rezEntity && rezDissolveFx) {
+		common->Warning("Already resurrecting %s with %s\n", GetName(), rezEntity->GetName());
+		return rezEntity;
+	}
+	
 	idDict args = rezEntSpawnArgs;
 	// Override resurrection specific args
 	args.Set("teleport", "1");
