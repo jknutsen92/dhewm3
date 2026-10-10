@@ -553,6 +553,12 @@ idAFEntity_Base::~idAFEntity_Base
 idAFEntity_Base::~idAFEntity_Base( void ) {
 	delete combatModel;
 	combatModel = NULL;
+	if (rezEntity && !rezEntity->IsSpawned()) {
+		if (g_debugResurrection.GetBool()) {
+			common->Printf("Ragdoll %s destroyed before resurrection could complete, freeing %s.\n", GetName(), rezEntity->GetName());
+		}
+		delete rezEntity;
+	}
 }
 
 /*
@@ -635,8 +641,10 @@ idAFEntity_Base::Think
 void idAFEntity_Base::Think( void ) {
 	RunPhysics();
 	UpdateAnimation();
+
+	// TODO: We can update timers here for beginning resurrection
 	
-	// smolspacer - TODO: We can put corpse timers in here too
+	// smolspacer - TODO: We can check a timestamp to determine if we should make the ragdoll immortal once a certain amount of time has passed
 	if (rezDissolveFx && rezDissolveFx->Done()) {
 		CompleteResurrection();
 	}
@@ -655,6 +663,10 @@ void idAFEntity_Base::CompleteResurrection() {
 	rezEntity->Signal( SIG_TRIGGER );
 	rezEntity->ProcessEvent( &EV_Activate, gameLocal.GetLocalPlayer() );
 	rezEntity->TriggerGuis();
+
+	if (g_debugResurrection.GetBool()) {
+		common->Printf("Removing %s and spawning %s\n", GetName(), rezEntity->GetName());
+	}
 
 	// Clean up the dissolved ragdoll after spawning the resurrected creature
 	delete this;
@@ -959,6 +971,14 @@ idEntity* idAFEntity_Base::StartResurrection(const idDict rezEntSpawnArgs) {
 		common->Warning("Already resurrecting %s with %s\n", GetName(), rezEntity->GetName());
 		return rezEntity;
 	}
+
+	if (!IsActive()) {
+		int flags = TH_PHYSICS;
+		BecomeActive(flags);
+		if (g_debugResurrection.GetBool()) {
+			common->Printf("Activating %s (%x) for resurrection\n", GetName(), flags);
+		}
+	}
 	
 	idDict args = rezEntSpawnArgs;
 	// Override resurrection specific args
@@ -979,6 +999,10 @@ idEntity* idAFEntity_Base::StartResurrection(const idDict rezEntSpawnArgs) {
 
 	// Play the FX
 	rezDissolveFx = idEntityFx::StartFx("fx/resurrect.fx", &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, false);
+
+	if (g_debugResurrection.GetBool()) {
+		common->Printf("Resurrecting ragdoll %s with %s after fx completes (%d)\n", GetName(), rezEntity->GetName(), rezDissolveFx->Duration());
+	}
 
 	return rezEntity;
 }

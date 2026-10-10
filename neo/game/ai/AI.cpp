@@ -1049,6 +1049,12 @@ idAI::Think
 =====================
 */
 void idAI::Think( void ) {
+	if (rezEntity) {
+		// A ragdoll that has been activated for resurrection
+		idAFEntity_Base::Think();
+		return;
+	}
+
 	// if we are completely closed off from the player, don't do anything at all
 	if ( CheckDormant() ) {
 		return;
@@ -3342,7 +3348,6 @@ void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const id
 		fl.takedamage = 0;			// Prevents recursive calling of Killed by multiple enemies heatblasting nearby each other
 		SetSkin(0);
 		idEntityFx::StartFx(spawnArgs.GetString("heatblast_fx"), &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, false);
-		//gameLocal.ProjectDecal( GetPhysics()->GetOrigin(), GetPhysics()->GetGravity(), 8.0f, true, 300, "textures/decals/ballburn01");
 		gameLocal.RadiusDamage(GetPhysics()->GetOrigin(), inflictor, attacker, this, nullptr, "damage_heatblast", 1.0f);
 	}
 

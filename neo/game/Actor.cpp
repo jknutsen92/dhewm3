@@ -26,13 +26,7 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
-#include "Entity.h"
 #include "Game_local.h"
-#include "d3xp/script/Script_Program.h"
-#include "framework/DeclManager.h"
-#include "idlib/Dict.h"
-#include "idlib/math/Vector.h"
-#include "physics/Clip.h"
 #include "sys/platform.h"
 #include "gamesys/SysCvar.h"
 #include "script/Script_Thread.h"
@@ -41,7 +35,6 @@ If you have questions concerning this license or the applicable additional terms
 #include "Projectile.h"
 #include "WorldSpawn.h"
 #include "Fx.h"
-#include "../framework/DeclSkin.h"
 
 #include "Actor.h"
 
