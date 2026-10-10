@@ -26,7 +26,6 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
-#include "framework/CVarSystem.h"
 #include "sys/platform.h"
 #include "framework/Licensee.h"
 #include "framework/BuildVersion.h"
@@ -120,10 +119,11 @@ idCVar g_debugMove(					"g_debugMove",				"0",			CVAR_GAME | CVAR_BOOL, "" );
 idCVar g_debugDamage(				"g_debugDamage",			"0",			CVAR_GAME | CVAR_BOOL, "" );
 idCVar g_debugWeapon(				"g_debugWeapon",			"0",			CVAR_GAME | CVAR_BOOL, "" );
 idCVar g_debugScript(				"g_debugScript",			"0",			CVAR_GAME | CVAR_BOOL, "" );
-idCVar g_debugMover(				"g_debugMover",				"0",			CVAR_GAME | CVAR_BOOL, "" );
+idCVar g_debugMover(				"g_debugMover",			"0",			CVAR_GAME | CVAR_BOOL, "" );
 idCVar g_debugTriggers(				"g_debugTriggers",			"0",			CVAR_GAME | CVAR_BOOL, "" );
-idCVar g_debugCinematic(			"g_debugCinematic",			"0",			CVAR_GAME | CVAR_BOOL, "" );
+idCVar g_debugCinematic(			"g_debugCinematic",		"0",			CVAR_GAME | CVAR_BOOL, "" );
 idCVar g_debugHeat(					"g_debugHeat",				"0",			CVAR_GAME | CVAR_BOOL, "prints debug information related to the heat system");
+idCVar g_debugResurrection(			"g_debugResurrection",		"0",			CVAR_GAME | CVAR_BOOL, "debug messages for ragdoll resurrection system");
 idCVar g_stopTime(					"g_stopTime",				"0",			CVAR_GAME | CVAR_BOOL, "" );
 idCVar g_damageScale(				"g_damageScale",			"1",			CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"scale final damage on player by this factor" );
 idCVar g_armorProtection(			"g_armorProtection",		"0.9",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"Efficiency of armor. Absorbs this percentage of damage" );

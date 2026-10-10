@@ -62,6 +62,7 @@ extern idCVar	g_debugMover;
 extern idCVar	g_debugTriggers;
 extern idCVar	g_debugCinematic;
 extern idCVar   g_debugHeat;
+extern idCVar   g_debugResurrection;
 extern idCVar	g_stopTime;
 extern idCVar	g_armorProtection;
 extern idCVar   g_armorCoverageMin;
