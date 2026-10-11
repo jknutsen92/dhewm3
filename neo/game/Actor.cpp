@@ -1041,6 +1041,15 @@ void idActor::Restore( idRestoreGame *savefile ) {
 	}
 }
 
+void idActor::Think() {
+	// smolspacer - heat decay
+	if (thinkFlags & TH_HEAT) {
+		if (isPlasmaHeatable && heat > 0) {
+			UpdateHeatState();
+		}
+	}
+}
+
 /*
 ================
 idActor::Hide
@@ -2075,10 +2084,6 @@ idActor::UpdateAnimState
 =====================
 */
 void idActor::UpdateAnimState( void ) {
-	// smolspacer - heat decay
-	if (isPlasmaHeatable && heat > 0 && isAlive) {
-		UpdateHeatState();
-	}
 	headAnim.UpdateState();
 	torsoAnim.UpdateState();
 	legsAnim.UpdateState();
@@ -2178,9 +2183,13 @@ void idActor::SyncAnimChannels( int channel, int syncToChannel, int blendFrames 
 
 // smolspacer -- Updates the heat values with the decay amount and also manages the materials
 void idActor::UpdateHeatState() {
+	if (!isAlive && spawnArgs.GetBool("burnaway")) {
+		return;
+	}
+
 	float deltaTime = float(gameLocal.time - gameLocal.previousTime) / 1000.0;
 	idDeclSkin* currentSkin = (idDeclSkin*)GetSkin();
-	if (heat > 0) {
+	if (heat > 0 && heat < maxHeat) {
 		float heatDecay = heatDecayRate * deltaTime;
 		heat = (heat - heatDecay) > 0.0 ? (heat - heatDecay) : 0.0;					// clamp heat to zero
 		if (currentSkin != heatedSkinBody) {
@@ -2191,12 +2200,20 @@ void idActor::UpdateHeatState() {
 		}
 		UpdateHeatShaderParms(heat / maxHeat);							// Update the shader intensity
 	}
-	if (heat <= 0 && currentSkin == heatedSkinBody) {
+	else if (heat <= 0 && currentSkin == heatedSkinBody) {
 		RemoveHeatFx();
 		UpdateHeatShaderParms(0.0f);
 		if (g_debugHeat.GetBool()) {
 			common->Printf("Swapping heated skin for previous skin\n");
 		}
+		if (!isAlive) {
+			BecomeInactive(TH_HEAT);										// Stop updating heat
+		}
+	}
+	else if (!isAlive) {
+		fl.takedamage = 0;
+		common->Printf("Heat dissolving %s\n", GetName());
+		BecomeInactive(TH_HEAT);
 	}
 }
 
@@ -2432,6 +2449,7 @@ idStr idActor::GetWeakpointSoundShader(idEntity* inflictor) {
 }
 
 void idActor::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, int areaHeat) {
+	BecomeActive(TH_HEAT);
 	int projectileHeat = inflictor->spawnArgs.GetInt("heat");
 	InflictHeat(projectileHeat + areaHeat);
 	if (g_debugHeat.GetBool()) {

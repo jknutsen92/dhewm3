@@ -975,6 +975,7 @@ idEntity* idAFEntity_Base::StartResurrection(const idDict rezEntSpawnArgs) {
 	if (!IsActive()) {
 		int flags = TH_PHYSICS;
 		BecomeActive(flags);
+		isAlive = true;								// For keeping the heat system from disabling this entity
 		if (g_debugResurrection.GetBool()) {
 			common->Printf("Activating %s (%x) for resurrection\n", GetName(), flags);
 		}

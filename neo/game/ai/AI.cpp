@@ -1049,6 +1049,8 @@ idAI::Think
 =====================
 */
 void idAI::Think( void ) {
+	idActor::Think();
+
 	if (rezEntity) {
 		// A ragdoll that has been activated for resurrection
 		idAFEntity_Base::Think();
@@ -3346,6 +3348,7 @@ void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const id
 
 	if (isOverheat) {				// smolspacer - apply AOE damage and FX
 		fl.takedamage = 0;			// Prevents recursive calling of Killed by multiple enemies heatblasting nearby each other
+		BecomeInactive(TH_HEAT);
 		SetSkin(0);
 		idEntityFx::StartFx(spawnArgs.GetString("heatblast_fx"), &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, false);
 		gameLocal.RadiusDamage(GetPhysics()->GetOrigin(), inflictor, attacker, this, nullptr, "damage_heatblast", 1.0f);
