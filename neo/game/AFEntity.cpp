@@ -642,6 +642,13 @@ void idAFEntity_Base::Think( void ) {
 	RunPhysics();
 	UpdateAnimation();
 
+	// smolspacer - heat decay
+	if (thinkFlags & TH_HEAT) {
+		if (isPlasmaHeatable && heat > 0) {
+			UpdateHeatState();
+		}
+	}
+
 	// TODO: We can update timers here for beginning resurrection
 	
 	// smolspacer - TODO: We can check a timestamp to determine if we should make the ragdoll immortal once a certain amount of time has passed
@@ -670,6 +677,72 @@ void idAFEntity_Base::CompleteResurrection() {
 
 	// Clean up the dissolved ragdoll after spawning the resurrected creature
 	delete this;
+}
+
+// smolspacer -- Updates the heat values with the decay amount and also manages the materials
+void idAFEntity_Base::UpdateHeatState() {
+	if (!isAlive && spawnArgs.GetBool("burnaway")) {
+		return;
+	}
+
+	float deltaTime = float(gameLocal.time - gameLocal.previousTime) / 1000.0;
+	idDeclSkin* currentSkin = (idDeclSkin*)GetSkin();
+	if (heat > 0 && heat < maxHeat) {
+		float heatDecay = heatDecayRate * deltaTime;
+		heat = (heat - heatDecay) > 0.0 ? (heat - heatDecay) : 0.0;					// clamp heat to zero
+		if (currentSkin != heatedSkinBody) {
+			ApplyHeatFx(currentSkin);
+			if (g_debugHeat.GetBool()) {
+				common->Printf("Swapping previous skin for heated skin\n");
+			}
+		}
+		UpdateHeatShaderParms(heat / maxHeat);							// Update the shader intensity
+	}
+	else if (heat <= 0 && currentSkin == heatedSkinBody) {
+		RemoveHeatFx();
+		UpdateHeatShaderParms(0.0f);
+		if (g_debugHeat.GetBool()) {
+			common->Printf("Swapping heated skin for previous skin\n");
+		}
+		if (!isAlive) {
+			BecomeInactive(TH_HEAT);										// Stop updating heat
+		}
+	}
+	else if (!isAlive) {
+		if (g_debugHeat.GetBool()) {
+			common->Printf("Heat dissolving ragdoll %s\n", GetName());
+		}
+		fl.takedamage = 0;
+		BecomeInactive(TH_HEAT);
+		StartHeatDissolve();
+	}
+}
+
+void idAFEntity_Base::ApplyHeatFx(idDeclSkin* currentSkin) {
+	// Apply skin
+	previousSkinBody = currentSkin;
+	SetSkin(heatedSkinBody);
+	// Apply glow fx
+	heatGlowFx = idEntityFx::StartFx("fx/heatglow.fx", &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, true);
+	// Loop sizzle sound
+	StartSoundShader(declManager->FindSound("heat_sizzle"), SIZZLE_SND_CHANNEL, 0, false, nullptr);
+}
+
+void idAFEntity_Base::RemoveHeatFx() {
+	SetSkin(previousSkinBody);
+	heatGlowFx->Stop();
+	StopSound(SIZZLE_SND_CHANNEL, false);
+}
+
+void idAFEntity_Base::UpdateHeatShaderParms(float heatRatio) {
+	SetShaderParm(SHADERPARM_BEAM_WIDTH, heatRatio);
+}
+
+void idAFEntity_Base::StartHeatDissolve() {
+	idThread* thread = new idThread();
+	function_t* burnFunc = gameLocal.program.FindFunction("overheat_burn");
+	thread->CallFunction(this, burnFunc, false );
+	thread->DelayedStart( 0 );
 }
 
 /*
@@ -1095,6 +1168,7 @@ void idAFEntity_Gibbable::Spawn( void ) {
 	InitSkeletonModel();
 
 	gibbed = false;
+	isPlasmaHeatable = spawnArgs.GetBool("plasma_heatable");
 }
 
 /*
@@ -1169,10 +1243,44 @@ void idAFEntity_Gibbable::Damage( idEntity *inflictor, idEntity *attacker, const
 	if ( !fl.takedamage ) {
 		return;
 	}
+
+	if (isPlasmaHeatable && inflictor->spawnArgs.GetBool("heat")) {
+		ApplyHeat(inflictor, attacker, 0, dir, location, damageDefName);
+	}
+
 	idAFEntity_Base::Damage( inflictor, attacker, dir, damageDefName, damageScale, location );
 	const idDict* damageDef = gameLocal.FindEntityDefDict( damageDefName ); 
 	if ( health < -20 && spawnArgs.GetBool( "gib" ) && damageDef->GetBool("gib")) {
 		Gib( dir, damageDefName );
+	}
+}
+
+void idAFEntity_Gibbable::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, int areaHeat) {
+	BecomeActive(TH_HEAT);
+	int projectileHeat = inflictor->spawnArgs.GetInt("heat");
+	InflictHeat(projectileHeat + areaHeat);
+	if (g_debugHeat.GetBool()) {
+		int mass = spawnArgs.GetInt("mass");
+		common->Printf("Target %s (%dKg) current heat: %f/%f - projectile heat: %d\n", (const char*)name, mass, heat, maxHeat, projectileHeat);
+	}
+	if (heat > maxHeat && isAlive) {
+		StopSound(SIZZLE_SND_CHANNEL, false);
+		if (heatGlowFx) {
+			heatGlowFx->Stop();
+		}
+		Killed( inflictor, attacker, damage, dir, location, true );
+		if (spawnArgs.GetBool("gib") || spawnArgs.GetBool("heatgib")) {
+			if (spawnArgs.GetBool("heatgib")) {
+				Hide();
+			}
+			Gib( inflictor->spawnArgs.GetVector("heatblast_gib_dir"), damageDefName );
+		}
+		if (g_debugHeat.GetBool()) {
+			common->Printf("%s killed by overheat\n", (const char*)name);
+		}
+	}
+	if (g_debugHeat.GetBool()) {
+		common->Printf("(11) SHADERPARM_BEAM_WIDTH (HEAT): %f ", renderEntity.shaderParms[SHADERPARM_BEAM_WIDTH]);
 	}
 }
 
@@ -1609,6 +1717,27 @@ void idAFEntity_WithAttachedHead::Gib( const idVec3 &dir, const char *damageDefN
 	idAFEntity_Gibbable::Gib( dir, damageDefName );
 	if ( head.GetEntity() ) {
 		head.GetEntity()->Hide();
+	}
+}
+
+void idAFEntity_WithAttachedHead::ApplyHeatFx(idDeclSkin *currentSkin) {
+	idAFEntity_Base::ApplyHeatFx(currentSkin);
+	if (head.GetEntity()) {
+		head.GetEntity()->SetSkin(heatedSkinHead);
+	}
+}
+
+void idAFEntity_WithAttachedHead::RemoveHeatFx() {
+	idAFEntity_Base::RemoveHeatFx();
+	if (head.GetEntity()) {
+		head.GetEntity()->SetSkin(previousSkinHead);
+	}
+}
+
+void idAFEntity_WithAttachedHead::UpdateHeatShaderParms(float heatRatio) {
+	idAFEntity_Base::UpdateHeatShaderParms(heatRatio);
+	if (head.GetEntity()) {
+		head.GetEntity()->SetShaderParm(SHADERPARM_BEAM_WIDTH, heatRatio);
 	}
 }
 
