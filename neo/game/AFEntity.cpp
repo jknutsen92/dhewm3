@@ -1270,7 +1270,7 @@ void idAFEntity_Gibbable::Damage( idEntity *inflictor, idEntity *attacker, const
 	}
 
 	if (isPlasmaHeatable && inflictor->spawnArgs.GetBool("heat")) {
-		ApplyHeat(inflictor, attacker, 0, dir, location, damageDefName);
+		ApplyHeat(inflictor, attacker, 0, dir, location, damageDefName, damageScale);
 	}
 
 	idAFEntity_Base::Damage( inflictor, attacker, dir, damageDefName, damageScale, location );
@@ -1280,14 +1280,23 @@ void idAFEntity_Gibbable::Damage( idEntity *inflictor, idEntity *attacker, const
 	}
 }
 
-void idAFEntity_Gibbable::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, int areaHeat) {
-	BecomeActive(TH_HEAT);
-	int projectileHeat = inflictor->spawnArgs.GetInt("heat");
-	InflictHeat(projectileHeat + areaHeat);
+void idAFEntity_Gibbable::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char* damageDefName, float damageScale, int areaHeat) {
+	if (!(thinkFlags & TH_HEAT)) {
+		BecomeActive(TH_HEAT);
+	}
+
+	const idDict *damageDef = gameLocal.FindEntityDefDict( damageDefName );
+	if ( !damageDef ) {
+		gameLocal.Error( "Unknown damageDef '%s'", damageDefName );
+	}
+
+	float projectileHeat = damageDef->GetFloat("heat");
+	InflictHeat((projectileHeat + areaHeat) * damageScale);
 	if (g_debugHeat.GetBool()) {
 		int mass = spawnArgs.GetInt("mass");
-		common->Printf("Target %s (%dKg) current heat: %f/%f - projectile heat: %d\n", (const char*)name, mass, heat, maxHeat, projectileHeat);
+		common->Printf("Target %s (%dKg) current heat: %f/%f - projectile heat: %f\n", (const char*)name, mass, heat, maxHeat, projectileHeat);
 	}
+
 	if (heat > maxHeat && isAlive) {
 		StopSound(SIZZLE_SND_CHANNEL, false);
 		if (heatGlowFx) {

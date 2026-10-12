@@ -253,7 +253,7 @@ public:
 	virtual void			SpawnGibs( const idVec3 &dir, const char *damageDefName );
 
 	// Heat system
-	virtual void 			ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, int areaHeat = 0);
+	virtual void 			ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, float damageScale, int areaHeat = 0);
 
 protected:
 	idRenderModel *			skeletonModel;

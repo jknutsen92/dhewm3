@@ -2226,12 +2226,6 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 		return;
 	}
 
-	Signal(SIG_DAMAGE);
-	// if (callbackFuncDamaged) {
-	// 	idThread* thread = GetIdleCallbackThread();
-	// 	thread->CallFunction(this, callbackFuncDamaged, true);
-	// }
-
 	if ( !inflictor ) {
 		inflictor = gameLocal.world;
 	}
@@ -2252,8 +2246,14 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 	float dmgZoneScale, heatRatio;
 	int damage = idActor::CalcDamagePoints(inflictor, attacker, damageDef, damageScale, location, dmgZoneScale, heatRatio);
 
+	Signal(SIG_DAMAGE);
+
 	// inform the attacker that they hit someone, and if it was a weakpoint hit
 	attacker->DamageFeedback( this, inflictor, damage, dmgZoneScale, heatRatio );
+
+	if (isPlasmaHeatable && inflictor->spawnArgs.GetBool("heat")) {
+		ApplyHeat(inflictor, attacker, damage, dir, location, damageDefName, damageScale);
+	}
 
 	if ( damage > 0 ) {
 		health -= damage;
@@ -2277,10 +2277,6 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 			// physics is turned off by calling af.Rest()
 			BecomeActive( TH_PHYSICS );
 		}
-	}
-
-	if (isPlasmaHeatable && inflictor->spawnArgs.GetBool("heat")) {
-		ApplyHeat(inflictor, attacker, damage, dir, location, damageDefName);
 	}
 }
 

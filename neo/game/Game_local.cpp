@@ -3808,7 +3808,7 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 			ent->Damage( inflictor, attacker, dir, damageDefName, damageScale, INVALID_JOINT );
 			
 			if (!ent->IsType( idPlayer::Type) && ent->isPlasmaHeatable) {
-				ent->ApplyHeat(inflictor, attacker, 0, dir, 0, damageDefName, floor(heat * distScale));
+				ent->ApplyHeat(inflictor, attacker, 0, dir, 0, damageDefName, distScale, heat);
 			}
 		}
 	}

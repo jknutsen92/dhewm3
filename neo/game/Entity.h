@@ -317,7 +317,7 @@ public:
 	virtual void			Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat = false );
 
 	virtual void			InflictHeat( float heatToInflict );
-	virtual void 			ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, int areaHeat = 0);
+	virtual void 			ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, float damageScale, int areaHeat = 0);
 
 
 	// scripting
