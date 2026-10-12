@@ -451,15 +451,6 @@ idActor::idActor( void ) {
 	allowPain			= false;
 	allowEyeFocus		= false;
 
-	heat 				= 0;
-	maxHeat				= 0;
-	heatDecayRate		= 0;
-	previousSkinBody 	= nullptr;
-	heatedSkinBody		= nullptr;
-	previousSkinHead	= nullptr;
-	heatedSkinHead		= nullptr;
-	heatGlowFx			= nullptr;
-
 	waitState			= "";
 
 	blink_anim			= 0;
@@ -468,6 +459,8 @@ idActor::idActor( void ) {
 	blink_max			= 0;
 
 	finalBoss			= false;
+
+	isAlive				= true;
 
 	attachments.SetGranularity( 1 );
 
@@ -642,22 +635,22 @@ void idActor::Spawn( void ) {
 
 	finalBoss = spawnArgs.GetBool( "finalBoss" );
 
-	// smolspacer
-	heatDecayRate = spawnArgs.GetFloat("heat_decay_rate");
-	isPlasmaHeatable = spawnArgs.GetBool("plasma_heatable");
-	previousSkinBody = (idDeclSkin*)GetSkin();
-	heatedSkinBody = (idDeclSkin*)declManager->FindSkin(spawnArgs.GetString("body_skin_heated"));
-	if (!heatedSkinBody) {
-		common->Warning("Invalid heated skin %s", spawnArgs.GetString("body_skin_heated"));
-	}
-	if (headEnt) {
-		previousSkinHead = (idDeclSkin*)GetSkin();
-		heatedSkinHead = (idDeclSkin*)declManager->FindSkin(spawnArgs.GetString("head_skin_heated"));
-		if (!heatedSkinHead) {
-			common->Warning("Invalid heated skin %s", spawnArgs.GetString("head_skin_heated"));
-		}
-	}
-	maxHeat = g_pMassHeatScale.GetFloat() * spawnArgs.GetFloat("mass");
+	// // smolspacer
+	// heatDecayRate = spawnArgs.GetFloat("heat_decay_rate");
+	// isPlasmaHeatable = spawnArgs.GetBool("plasma_heatable");
+	// previousSkinBody = (idDeclSkin*)GetSkin();
+	// heatedSkinBody = (idDeclSkin*)declManager->FindSkin(spawnArgs.GetString("body_skin_heated"));
+	// if (!heatedSkinBody) {
+	// 	common->Warning("Invalid heated skin %s", spawnArgs.GetString("body_skin_heated"));
+	// }
+	// if (headEnt) {
+	// 	previousSkinHead = (idDeclSkin*)GetSkin();
+	// 	heatedSkinHead = (idDeclSkin*)declManager->FindSkin(spawnArgs.GetString("head_skin_heated"));
+	// 	if (!heatedSkinHead) {
+	// 		common->Warning("Invalid heated skin %s", spawnArgs.GetString("head_skin_heated"));
+	// 	}
+	// }
+	// maxHeat = g_pMassHeatScale.GetFloat() * spawnArgs.GetFloat("mass");
 
 	// Sets up script object
 	FinishSetup();
@@ -2207,11 +2200,6 @@ void idActor::Gib( const idVec3 &dir, const char *damageDefName ) {
 	}
 	StopSound( SND_CHANNEL_VOICE, false );
 }
-
-void idActor::InflictHeat(float heatToInflict) {
-	heat += heatToInflict;
-}
-
 
 /*
 ============

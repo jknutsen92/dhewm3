@@ -543,6 +543,16 @@ idAFEntity_Base::idAFEntity_Base( void ) {
 	rezEntity = nullptr;
 	spawnOrigin.Zero();
 	spawnAxis.Identity();
+	
+	isAlive 			= false;
+	heat 				= 0;
+	maxHeat				= 0;
+	heatDecayRate		= 0;
+	previousSkinBody 	= nullptr;
+	heatedSkinBody		= nullptr;
+	previousSkinHead	= nullptr;
+	heatedSkinHead		= nullptr;
+	heatGlowFx			= nullptr;
 }
 
 /*
@@ -558,6 +568,11 @@ idAFEntity_Base::~idAFEntity_Base( void ) {
 			common->Printf("Ragdoll %s destroyed before resurrection could complete, freeing %s.\n", GetName(), rezEntity->GetName());
 		}
 		delete rezEntity;
+	}
+	if (heatGlowFx) {
+		heatGlowFx->Stop();
+		delete heatGlowFx;
+		StopSound(SIZZLE_SND_CHANNEL, false);
 	}
 }
 
@@ -600,6 +615,16 @@ void idAFEntity_Base::Spawn( void ) {
 	spawnOrigin = GetPhysics()->GetOrigin();
 	spawnAxis = GetPhysics()->GetAxis();
 	nextSoundTime = 0;
+
+	// smolspacer - heat init
+	heatDecayRate = spawnArgs.GetFloat("heat_decay_rate");
+	isPlasmaHeatable = spawnArgs.GetBool("plasma_heatable");
+	previousSkinBody = (idDeclSkin*)GetSkin();
+	heatedSkinBody = (idDeclSkin*)declManager->FindSkin(spawnArgs.GetString("body_skin_heated"));
+	if (!heatedSkinBody) {
+		common->Warning("Invalid heated skin %s", spawnArgs.GetString("body_skin_heated"));
+	}
+	maxHeat = g_pMassHeatScale.GetFloat() * spawnArgs.GetFloat("mass");
 }
 
 /*
@@ -1284,6 +1309,10 @@ void idAFEntity_Gibbable::ApplyHeat(idEntity* inflictor, idEntity* attacker, int
 	}
 }
 
+void idAFEntity_Gibbable::InflictHeat(float heatToInflict) {
+	heat += heatToInflict;
+}
+
 /*
 =====================
 idAFEntity_Gibbable::SpawnGibs
@@ -1560,6 +1589,13 @@ void idAFEntity_WithAttachedHead::Spawn( void ) {
 
 		if ( anim ) {
 			head.GetEntity()->GetAnimator()->SetFrame( ANIMCHANNEL_ALL, anim, 0, gameLocal.time, 0 );
+		}
+
+		// smolspacer - heat system
+		previousSkinHead = (idDeclSkin*)GetSkin();
+		heatedSkinHead = (idDeclSkin*)declManager->FindSkin(spawnArgs.GetString("head_skin_heated"));
+		if (!heatedSkinHead) {
+			common->Warning("Invalid heated skin %s", spawnArgs.GetString("head_skin_heated"));
 		}
 	}
 }

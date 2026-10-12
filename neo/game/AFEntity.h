@@ -253,13 +253,14 @@ public:
 	virtual void			SpawnGibs( const idVec3 &dir, const char *damageDefName );
 
 	// Heat system
-	void 			ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, int areaHeat = 0);
+	virtual void 			ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, int areaHeat = 0);
 
 protected:
 	idRenderModel *			skeletonModel;
 	int						skeletonModelDefHandle;
 	bool					gibbed;
 
+	virtual void 			InflictHeat( float heatToInflict );
 	virtual void			Gib( const idVec3 &dir, const char *damageDefName );
 	void					InitSkeletonModel( void );
 
