@@ -659,7 +659,14 @@ idInventory::AmmoIndexForAmmoClass
 ==============
 */
 int idInventory::MaxAmmoForAmmoClass( idPlayer *owner, const char *ammo_classname ) const {
-	return owner->spawnArgs.GetInt( va( "max_%s", ammo_classname ), "0" ) * g_maxAmmoScale.GetFloat();		// smolspacer
+	float ammoScale;
+	if (ammo_classname) {
+		ammoScale = idStr::Icmp(ammo_classname, "ammo_souls") ? g_maxAmmoScale.GetFloat() : 1.0f;				// Don't change soul counts
+	}
+	else {
+		ammoScale = 0.0f;
+	}
+	return owner->spawnArgs.GetInt( va( "max_%s", ammo_classname ), "0" ) * ammoScale;		// smolspacer
 }
 
 /*

@@ -208,6 +208,23 @@ protected:
 
 	void					Event_SetConstraintPosition( const char *name, const idVec3 &pos );
 	void					CompleteResurrection(void);
+
+	// Heat system
+	float 					heat;				// How much heat this entity currently has
+	float 					maxHeat;			// The point at which the entity overheats and detonates
+	float					heatDecayRate;		// How much heat per second the entity sheds
+	idDeclSkin*				previousSkinBody;	// Skin the character had before he was heated
+	idDeclSkin*				heatedSkinBody;		// Material that makes the heated entity glow
+	idDeclSkin*				previousSkinHead;	
+	idDeclSkin*				heatedSkinHead;		// Some characters have separate entities for the head
+	idEntityFx*				heatGlowFx;			// Glow from the entity radiating visible light
+
+	// Heat system
+	void					UpdateHeatState( void );
+	virtual void 			ApplyHeatFx( idDeclSkin* currentSkin );
+	virtual void			RemoveHeatFx( void );
+	virtual void			UpdateHeatShaderParms( float heatRatio );
+	void					StartHeatDissolve(void);
 };
 
 /*
@@ -235,11 +252,15 @@ public:
 	virtual	void			Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir, const char *damageDefName, const float damageScale, const int location );
 	virtual void			SpawnGibs( const idVec3 &dir, const char *damageDefName );
 
+	// Heat system
+	virtual void 			ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, float damageScale, int areaHeat = 0);
+
 protected:
 	idRenderModel *			skeletonModel;
 	int						skeletonModelDefHandle;
 	bool					gibbed;
 
+	virtual void 			InflictHeat( float heatToInflict );
 	virtual void			Gib( const idVec3 &dir, const char *damageDefName );
 	void					InitSkeletonModel( void );
 
@@ -309,6 +330,9 @@ public:
 
 protected:
 	virtual void			Gib( const idVec3 &dir, const char *damageDefName );
+	virtual void 			ApplyHeatFx( idDeclSkin* currentSkin );
+	virtual void			RemoveHeatFx( void );
+	virtual void			UpdateHeatShaderParms( float heatRatio );
 
 private:
 	idEntityPtr<idAFAttachment>	head;

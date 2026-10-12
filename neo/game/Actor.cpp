@@ -451,15 +451,6 @@ idActor::idActor( void ) {
 	allowPain			= false;
 	allowEyeFocus		= false;
 
-	heat 				= 0;
-	maxHeat				= 0;
-	heatDecayRate		= 0;
-	previousSkinBody 	= nullptr;
-	heatedSkinBody		= nullptr;
-	previousSkinHead	= nullptr;
-	heatedSkinHead		= nullptr;
-	heatGlowFx			= nullptr;
-
 	waitState			= "";
 
 	blink_anim			= 0;
@@ -468,6 +459,8 @@ idActor::idActor( void ) {
 	blink_max			= 0;
 
 	finalBoss			= false;
+
+	isAlive				= true;
 
 	attachments.SetGranularity( 1 );
 
@@ -642,22 +635,22 @@ void idActor::Spawn( void ) {
 
 	finalBoss = spawnArgs.GetBool( "finalBoss" );
 
-	// smolspacer
-	heatDecayRate = spawnArgs.GetFloat("heat_decay_rate");
-	isPlasmaHeatable = spawnArgs.GetBool("plasma_heatable");
-	previousSkinBody = (idDeclSkin*)GetSkin();
-	heatedSkinBody = (idDeclSkin*)declManager->FindSkin(spawnArgs.GetString("body_skin_heated"));
-	if (!heatedSkinBody) {
-		common->Warning("Invalid heated skin %s", spawnArgs.GetString("body_skin_heated"));
-	}
-	if (headEnt) {
-		previousSkinHead = (idDeclSkin*)GetSkin();
-		heatedSkinHead = (idDeclSkin*)declManager->FindSkin(spawnArgs.GetString("head_skin_heated"));
-		if (!heatedSkinHead) {
-			common->Warning("Invalid heated skin %s", spawnArgs.GetString("head_skin_heated"));
-		}
-	}
-	maxHeat = g_pMassHeatScale.GetFloat() * spawnArgs.GetFloat("mass");
+	// // smolspacer
+	// heatDecayRate = spawnArgs.GetFloat("heat_decay_rate");
+	// isPlasmaHeatable = spawnArgs.GetBool("plasma_heatable");
+	// previousSkinBody = (idDeclSkin*)GetSkin();
+	// heatedSkinBody = (idDeclSkin*)declManager->FindSkin(spawnArgs.GetString("body_skin_heated"));
+	// if (!heatedSkinBody) {
+	// 	common->Warning("Invalid heated skin %s", spawnArgs.GetString("body_skin_heated"));
+	// }
+	// if (headEnt) {
+	// 	previousSkinHead = (idDeclSkin*)GetSkin();
+	// 	heatedSkinHead = (idDeclSkin*)declManager->FindSkin(spawnArgs.GetString("head_skin_heated"));
+	// 	if (!heatedSkinHead) {
+	// 		common->Warning("Invalid heated skin %s", spawnArgs.GetString("head_skin_heated"));
+	// 	}
+	// }
+	// maxHeat = g_pMassHeatScale.GetFloat() * spawnArgs.GetFloat("mass");
 
 	// Sets up script object
 	FinishSetup();
@@ -1038,6 +1031,15 @@ void idActor::Restore( idRestoreGame *savefile ) {
 	savefile->ReadString( statename );
 	if ( statename.Length() > 0 ) {
 		idealState = GetScriptFunction( statename );
+	}
+}
+
+void idActor::Think() {
+	// smolspacer - heat decay
+	if (thinkFlags & TH_HEAT) {
+		if (isPlasmaHeatable && heat > 0) {
+			UpdateHeatState();
+		}
 	}
 }
 
@@ -2075,10 +2077,6 @@ idActor::UpdateAnimState
 =====================
 */
 void idActor::UpdateAnimState( void ) {
-	// smolspacer - heat decay
-	if (isPlasmaHeatable && heat > 0 && isAlive) {
-		UpdateHeatState();
-	}
 	headAnim.UpdateState();
 	torsoAnim.UpdateState();
 	legsAnim.UpdateState();
@@ -2176,59 +2174,6 @@ void idActor::SyncAnimChannels( int channel, int syncToChannel, int blendFrames 
 	}
 }
 
-// smolspacer -- Updates the heat values with the decay amount and also manages the materials
-void idActor::UpdateHeatState() {
-	float deltaTime = float(gameLocal.time - gameLocal.previousTime) / 1000.0;
-	idDeclSkin* currentSkin = (idDeclSkin*)GetSkin();
-	if (heat > 0) {
-		float heatDecay = heatDecayRate * deltaTime;
-		heat = (heat - heatDecay) > 0.0 ? (heat - heatDecay) : 0.0;					// clamp heat to zero
-		if (currentSkin != heatedSkinBody) {
-			ApplyHeatFx(currentSkin);
-			if (g_debugHeat.GetBool()) {
-				common->Printf("Swapping previous skin for heated skin\n");
-			}
-		}
-		UpdateHeatShaderParms(heat / maxHeat);							// Update the shader intensity
-	}
-	if (heat <= 0 && currentSkin == heatedSkinBody) {
-		RemoveHeatFx();
-		UpdateHeatShaderParms(0.0f);
-		if (g_debugHeat.GetBool()) {
-			common->Printf("Swapping heated skin for previous skin\n");
-		}
-	}
-}
-
-void idActor::ApplyHeatFx(idDeclSkin* currentSkin) {
-	// Apply skin
-	previousSkinBody = currentSkin;
-	SetSkin(heatedSkinBody);
-	if (head.GetEntity()) {
-		head.GetEntity()->SetSkin(heatedSkinHead);
-	}
-	// Apply glow fx
-	heatGlowFx = idEntityFx::StartFx("fx/heatglow.fx", &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, true);
-	// Loop sizzle sound
-	StartSoundShader(declManager->FindSound("heat_sizzle"), SIZZLE_SND_CHANNEL, 0, false, nullptr);
-}
-
-void idActor::RemoveHeatFx() {
-	SetSkin(previousSkinBody);
-	if (head.GetEntity()) {
-		head.GetEntity()->SetSkin(previousSkinHead);
-	}	
-	heatGlowFx->Stop();
-	StopSound(SIZZLE_SND_CHANNEL, false);
-}
-
-void idActor::UpdateHeatShaderParms(float heatRatio) {
-	SetShaderParm(SHADERPARM_BEAM_WIDTH, heatRatio);
-	if (head.GetEntity()) {
-		head.GetEntity()->SetShaderParm(SHADERPARM_BEAM_WIDTH, heatRatio);
-	}
-}
-
 /***********************************************************************
 
 	Damage
@@ -2256,11 +2201,6 @@ void idActor::Gib( const idVec3 &dir, const char *damageDefName ) {
 	StopSound( SND_CHANNEL_VOICE, false );
 }
 
-void idActor::InflictHeat(float heatToInflict) {
-	heat += heatToInflict;
-}
-
-
 /*
 ============
 idActor::Damage
@@ -2286,12 +2226,6 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 		return;
 	}
 
-	Signal(SIG_DAMAGE);
-	// if (callbackFuncDamaged) {
-	// 	idThread* thread = GetIdleCallbackThread();
-	// 	thread->CallFunction(this, callbackFuncDamaged, true);
-	// }
-
 	if ( !inflictor ) {
 		inflictor = gameLocal.world;
 	}
@@ -2312,8 +2246,14 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 	float dmgZoneScale, heatRatio;
 	int damage = idActor::CalcDamagePoints(inflictor, attacker, damageDef, damageScale, location, dmgZoneScale, heatRatio);
 
+	Signal(SIG_DAMAGE);
+
 	// inform the attacker that they hit someone, and if it was a weakpoint hit
 	attacker->DamageFeedback( this, inflictor, damage, dmgZoneScale, heatRatio );
+
+	if (isPlasmaHeatable && inflictor->spawnArgs.GetBool("heat")) {
+		ApplyHeat(inflictor, attacker, damage, dir, location, damageDefName, damageScale);
+	}
 
 	if ( damage > 0 ) {
 		health -= damage;
@@ -2337,10 +2277,6 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 			// physics is turned off by calling af.Rest()
 			BecomeActive( TH_PHYSICS );
 		}
-	}
-	
-	if (isPlasmaHeatable && inflictor->spawnArgs.GetBool("heat")) {
-		ApplyHeat(inflictor, attacker, damage, dir, location, damageDefName);
 	}
 }
 
@@ -2429,34 +2365,6 @@ idStr idActor::GetWeakpointSoundShader(idEntity* inflictor) {
 	}
 	common->Error("No sound shader for %s", projectileName);
 	return "";
-}
-
-void idActor::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, int areaHeat) {
-	int projectileHeat = inflictor->spawnArgs.GetInt("heat");
-	InflictHeat(projectileHeat + areaHeat);
-	if (g_debugHeat.GetBool()) {
-		int mass = spawnArgs.GetInt("mass");
-		common->Printf("Target %s (%dKg) current heat: %f/%f - projectile heat: %d\n", (const char*)name, mass, heat, maxHeat, projectileHeat);
-	}
-	if (heat > maxHeat) {
-		StopSound(SIZZLE_SND_CHANNEL, false);
-		if (heatGlowFx) {
-			heatGlowFx->Stop();
-		}
-		Killed( inflictor, attacker, damage, dir, location, true );
-		if (spawnArgs.GetBool("gib") || spawnArgs.GetBool("heatgib")) {
-			if (spawnArgs.GetBool("heatgib")) {
-				Hide();
-			}
-			Gib( dir, damageDefName );
-		}
-		if (g_debugHeat.GetBool()) {
-			common->Printf("%s killed by overheat\n", (const char*)name);
-		}
-	}
-	if (g_debugHeat.GetBool()) {
-		common->Printf("(11) SHADERPARM_BEAM_WIDTH (HEAT): %f ", renderEntity.shaderParms[SHADERPARM_BEAM_WIDTH]);
-	}
 }
 
 /*

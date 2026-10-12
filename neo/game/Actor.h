@@ -133,6 +133,7 @@ public:
 	void					Save( idSaveGame *savefile ) const;
 	void					Restore( idRestoreGame *savefile );
 
+	virtual void			Think(void);
 	virtual void			Hide( void );
 	virtual void			Show( void );
 	virtual int				GetDefaultSurfaceType( void ) const;
@@ -214,20 +215,9 @@ public:
 	void					SetWaitState( const char *_waitstate );
 	bool					AnimDone( int channel, int blendFrames ) const;
 	virtual void			SpawnGibs( const idVec3 &dir, const char *damageDefName );
-	void 					ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, int areaHeat = 0);
 
 protected:
 	friend class			idAnimState;
-
-	// smolspacer
-	float 					heat;				// How much heat this entity currently has
-	float 					maxHeat;			// The point at which the entity overheats and detonates
-	float					heatDecayRate;		// How much heat per second the entity sheds
-	idDeclSkin*				previousSkinBody;	// Skin the character had before he was heated
-	idDeclSkin*				heatedSkinBody;		// Material that makes the heated entity glow
-	idDeclSkin*				previousSkinHead;	
-	idDeclSkin*				heatedSkinHead;		// Some characters have separate entities for the head
-	idEntityFx*				heatGlowFx;			// Glow from the entity radiating visible light
 
 	float					fovDot;				// cos( fovDegrees )
 	idVec3					eyeOffset;			// offset of eye relative to physics origin
@@ -284,8 +274,6 @@ protected:
 
 	virtual void			Gib( const idVec3 &dir, const char *damageDefName );
 
-	virtual void 			InflictHeat( float heatToInflict ); 
-
 							// removes attachments with "remove" set for when character dies
 	void					RemoveAttachments( void );
 
@@ -300,10 +288,6 @@ private:
 	void					FinishSetup( void );
 	void					SetupHead( void );
 	void					PlayFootStepSound( void );
-	void					UpdateHeatState( void );
-	void 					ApplyHeatFx( idDeclSkin* currentSkin );
-	void					RemoveHeatFx( void );
-	void					UpdateHeatShaderParms( float heatRatio );
 
 	void					Event_EnableEyeFocus( void );
 	void					Event_DisableEyeFocus( void );
