@@ -168,6 +168,7 @@ public:
 							~idEntity();
 
 	void					Spawn( void );
+	void					AutoName();				// Automatically name entity based on classname/entityNumber
 
 	void					Save( idSaveGame *savefile ) const;
 	void					Restore( idRestoreGame *savefile );
@@ -316,8 +317,8 @@ public:
 							// notifies this entity that is has been killed
 	virtual void			Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat = false );
 
-	virtual void			InflictHeat( float heatToInflict );
-	virtual void 			ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, float damageScale, int areaHeat = 0);
+	virtual void			InflictHeat(const char* damageDefName, float damageScale);
+	virtual void 			ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, float damageScale);
 
 
 	// scripting

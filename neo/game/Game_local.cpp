@@ -3696,7 +3696,6 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 	idBounds	bounds;
 	idVec3		v, damagePoint, dir;
 	int			i, e, baseDamage, radius, push;
-	float 		heat;
 
 	const idDict *damageDef = FindEntityDefDict( damageDefName, false );
 	if ( !damageDef ) {
@@ -3709,17 +3708,14 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 	damageDef->GetInt( "push", va( "%d", baseDamage * 100 ), push );
 	damageDef->GetFloat( "attackerDamageScale", "0.5", attackerDamageScale );
 	damageDef->GetFloat( "attackerPushScale", "0", attackerPushScale );
-	heat = damageDef->GetFloat("heat");
 	
-	// TODO: Redesign this dogshit
 	if (damageDef->GetBool("massScale")) {						// Effectiveness of overheat bomb scales with the size of the entity
 		if (g_debugDamage.GetBool()) {
-			common->Printf("MassScale enabled - pre-scaled values: push=%d,damage=%d,heat=%f,radius=%d\n", push, baseDamage, heat, radius);
+			common->Printf("MassScale enabled - pre-scaled values: push=%d,damage=%d,radius=%d\n", push, baseDamage, radius);
 		}
 		float mass = ignoreDamage->spawnArgs.GetFloat("mass");
 		push 		= (int)ceil(mass * push * g_pMassPushScale.GetFloat());
 		dmgPower	= dmgPower * mass * g_pAreaDmgScale.GetFloat();
-		heat 		= mass * heat * g_pAreaHeatScale.GetFloat();
 		radius 		= mass * radius * g_pMassRadiusScale.GetFloat() + 100.0f;
 	}
 	else {
@@ -3727,7 +3723,7 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 	}
 
 	if (g_debugDamage.GetBool() && attacker) {
-		common->Printf("Radial damage from %s: push=%d,damage=%d,heat=%f,radius=%d\n", attacker->GetName(), push, baseDamage, heat, radius);
+		common->Printf("Radial damage from %s: push=%d,damage=%d,radius=%d\n", attacker->GetName(), push, baseDamage, radius);
 		if (!damageDef->GetBool("exclude_debug_draw")) {
 			idVec4 debugColor = idVec4(1, 0, 0, 0.75);
 			idSphere debugSphere = idSphere(origin, radius);
@@ -3799,17 +3795,12 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 			dir[ 2 ] += 24;
 
 			// get the damage scale
-			float distScale = ( 1.0f - dist / radius );
-			damageScale = dmgPower * distScale;
+			damageScale = dmgPower * ( 1.0f - dist / radius );
 			if ( ent == attacker || ( ent->IsType( idAFAttachment::Type ) && static_cast<idAFAttachment*>(ent)->GetBody() == attacker ) ) {
 				damageScale *= attackerDamageScale;
 			}
 
 			ent->Damage( inflictor, attacker, dir, damageDefName, damageScale, INVALID_JOINT );
-			
-			if (!ent->IsType( idPlayer::Type) && ent->isPlasmaHeatable) {
-				ent->ApplyHeat(inflictor, attacker, 0, dir, 0, damageDefName, distScale, heat);
-			}
 		}
 	}
 

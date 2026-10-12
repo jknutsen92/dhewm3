@@ -134,7 +134,6 @@ idCVar g_maxAmmoScale(				"g_maxAmmoScale",			"1.0",		CVAR_GAME | CVAR_FLOAT | C
 idCVar g_itemValueScale(			"g_itemValueScale",		"1.0",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"multiplies the base value of health/armor/ammo pickups");
 idCVar g_pMassHeatScale(			"g_pMassHeatScale",		"1.0",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"scales a character's maximum heat by their mass amount for plasmagun");
 idCVar g_pMassPushScale(			"g_pMassPushScale",		"1.0",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"scales the heatblast pushback by mass");
-idCVar g_pAreaHeatScale(			"g_pAreaHeatScale",		"0.2",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"scales the heatblast inflicted heat by mass");
 idCVar g_pAreaDmgScale(				"g_pAreaDmgScale",			"0.2",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"scales the heatblast inflicted damage by mass");
 idCVar g_pMassRadiusScale(			"g_pMassRadiusScale",		"0.4",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"scales the heatblast radius by mass");
 idCVar g_armorProtectionMP(			"g_armorProtectionMP",		"0.6",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"armor takes this percentage of damage in mp" );

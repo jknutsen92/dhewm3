@@ -569,11 +569,7 @@ idAFEntity_Base::~idAFEntity_Base( void ) {
 		}
 		delete rezEntity;
 	}
-	if (heatGlowFx) {
-		heatGlowFx->Stop();
-		delete heatGlowFx;
-		StopSound(SIZZLE_SND_CHANNEL, false);
-	}
+	StopSound(SIZZLE_SND_CHANNEL, false);
 }
 
 /*
@@ -1092,6 +1088,7 @@ idEntity* idAFEntity_Base::StartResurrection(const idDict rezEntSpawnArgs) {
 	}
 	// Doesn't spawn, but we need to reserve a spot on the entity list in order for the scripting to work
 	gameLocal.AddToEntityList(rezEntity);
+	rezEntity->AutoName();
 	
 	// TODO: Find and apply dissolve skin
 	// TODO: Update shaderparm 7
@@ -1280,21 +1277,15 @@ void idAFEntity_Gibbable::Damage( idEntity *inflictor, idEntity *attacker, const
 	}
 }
 
-void idAFEntity_Gibbable::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char* damageDefName, float damageScale, int areaHeat) {
+void idAFEntity_Gibbable::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char* damageDefName, float damageScale) {
 	if (!(thinkFlags & TH_HEAT)) {
 		BecomeActive(TH_HEAT);
 	}
 
-	const idDict *damageDef = gameLocal.FindEntityDefDict( damageDefName );
-	if ( !damageDef ) {
-		gameLocal.Error( "Unknown damageDef '%s'", damageDefName );
-	}
-
-	float projectileHeat = damageDef->GetFloat("heat");
-	InflictHeat((projectileHeat + areaHeat) * damageScale);
+	InflictHeat(damageDefName, damageScale);
 	if (g_debugHeat.GetBool()) {
 		int mass = spawnArgs.GetInt("mass");
-		common->Printf("Target %s (%dKg) current heat: %f/%f - projectile heat: %f\n", (const char*)name, mass, heat, maxHeat, projectileHeat);
+		common->Printf("Target %s (%dKg) current heat: %f/%f\n", (const char*)name, mass, heat, maxHeat);
 	}
 
 	if (heat > maxHeat && isAlive) {
@@ -1318,8 +1309,18 @@ void idAFEntity_Gibbable::ApplyHeat(idEntity* inflictor, idEntity* attacker, int
 	}
 }
 
-void idAFEntity_Gibbable::InflictHeat(float heatToInflict) {
-	heat += heatToInflict;
+void idAFEntity_Gibbable::InflictHeat(const char* damageDefName, float damageScale) {
+	const idDict *damageDef = gameLocal.FindEntityDefDict( damageDefName );
+	if ( !damageDef ) {
+		gameLocal.Error( "Unknown damageDef '%s'", damageDefName );
+	}
+
+	float baseHeat = damageDef->GetFloat("heat");
+	float scaledHeat = baseHeat * damageScale;
+	if (g_debugHeat.GetBool()) {
+		common->Printf("%s applying %f heat: base=%f,damageScale=%f\n", damageDefName, scaledHeat, baseHeat, damageScale);
+	}
+	heat += scaledHeat;
 }
 
 /*

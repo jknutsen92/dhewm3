@@ -74,7 +74,6 @@ extern idCVar   g_maxAmmoScale;
 extern idCVar   g_itemValueScale;
 extern idCVar   g_pMassHeatScale;
 extern idCVar   g_pMassPushScale;
-extern idCVar   g_pAreaHeatScale;
 extern idCVar   g_pAreaDmgScale;
 extern idCVar   g_pMassRadiusScale;
 extern idCVar	g_useDynamicProtection;

@@ -532,8 +532,9 @@ void idEntity::Spawn( void ) {
 #endif
 
 	// every object will have a unique name
-	temp = spawnArgs.GetString( "name", va( "%s_%s_%d", GetClassname(), spawnArgs.GetString( "classname" ), entityNumber ) );
-	SetName( temp );
+	if (!GetName()[0]) {
+		AutoName();
+	}
 
 	// if we have targets, wait until all entities are spawned to get them
 	if ( spawnArgs.MatchPrefix( "target" ) || spawnArgs.MatchPrefix( "guiTarget" ) ) {
@@ -574,6 +575,11 @@ void idEntity::Spawn( void ) {
 
 		ConstructScriptObject();
 	}
+}
+
+void idEntity::AutoName() {
+	const char* temp = spawnArgs.GetString( "name", va( "%s_%s_%d", GetClassname(), spawnArgs.GetString( "classname" ), entityNumber ) );
+	SetName( temp );
 }
 
 /*
@@ -3090,10 +3096,10 @@ void idEntity::Killed( idEntity *inflictor, idEntity *attacker, int damage, cons
 }
 
 // For subclasses to implement - smolspacer
-void idEntity::InflictHeat( float heatToInflict ) {
+void idEntity::InflictHeat(const char* damageDefName, float damageScale) {
 }
 
-void idEntity::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, float damageScale, int areaHeat) {
+void idEntity::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, float damageScale) {
 }
 
 
