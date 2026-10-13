@@ -105,6 +105,10 @@ const idEventDef EV_StopSound( "stopSound", "dd" );
 const idEventDef EV_FadeSound( "fadeSound", "dff" );
 const idEventDef EV_SetGuiParm( "setGuiParm", "ss" );
 const idEventDef EV_SetGuiFloat( "setGuiFloat", "sf" );
+const idEventDef EV_SetGui ( "setGui", "ds" );
+const idEventDef EV_PrecacheGui ( "precacheGui", "s" );
+const idEventDef EV_GetGuiParm ( "getGuiParm", "ds", 's' );
+const idEventDef EV_GetGuiParmFloat ( "getGuiParmFloat", "ds", 'f' );
 const idEventDef EV_GetNextKey( "getNextKey", "ss", 's' );
 const idEventDef EV_SetKey( "setKey", "ss" );
 const idEventDef EV_GetKey( "getKey", "s", 's' );
@@ -169,6 +173,10 @@ ABSTRACT_DECLARATION( idClass, idEntity )
 	EVENT( EV_Touches,				idEntity::Event_Touches )
 	EVENT( EV_SetGuiParm,			idEntity::Event_SetGuiParm )
 	EVENT( EV_SetGuiFloat,			idEntity::Event_SetGuiFloat )
+	EVENT( EV_SetGui,				idEntity::Event_SetGui )
+	EVENT( EV_PrecacheGui,			idEntity::Event_PrecacheGui )
+	EVENT( EV_GetGuiParm,			idEntity::Event_GetGuiParm )
+	EVENT( EV_GetGuiParmFloat,		idEntity::Event_GetGuiParmFloat )
 	EVENT( EV_GetNextKey,			idEntity::Event_GetNextKey )
 	EVENT( EV_SetKey,				idEntity::Event_SetKey )
 	EVENT( EV_GetKey,				idEntity::Event_GetKey )
@@ -4307,6 +4315,59 @@ void idEntity::Event_SetGuiFloat( const char *key, float f ) {
 			renderEntity.gui[ i ]->StateChanged( gameLocal.time );
 		}
 	}
+}
+
+/*
+================
+idEntity::Event_SetGui
+================
+* BSM Nerve: Allows guis to be changed at runtime. Guis that are
+* loaded after the level loads should be precahced using PrecacheGui.
+*/
+void idEntity::Event_SetGui( int guiNum, const char *guiName) {
+	idUserInterface** gui = NULL;
+
+	if ( guiNum >= 1 && guiNum <= MAX_RENDERENTITY_GUI ) {
+		gui = &renderEntity.gui[ guiNum-1 ];
+	}
+
+	if( gui ) {
+		*gui = uiManager->FindGui( guiName, true, false );
+		UpdateGuiParms( *gui, &spawnArgs );
+		UpdateChangeableSpawnArgs( NULL );
+		gameRenderWorld->UpdateEntityDef(modelDefHandle, &renderEntity);
+
+	} else {
+		gameLocal.Error( "Entity '%s' doesn't have a GUI %d", name.c_str(), guiNum );
+	}
+
+}
+
+/*
+================
+idEntity::Event_PrecacheGui
+================
+* BSM Nerve: Forces the engine to initialize a gui even if it is not specified as used in a level.
+* This is useful for preventing load hitches when switching guis during the game using "setGui"
+*/
+void idEntity::Event_PrecacheGui( const char *guiName ) {
+	uiManager->FindGui( guiName, true, true );
+}
+
+void idEntity::Event_GetGuiParm(int guiNum, const char *key) {
+	if(renderEntity.gui[guiNum-1]) {
+		idThread::ReturnString(renderEntity.gui[guiNum-1]->GetStateString(key));
+		return;
+	}
+	idThread::ReturnString("");
+}
+
+void idEntity::Event_GetGuiParmFloat(int guiNum, const char *key) {
+	if(renderEntity.gui[guiNum-1]) {
+		idThread::ReturnFloat(renderEntity.gui[guiNum-1]->GetStateFloat(key));
+		return;
+	}
+	idThread::ReturnFloat(0.0f);
 }
 
 /*

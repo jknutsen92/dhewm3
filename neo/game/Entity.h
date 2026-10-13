@@ -459,6 +459,10 @@ private:
 	void					Event_Touches( idEntity *ent );
 	void					Event_SetGuiParm( const char *key, const char *val );
 	void					Event_SetGuiFloat( const char *key, float f );
+	void					Event_SetGui( int guiNum, const char *guiName);
+	void					Event_PrecacheGui( const char *guiName );
+	void					Event_GetGuiParm(int guiNum, const char *key);
+	void					Event_GetGuiParmFloat(int guiNum, const char *key);
 	void					Event_GetNextKey( const char *prefix, const char *lastMatch );
 	void					Event_SetKey( const char *key, const char *value );
 	void					Event_GetKey( const char *key );
@@ -477,6 +481,7 @@ private:
 	void					Event_CallFunction( const char *name );
 	void					Event_SetNeverDormant( int enable );
 	void					Event_IsSpawned(void);
+
 };
 
 /*
