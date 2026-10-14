@@ -81,6 +81,9 @@ extern idCVar	g_healthTakeTime;
 extern idCVar	g_healthTakeAmt;
 extern idCVar	g_healthTakeLimit;
 
+extern idCVar   g_ragdollRezProbability;
+extern idCVar   g_ragdollRezBoundsSize;
+
 extern idCVar   g_reticleHighlightDim;
 extern idCVar   g_reticleHighlightWeakp;
 extern idCVar   g_reticleHighlightHeat;

@@ -3424,6 +3424,8 @@ void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const id
 	if ( ( attacker && attacker->IsType( idPlayer::Type ) ) && ( inflictor && !inflictor->IsType( idSoulCubeMissile::Type ) ) ) {
 		static_cast< idPlayer* >( attacker )->AddAIKill();
 	}
+
+	CheckAutoResurrection();
 }
 
 /***********************************************************************

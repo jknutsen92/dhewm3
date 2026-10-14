@@ -921,7 +921,6 @@ void idActor::Restore( idRestoreGame *savefile ) {
 	const idDeclSkin* hsb;
 	const idDeclSkin* psh;
 	const idDeclSkin* hsh;
-	idThread* cbThread;
 
 	savefile->ReadInt( team );
 	savefile->ReadInt( rank );
