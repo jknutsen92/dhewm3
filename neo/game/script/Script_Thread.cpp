@@ -57,6 +57,7 @@ const idEventDef EV_Thread_KillThread( "killthread", "s" );
 const idEventDef EV_Thread_SetThreadName( "threadname", "s" );
 const idEventDef EV_Thread_GetEntity( "getEntity", "s", 'e' );
 const idEventDef EV_Thread_ResurrectRagdoll("resurrectRagdoll", "e", 'e');
+const idEventDef EV_Thread_GetResurrectionClass("getResurrectionClass", NULL, 's');
 const idEventDef EV_Thread_Spawn( "spawn", "s", 'e' );
 const idEventDef EV_Thread_CopySpawnArgs( "copySpawnArgs", "e" );
 const idEventDef EV_Thread_SetSpawnArg( "setSpawnArg", "ss" );
@@ -140,6 +141,7 @@ CLASS_DECLARATION( idClass, idThread )
 	EVENT( EV_Thread_SetThreadName,			idThread::Event_SetThreadName )
 	EVENT( EV_Thread_GetEntity,				idThread::Event_GetEntity )
 	EVENT( EV_Thread_ResurrectRagdoll,		idThread::Event_ResurrectRagdoll )
+	EVENT( EV_Thread_GetResurrectionClass,	idThread::Event_GetResurrectionClass )
 	EVENT( EV_Thread_Spawn,					idThread::Event_Spawn )
 	EVENT( EV_Thread_CopySpawnArgs,			idThread::Event_CopySpawnArgs )
 	EVENT( EV_Thread_SetSpawnArg,			idThread::Event_SetSpawnArg )
@@ -1143,6 +1145,19 @@ void idThread::Event_Spawn( const char *classname ) {
 void idThread::Event_ResurrectRagdoll(idEntity* ragdoll) {
 	idThread::ReturnEntity(ragdoll->StartResurrection(spawnArgs));
 	spawnArgs.Clear();
+}
+
+void idThread::Event_GetResurrectionClass() {
+	// Sanity check the list
+	if (!gameLocal.rezEntityClassnames || gameLocal.rezEntityClassnames->Num() == 0) {
+		common->Error("No candidate resurrection entities found");
+	}
+
+	// Get random index in range [0,Num). RandomInt returns % max so it already gives Num()-1
+	const int randomIndex = gameLocal.random.RandomInt(gameLocal.rezEntityClassnames->Num());
+
+	// Return classname
+	idThread::ReturnString((*gameLocal.rezEntityClassnames)[randomIndex]);
 }
 
 /*

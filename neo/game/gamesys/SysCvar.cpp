@@ -146,6 +146,7 @@ idCVar g_ragdollRezProbability(		"g_ragdollRezProbability",	"0.1",		CVAR_GAME | 
 idCVar g_ragdollRezBoundsSize(		"g_ragdollRezBoundsSize",	"20.0",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE,	"How close the player has to be to trigger a respawning ragdoll");
 idCVar g_ragdollRezMinDelay(		"g_ragdollRezMinDelay",	"5",			CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"the minimum delay before a demon will spawn from a corpse");
 idCVar g_ragdollRezMaxDelay(		"g_ragdollRezMaxDelay",	"30",			CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"the maximum delay before a demon will spawn from a corpse");
+idCVar g_rezMapScoreOverride(		"g_rezMapScoreOverride",	"-1",			CVAR_GAME | CVAR_INTEGER, 				"Overrides the resurector entity score for the map");
 
 
 idCVar g_reticleHighlightDim(		"g_reticleHighlightDim",	"1",			CVAR_GAME | CVAR_BOOL | CVAR_ARCHIVE, 	"whether the reticle dims when hitting a reduced damage body part");

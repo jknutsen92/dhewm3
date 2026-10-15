@@ -1111,6 +1111,16 @@ idEntity* idAFEntity_Base::StartResurrection(const idDict rezEntSpawnArgs) {
 
 void idAFEntity_Base::CheckAutoResurrection() {
 	if (!spawnArgs.GetBool("auto_rez")) {
+		if (g_debugResurrection.GetBool()) {
+			common->Printf("%s has auto resurrection disabled (auto_rez=0). Aborting resurrection check\n", GetName());
+		}
+		return;
+	}
+
+	if (gameLocal.rezEntityClassnames->Num() == 0) {
+		if (g_debugResurrection.GetBool()) {
+			common->Warning("This map doesn't have resurrection spawn candidate entities. Aborting resurrection check\n");
+		}
 		return;
 	}
 

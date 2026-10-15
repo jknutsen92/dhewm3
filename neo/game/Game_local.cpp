@@ -252,6 +252,8 @@ void idGameLocal::Clear( void ) {
 	lastGUIEnt = NULL;
 	lastGUI = 0;
 
+	rezEntityClassnames = new idList<idStr>();
+
 	memset( clientEntityStates, 0, sizeof( clientEntityStates ) );
 	memset( clientPVS, 0, sizeof( clientPVS ) );
 	memset( clientSnapshots, 0, sizeof( clientSnapshots ) );
@@ -1186,6 +1188,10 @@ void idGameLocal::MapPopulate( void ) {
 	if ( isMultiplayer ) {
 		cvarSystem->SetCVarBool( "r_skipSpecular", false );
 	}
+
+	// Initialize the lists of entities that can spawn from resurrection
+	InitRezEntityList();
+
 	// parse the key/value pairs and spawn entities
 	SpawnMapEntities();
 
@@ -1198,7 +1204,6 @@ void idGameLocal::MapPopulate( void ) {
 	// spawnCount - 1 is the number of entities spawned into the map, their indexes started at MAX_CLIENTS (included)
 	// mapSpawnCount is used as the max index of map entities, it's the first index of non-map entities
 	mapSpawnCount = MAX_CLIENTS + spawnCount - 1;
-
 	// execute pending events before the very first game frame
 	// this makes sure the map script main() function is called
 	// before the physics are run so entities can bind correctly
@@ -1335,6 +1340,8 @@ bool idGameLocal::InitFromSaveGame( const char *mapName, idRenderWorld *renderWo
 			}
 		}
 	}
+
+	InitRezEntityList();
 
 	savegame.ReadDict( &si );
 	SetServerInfo( si );
@@ -1520,6 +1527,8 @@ void idGameLocal::MapClear( bool clearClients ) {
 			entityHash.Add( entityHash.GenerateKey( entities[ i ]->name.c_str(), true ), i );
 		}
 	}
+
+	rezEntityClassnames->Clear();
 
 	delete frameCommandThread;
 	frameCommandThread = NULL;
@@ -4535,3 +4544,50 @@ idGameLocal::GetMapLoadingGUI
 ===============
 */
 void idGameLocal::GetMapLoadingGUI( char gui[ MAX_STRING_CHARS ] ) { }
+
+void idGameLocal::InitRezEntityList() {
+	// Get the map score, the map worldspawn arg overrides the resurrect.def value if applicable
+	int currentMapScore;
+	idStr mapName = GetMapName();
+	if (g_rezMapScoreOverride.GetInteger() >= 0) {
+		currentMapScore = g_rezMapScoreOverride.GetInteger();
+		if (g_debugResurrection.GetBool()) {
+			common->Printf("Retrieved resurrector score of %d for %s by cvar override\n", currentMapScore, mapName.c_str());
+		}
+	}
+	else {
+		const idDict* mapScores = FindEntityDefDict("map_resurrector_score");
+		currentMapScore = mapScores->GetInt(mapName, "0");
+		if (g_debugResurrection.GetBool()) {
+			common->Printf("Retrieved resurrector score of %d for %s from resurrect.def\n", currentMapScore, mapName.c_str());
+		}
+	}
+
+	// Get the difficulty highs and lows
+	const int skill = g_skill.GetInteger();
+	const idDict* skillRanges = FindEntityDefDict("skill_resurrector_range");
+	const int lower = skillRanges->GetInt(va("lower_%d", skill));
+	const int upper = skillRanges->GetInt(va("upper_%d", skill));
+
+	// Calculate the score range
+	const int minScore = Max(Min(currentMapScore + lower, 60), 0);	// Lower should be negative in resurrect.def
+	const int maxScore = Max(Min(currentMapScore + upper, 60), 0);
+
+	if (g_debugResurrection.GetBool()) {
+		common->Printf("Map %s (%d) will spawn resurrection demons between scores of %d and %d (g_skill=%d)\n", mapName.c_str(), currentMapScore, minScore, maxScore, skill);
+	}
+
+	// Iterate through all the kvs in the demon_resurrector_score def and add the ones that fall inside the range
+	const idDict* monsterScores = FindEntityDefDict("demon_resurrector_score");
+	for (int i = 0; i < monsterScores->GetNumKeyVals(); i++) {
+		const idKeyValue* kv = monsterScores->GetKeyVal(i);
+		idStr className = kv->GetKey();
+		int monsterScore = atoi(kv->GetValue());
+		if (monsterScore > 0 && monsterScore >= minScore && monsterScore <= maxScore) {
+			rezEntityClassnames->Append(className);
+			if (g_debugResurrection.GetBool()) {
+				common->Printf("%s is a resurrection candidate on %s with g_skill=%d\n", className.c_str(), mapName.c_str(), skill);
+			}
+		}
+	}
+}
