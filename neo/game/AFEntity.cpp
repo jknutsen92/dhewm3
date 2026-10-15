@@ -1138,17 +1138,17 @@ void idAFEntity_Base::Event_IsPlayerInBounds(const idVec3 &mins, const idVec3 &m
 	bounds.ExpandSelf(g_ragdollRezBoundsSize.GetFloat());
 
 	if (g_debugResurrection.GetBool()) {
-		gameRenderWorld->DebugBounds( idVec4( 0, 1.0, 0.0, 0.0f ), bounds, GetPhysics()->GetOrigin(), SEC2MS( 5 ) );
+		gameRenderWorld->DebugBounds( idVec4( 0, 1.0, 0.0, 0.0f ), bounds, vec3_origin, SEC2MS( 5 ) );
 	}
 
 	idEntity* entityList[MAX_GENTITIES];
-	int numEntities = gameLocal.clip.EntitiesTouchingBounds(bounds, -1, entityList, MAX_GENTITIES);
+	int numEntities = gameLocal.clip.EntitiesTouchingBounds(bounds, CONTENTS_BODY, entityList, MAX_GENTITIES);
 	for (int i = 0; i < numEntities; i++) {
 		if (entityList[i]->IsType(idPlayer::Type)) {
-			idThread::ReturnInt(true);
+			return idThread::ReturnInt(true);
 		}
 	}
-	idThread::ReturnInt(false);
+	return idThread::ReturnInt(false);
 }
 
 /*

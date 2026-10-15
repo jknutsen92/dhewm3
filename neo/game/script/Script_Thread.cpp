@@ -116,6 +116,7 @@ const idEventDef EV_Thread_DebugCircle( "debugCircle", "vvvfdf" );
 const idEventDef EV_Thread_DebugBounds( "debugBounds", "vvvf" );
 const idEventDef EV_Thread_DrawText( "drawText", "svfvdf" );
 const idEventDef EV_Thread_InfluenceActive( "influenceActive", NULL, 'd' );
+const idEventDef EV_Thread_ParseFloat("parseFloat", "s", 'f');
 
 CLASS_DECLARATION( idClass, idThread )
 	EVENT( EV_Thread_Execute,				idThread::Event_Execute )
@@ -200,6 +201,7 @@ CLASS_DECLARATION( idClass, idThread )
 	EVENT( EV_Thread_DebugBounds,			idThread::Event_DebugBounds )
 	EVENT( EV_Thread_DrawText,				idThread::Event_DrawText )
 	EVENT( EV_Thread_InfluenceActive,		idThread::Event_InfluenceActive )
+	EVENT( EV_Thread_ParseFloat,			idThread::Event_ParseFloat )
 END_CLASS
 
 idThread			*idThread::currentThread = NULL;
@@ -1869,6 +1871,10 @@ void idThread::Event_InfluenceActive( void ) {
 	} else {
 		idThread::ReturnInt( false );
 	}
+}
+
+void idThread::Event_ParseFloat(const char *string) {
+	idThread::ReturnFloat(atof(string));
 }
 
 int idGameEditExt::ThreadGetNum(const idThread* thread) const
