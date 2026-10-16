@@ -74,13 +74,18 @@ extern idCVar   g_maxAmmoScale;
 extern idCVar   g_itemValueScale;
 extern idCVar   g_pMassHeatScale;
 extern idCVar   g_pMassPushScale;
-extern idCVar   g_pAreaHeatScale;
 extern idCVar   g_pAreaDmgScale;
 extern idCVar   g_pMassRadiusScale;
 extern idCVar	g_useDynamicProtection;
 extern idCVar	g_healthTakeTime;
 extern idCVar	g_healthTakeAmt;
 extern idCVar	g_healthTakeLimit;
+
+extern idCVar   g_ragdollRezProbability;
+extern idCVar   g_ragdollRezBoundsSize;
+extern idCVar   g_ragdollRezMinDelay;
+extern idCVar   g_ragdollRezMaxDelay;
+extern idCVar   g_rezMapScoreOverride;
 
 extern idCVar   g_reticleHighlightDim;
 extern idCVar   g_reticleHighlightWeakp;

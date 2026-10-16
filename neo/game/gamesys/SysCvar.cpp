@@ -134,7 +134,6 @@ idCVar g_maxAmmoScale(				"g_maxAmmoScale",			"1.0",		CVAR_GAME | CVAR_FLOAT | C
 idCVar g_itemValueScale(			"g_itemValueScale",		"1.0",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"multiplies the base value of health/armor/ammo pickups");
 idCVar g_pMassHeatScale(			"g_pMassHeatScale",		"1.0",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"scales a character's maximum heat by their mass amount for plasmagun");
 idCVar g_pMassPushScale(			"g_pMassPushScale",		"1.0",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"scales the heatblast pushback by mass");
-idCVar g_pAreaHeatScale(			"g_pAreaHeatScale",		"0.2",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"scales the heatblast inflicted heat by mass");
 idCVar g_pAreaDmgScale(				"g_pAreaDmgScale",			"0.2",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"scales the heatblast inflicted damage by mass");
 idCVar g_pMassRadiusScale(			"g_pMassRadiusScale",		"0.4",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"scales the heatblast radius by mass");
 idCVar g_armorProtectionMP(			"g_armorProtectionMP",		"0.6",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"armor takes this percentage of damage in mp" );
@@ -142,11 +141,18 @@ idCVar g_useDynamicProtection(		"g_useDynamicProtection",	"1",			CVAR_GAME | CVA
 idCVar g_healthTakeTime(			"g_healthTakeTime",		"5",			CVAR_GAME | CVAR_INTEGER | CVAR_ARCHIVE, 	"how often to take health in nightmare mode" );
 idCVar g_healthTakeAmt(				"g_healthTakeAmt",			"5",			CVAR_GAME | CVAR_INTEGER | CVAR_ARCHIVE, 	"how much health to take in nightmare mode" );
 idCVar g_healthTakeLimit(			"g_healthTakeLimit",		"25",			CVAR_GAME | CVAR_INTEGER | CVAR_ARCHIVE, 	"how low can health get taken in nightmare mode" );
+
+idCVar g_ragdollRezProbability(		"g_ragdollRezProbability",	"0.1",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"determines likelihood of ragdolls being resurrected as new demons");
+idCVar g_ragdollRezBoundsSize(		"g_ragdollRezBoundsSize",	"20.0",		CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE,	"How close the player has to be to trigger a respawning ragdoll");
+idCVar g_ragdollRezMinDelay(		"g_ragdollRezMinDelay",	"5",			CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"the minimum delay before a demon will spawn from a corpse");
+idCVar g_ragdollRezMaxDelay(		"g_ragdollRezMaxDelay",	"30",			CVAR_GAME | CVAR_FLOAT | CVAR_ARCHIVE, 	"the maximum delay before a demon will spawn from a corpse");
+idCVar g_rezMapScoreOverride(		"g_rezMapScoreOverride",	"-1",			CVAR_GAME | CVAR_INTEGER, 				"Overrides the resurector entity score for the map");
+
+
 idCVar g_reticleHighlightDim(		"g_reticleHighlightDim",	"1",			CVAR_GAME | CVAR_BOOL | CVAR_ARCHIVE, 	"whether the reticle dims when hitting a reduced damage body part");
 idCVar g_reticleHighlightWeakp(		"g_reticleHighlightWeakp",	"1",			CVAR_GAME | CVAR_BOOL | CVAR_ARCHIVE, 	"whether the reticle has a unique flash when hitting a weakpoint");
 idCVar g_reticleHighlightHeat(		"g_reticleHighlightHeat",	"1",			CVAR_GAME | CVAR_BOOL | CVAR_ARCHIVE, 	"whether the reticle has a unique flash when damaging a heated enemy");
 idCVar g_extendedSoundFeedback(		"g_extendedSoundFeedback",	"1",			CVAR_GAME | CVAR_BOOL | CVAR_ARCHIVE, 	"play sounds on weakpoint hit or against heated enemies");
-
 
 idCVar g_showPVS(					"g_showPVS",				"0",			CVAR_GAME | CVAR_INTEGER, "", 0, 2 );
 idCVar g_showTargets(				"g_showTargets",			"0",			CVAR_GAME | CVAR_BOOL, "draws entities and their targets.  hidden entities are drawn grey." );

@@ -147,6 +147,8 @@ idAFEntity_Base
 ===============================================================================
 */
 
+extern const idEventDef		EV_IsPlayerInBounds;
+
 class idAFEntity_Base : public idAnimatedEntity {
 public:
 	CLASS_PROTOTYPE( idAFEntity_Base );
@@ -195,6 +197,8 @@ public:
 	// Starts the resurrection process
 	virtual idEntity*		StartResurrection(const idDict rezEntSpawnArgs);
 
+	void					Event_IsPlayerInBounds(const idVec3& mins, const idVec3& maxs);
+
 protected:
 	idAF					af;				// articulated figure
 	idClipModel *			combatModel;	// render model for hit detection
@@ -208,6 +212,7 @@ protected:
 
 	void					Event_SetConstraintPosition( const char *name, const idVec3 &pos );
 	void					CompleteResurrection(void);
+	void 					CheckAutoResurrection(void);
 
 	// Heat system
 	float 					heat;				// How much heat this entity currently has
@@ -253,14 +258,14 @@ public:
 	virtual void			SpawnGibs( const idVec3 &dir, const char *damageDefName );
 
 	// Heat system
-	virtual void 			ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, float damageScale, int areaHeat = 0);
+	virtual void 			ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, float damageScale);
 
 protected:
 	idRenderModel *			skeletonModel;
 	int						skeletonModelDefHandle;
 	bool					gibbed;
 
-	virtual void 			InflictHeat( float heatToInflict );
+	virtual void			InflictHeat(const char* damageDefName, float damageScale);
 	virtual void			Gib( const idVec3 &dir, const char *damageDefName );
 	void					InitSkeletonModel( void );
 

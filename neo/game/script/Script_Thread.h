@@ -55,6 +55,7 @@ extern const idEventDef EV_Thread_KillThread;
 extern const idEventDef EV_Thread_SetThreadName;
 extern const idEventDef EV_Thread_GetEntity;
 extern const idEventDef EV_Thread_ResurrectRagdoll;
+extern const idEventDef EV_Thread_GetResurrectionClass;
 extern const idEventDef EV_Thread_Spawn;
 extern const idEventDef EV_Thread_SetSpawnArg;
 extern const idEventDef EV_Thread_SpawnString;
@@ -81,6 +82,7 @@ extern const idEventDef EV_Thread_FadeIn;
 extern const idEventDef EV_Thread_FadeOut;
 extern const idEventDef EV_Thread_FadeTo;
 extern const idEventDef EV_Thread_Restart;
+extern const idEventDef EV_ParseFloat;
 
 class idThread : public idClass {
 private:
@@ -134,6 +136,7 @@ private:
 	void						Event_KillThread( const char *name );
 	void						Event_GetEntity( const char *name );
 	void						Event_ResurrectRagdoll(idEntity* ragdoll);
+	void 						Event_GetResurrectionClass(void);
 	void						Event_Spawn( const char *classname );
 	void						Event_CopySpawnArgs( idEntity *ent );
 	void						Event_SetSpawnArg( const char *key, const char *value );
@@ -195,6 +198,7 @@ private:
 	void						Event_DebugBounds( const idVec3 &color, const idVec3 &mins, const idVec3 &maxs, const float lifetime );
 	void						Event_DrawText( const char *text, const idVec3 &origin, float scale, const idVec3 &color, const int align, const float lifetime );
 	void						Event_InfluenceActive( void );
+	void 						Event_ParseFloat(const char* string);
 
 public:
 								CLASS_PROTOTYPE( idThread );

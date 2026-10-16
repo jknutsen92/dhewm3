@@ -57,6 +57,7 @@ const idEventDef EV_Thread_KillThread( "killthread", "s" );
 const idEventDef EV_Thread_SetThreadName( "threadname", "s" );
 const idEventDef EV_Thread_GetEntity( "getEntity", "s", 'e' );
 const idEventDef EV_Thread_ResurrectRagdoll("resurrectRagdoll", "e", 'e');
+const idEventDef EV_Thread_GetResurrectionClass("getResurrectionClass", NULL, 's');
 const idEventDef EV_Thread_Spawn( "spawn", "s", 'e' );
 const idEventDef EV_Thread_CopySpawnArgs( "copySpawnArgs", "e" );
 const idEventDef EV_Thread_SetSpawnArg( "setSpawnArg", "ss" );
@@ -116,6 +117,7 @@ const idEventDef EV_Thread_DebugCircle( "debugCircle", "vvvfdf" );
 const idEventDef EV_Thread_DebugBounds( "debugBounds", "vvvf" );
 const idEventDef EV_Thread_DrawText( "drawText", "svfvdf" );
 const idEventDef EV_Thread_InfluenceActive( "influenceActive", NULL, 'd' );
+const idEventDef EV_Thread_ParseFloat("parseFloat", "s", 'f');
 
 CLASS_DECLARATION( idClass, idThread )
 	EVENT( EV_Thread_Execute,				idThread::Event_Execute )
@@ -139,6 +141,7 @@ CLASS_DECLARATION( idClass, idThread )
 	EVENT( EV_Thread_SetThreadName,			idThread::Event_SetThreadName )
 	EVENT( EV_Thread_GetEntity,				idThread::Event_GetEntity )
 	EVENT( EV_Thread_ResurrectRagdoll,		idThread::Event_ResurrectRagdoll )
+	EVENT( EV_Thread_GetResurrectionClass,	idThread::Event_GetResurrectionClass )
 	EVENT( EV_Thread_Spawn,					idThread::Event_Spawn )
 	EVENT( EV_Thread_CopySpawnArgs,			idThread::Event_CopySpawnArgs )
 	EVENT( EV_Thread_SetSpawnArg,			idThread::Event_SetSpawnArg )
@@ -200,6 +203,7 @@ CLASS_DECLARATION( idClass, idThread )
 	EVENT( EV_Thread_DebugBounds,			idThread::Event_DebugBounds )
 	EVENT( EV_Thread_DrawText,				idThread::Event_DrawText )
 	EVENT( EV_Thread_InfluenceActive,		idThread::Event_InfluenceActive )
+	EVENT( EV_Thread_ParseFloat,			idThread::Event_ParseFloat )
 END_CLASS
 
 idThread			*idThread::currentThread = NULL;
@@ -1143,6 +1147,19 @@ void idThread::Event_ResurrectRagdoll(idEntity* ragdoll) {
 	spawnArgs.Clear();
 }
 
+void idThread::Event_GetResurrectionClass() {
+	// Sanity check the list
+	if (!gameLocal.rezEntityClassnames || gameLocal.rezEntityClassnames->Num() == 0) {
+		common->Error("No candidate resurrection entities found");
+	}
+
+	// Get random index in range [0,Num). RandomInt returns % max so it already gives Num()-1
+	const int randomIndex = gameLocal.random.RandomInt(gameLocal.rezEntityClassnames->Num());
+
+	// Return classname
+	idThread::ReturnString((*gameLocal.rezEntityClassnames)[randomIndex]);
+}
+
 /*
 ================
 idThread::Event_CopySpawnArgs
@@ -1869,6 +1886,10 @@ void idThread::Event_InfluenceActive( void ) {
 	} else {
 		idThread::ReturnInt( false );
 	}
+}
+
+void idThread::Event_ParseFloat(const char *string) {
+	idThread::ReturnFloat(atof(string));
 }
 
 int idGameEditExt::ThreadGetNum(const idThread* thread) const

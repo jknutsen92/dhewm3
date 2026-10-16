@@ -168,6 +168,7 @@ public:
 							~idEntity();
 
 	void					Spawn( void );
+	void					AutoName();				// Automatically name entity based on classname/entityNumber
 
 	void					Save( idSaveGame *savefile ) const;
 	void					Restore( idRestoreGame *savefile );
@@ -316,8 +317,8 @@ public:
 							// notifies this entity that is has been killed
 	virtual void			Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat = false );
 
-	virtual void			InflictHeat( float heatToInflict );
-	virtual void 			ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, float damageScale, int areaHeat = 0);
+	virtual void			InflictHeat(const char* damageDefName, float damageScale);
+	virtual void 			ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, float damageScale);
 
 
 	// scripting
@@ -458,6 +459,10 @@ private:
 	void					Event_Touches( idEntity *ent );
 	void					Event_SetGuiParm( const char *key, const char *val );
 	void					Event_SetGuiFloat( const char *key, float f );
+	void					Event_SetGui( int guiNum, const char *guiName);
+	void					Event_PrecacheGui( const char *guiName );
+	void					Event_GetGuiParm(int guiNum, const char *key);
+	void					Event_GetGuiParmFloat(int guiNum, const char *key);
 	void					Event_GetNextKey( const char *prefix, const char *lastMatch );
 	void					Event_SetKey( const char *key, const char *value );
 	void					Event_GetKey( const char *key );
@@ -476,6 +481,7 @@ private:
 	void					Event_CallFunction( const char *name );
 	void					Event_SetNeverDormant( int enable );
 	void					Event_IsSpawned(void);
+
 };
 
 /*

@@ -252,6 +252,8 @@ void idGameLocal::Clear( void ) {
 	lastGUIEnt = NULL;
 	lastGUI = 0;
 
+	rezEntityClassnames = new idList<idStr>();
+
 	memset( clientEntityStates, 0, sizeof( clientEntityStates ) );
 	memset( clientPVS, 0, sizeof( clientPVS ) );
 	memset( clientSnapshots, 0, sizeof( clientSnapshots ) );
@@ -1186,6 +1188,10 @@ void idGameLocal::MapPopulate( void ) {
 	if ( isMultiplayer ) {
 		cvarSystem->SetCVarBool( "r_skipSpecular", false );
 	}
+
+	// Initialize the lists of entities that can spawn from resurrection
+	InitRezEntityList();
+
 	// parse the key/value pairs and spawn entities
 	SpawnMapEntities();
 
@@ -1198,7 +1204,6 @@ void idGameLocal::MapPopulate( void ) {
 	// spawnCount - 1 is the number of entities spawned into the map, their indexes started at MAX_CLIENTS (included)
 	// mapSpawnCount is used as the max index of map entities, it's the first index of non-map entities
 	mapSpawnCount = MAX_CLIENTS + spawnCount - 1;
-
 	// execute pending events before the very first game frame
 	// this makes sure the map script main() function is called
 	// before the physics are run so entities can bind correctly
@@ -1335,6 +1340,8 @@ bool idGameLocal::InitFromSaveGame( const char *mapName, idRenderWorld *renderWo
 			}
 		}
 	}
+
+	InitRezEntityList();
 
 	savegame.ReadDict( &si );
 	SetServerInfo( si );
@@ -1520,6 +1527,8 @@ void idGameLocal::MapClear( bool clearClients ) {
 			entityHash.Add( entityHash.GenerateKey( entities[ i ]->name.c_str(), true ), i );
 		}
 	}
+
+	rezEntityClassnames->Clear();
 
 	delete frameCommandThread;
 	frameCommandThread = NULL;
@@ -3696,7 +3705,6 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 	idBounds	bounds;
 	idVec3		v, damagePoint, dir;
 	int			i, e, baseDamage, radius, push;
-	float 		heat;
 
 	const idDict *damageDef = FindEntityDefDict( damageDefName, false );
 	if ( !damageDef ) {
@@ -3709,17 +3717,14 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 	damageDef->GetInt( "push", va( "%d", baseDamage * 100 ), push );
 	damageDef->GetFloat( "attackerDamageScale", "0.5", attackerDamageScale );
 	damageDef->GetFloat( "attackerPushScale", "0", attackerPushScale );
-	heat = damageDef->GetFloat("heat");
 	
-	// TODO: Redesign this dogshit
 	if (damageDef->GetBool("massScale")) {						// Effectiveness of overheat bomb scales with the size of the entity
 		if (g_debugDamage.GetBool()) {
-			common->Printf("MassScale enabled - pre-scaled values: push=%d,damage=%d,heat=%f,radius=%d\n", push, baseDamage, heat, radius);
+			common->Printf("MassScale enabled - pre-scaled values: push=%d,damage=%d,radius=%d\n", push, baseDamage, radius);
 		}
 		float mass = ignoreDamage->spawnArgs.GetFloat("mass");
 		push 		= (int)ceil(mass * push * g_pMassPushScale.GetFloat());
 		dmgPower	= dmgPower * mass * g_pAreaDmgScale.GetFloat();
-		heat 		= mass * heat * g_pAreaHeatScale.GetFloat();
 		radius 		= mass * radius * g_pMassRadiusScale.GetFloat() + 100.0f;
 	}
 	else {
@@ -3727,7 +3732,7 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 	}
 
 	if (g_debugDamage.GetBool() && attacker) {
-		common->Printf("Radial damage from %s: push=%d,damage=%d,heat=%f,radius=%d\n", attacker->GetName(), push, baseDamage, heat, radius);
+		common->Printf("Radial damage from %s: push=%d,damage=%d,radius=%d\n", attacker->GetName(), push, baseDamage, radius);
 		if (!damageDef->GetBool("exclude_debug_draw")) {
 			idVec4 debugColor = idVec4(1, 0, 0, 0.75);
 			idSphere debugSphere = idSphere(origin, radius);
@@ -3799,17 +3804,12 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 			dir[ 2 ] += 24;
 
 			// get the damage scale
-			float distScale = ( 1.0f - dist / radius );
-			damageScale = dmgPower * distScale;
+			damageScale = dmgPower * ( 1.0f - dist / radius );
 			if ( ent == attacker || ( ent->IsType( idAFAttachment::Type ) && static_cast<idAFAttachment*>(ent)->GetBody() == attacker ) ) {
 				damageScale *= attackerDamageScale;
 			}
 
 			ent->Damage( inflictor, attacker, dir, damageDefName, damageScale, INVALID_JOINT );
-			
-			if (!ent->IsType( idPlayer::Type) && ent->isPlasmaHeatable) {
-				ent->ApplyHeat(inflictor, attacker, 0, dir, 0, damageDefName, distScale, heat);
-			}
 		}
 	}
 
@@ -4544,3 +4544,53 @@ idGameLocal::GetMapLoadingGUI
 ===============
 */
 void idGameLocal::GetMapLoadingGUI( char gui[ MAX_STRING_CHARS ] ) { }
+
+void idGameLocal::InitRezEntityList() {
+	// Get the map score, the map worldspawn arg overrides the resurrect.def value if applicable
+	int currentMapScore;
+	idStr mapName = GetMapName();
+	if (g_rezMapScoreOverride.GetInteger() >= 0) {
+		currentMapScore = g_rezMapScoreOverride.GetInteger();
+		if (g_debugResurrection.GetBool()) {
+			common->Printf("Retrieved resurrector score of %d for %s by cvar override\n", currentMapScore, mapName.c_str());
+		}
+	}
+	else {
+		const idDict* mapScores = FindEntityDefDict("map_resurrector_score");
+		currentMapScore = mapScores->GetInt(mapName, "0");
+		if (g_debugResurrection.GetBool()) {
+			common->Printf("Retrieved resurrector score of %d for %s from resurrect.def\n", currentMapScore, mapName.c_str());
+		}
+	}
+
+	// Get the difficulty highs and lows
+	const int skill = g_skill.GetInteger();
+	const idDict* skillRanges = FindEntityDefDict("skill_resurrector_range");
+	const int lower = skillRanges->GetInt(va("lower_%d", skill));
+	const int upper = skillRanges->GetInt(va("upper_%d", skill));
+
+	// Calculate the score range
+	const int minScore = Max(Min(currentMapScore + lower, 60), 0);	// Lower should be negative in resurrect.def
+	const int maxScore = Max(Min(currentMapScore + upper, 60), 0);
+
+	if (g_debugResurrection.GetBool()) {
+		common->Printf("Map %s (%d) will spawn resurrection demons between scores of %d and %d (g_skill=%d)\n", mapName.c_str(), currentMapScore, minScore, maxScore, skill);
+	}
+
+	// Iterate through all the kvs in the demon_resurrector_score def and add the ones that fall inside the range
+	const idDict* monsterScores = FindEntityDefDict("demon_resurrector_score");
+	for (int i = 0; i < monsterScores->GetNumKeyVals(); i++) {
+		const idKeyValue* kv = monsterScores->GetKeyVal(i);
+		idStr className = kv->GetKey();
+		int monsterScore = atoi(kv->GetValue());
+		if (monsterScore > 0 && monsterScore >= minScore && monsterScore <= maxScore) {
+			// Cache the entity so the framerate doesn't hitch when spawning in
+			FindEntityDef(className, false);
+			// Add to candidate list
+			rezEntityClassnames->Append(className);
+			if (g_debugResurrection.GetBool()) {
+				common->Printf("%s is a resurrection candidate on %s with g_skill=%d\n", className.c_str(), mapName.c_str(), skill);
+			}
+		}
+	}
+}

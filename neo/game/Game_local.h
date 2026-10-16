@@ -302,6 +302,8 @@ public:
 	idEntityPtr<idEntity>	lastGUIEnt;				// last entity with a GUI, used by Cmd_NextGUI_f
 	int						lastGUI;				// last GUI on the lastGUIEnt
 
+	idList<idStr>*			rezEntityClassnames;	// The list of possible entity classnames for this map and difficulty
+
 	// ---------------------- Public idGame Interface -------------------
 
 							idGameLocal();
@@ -566,6 +568,8 @@ private:
 	void					UpdateLagometer( int aheadOfServer, int dupeUsercmds );
 
 	virtual void			GetMapLoadingGUI( char gui[ MAX_STRING_CHARS ] );
+
+	void 					InitRezEntityList(void);
 };
 
 //============================================================================

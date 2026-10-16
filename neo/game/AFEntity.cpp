@@ -522,9 +522,11 @@ void idAFAttachment::UnlinkCombat( void ) {
 */
 
 const idEventDef EV_SetConstraintPosition( "SetConstraintPosition", "sv" );
+const idEventDef EV_IsPlayerInBounds("isPlayerInBounds", "vv", 'd');
 
 CLASS_DECLARATION( idAnimatedEntity, idAFEntity_Base )
 	EVENT( EV_SetConstraintPosition,	idAFEntity_Base::Event_SetConstraintPosition )
+	EVENT( EV_IsPlayerInBounds,			idAFEntity_Base::Event_IsPlayerInBounds )
 END_CLASS
 
 static const float BOUNCE_SOUND_MIN_VELOCITY	= 80.0f;
@@ -569,11 +571,7 @@ idAFEntity_Base::~idAFEntity_Base( void ) {
 		}
 		delete rezEntity;
 	}
-	if (heatGlowFx) {
-		heatGlowFx->Stop();
-		delete heatGlowFx;
-		StopSound(SIZZLE_SND_CHANNEL, false);
-	}
+	StopSound(SIZZLE_SND_CHANNEL, false);
 }
 
 /*
@@ -625,6 +623,10 @@ void idAFEntity_Base::Spawn( void ) {
 		common->Warning("Invalid heated skin %s", spawnArgs.GetString("body_skin_heated"));
 	}
 	maxHeat = g_pMassHeatScale.GetFloat() * spawnArgs.GetFloat("mass");
+
+	if (!isAlive) {
+		CheckAutoResurrection();
+	}
 }
 
 /*
@@ -1092,6 +1094,7 @@ idEntity* idAFEntity_Base::StartResurrection(const idDict rezEntSpawnArgs) {
 	}
 	// Doesn't spawn, but we need to reserve a spot on the entity list in order for the scripting to work
 	gameLocal.AddToEntityList(rezEntity);
+	rezEntity->AutoName();
 	
 	// TODO: Find and apply dissolve skin
 	// TODO: Update shaderparm 7
@@ -1104,6 +1107,58 @@ idEntity* idAFEntity_Base::StartResurrection(const idDict rezEntSpawnArgs) {
 	}
 
 	return rezEntity;
+}
+
+void idAFEntity_Base::CheckAutoResurrection() {
+	if (!spawnArgs.GetBool("auto_rez")) {
+		if (g_debugResurrection.GetBool()) {
+			common->Printf("%s has auto resurrection disabled (auto_rez=0). Aborting resurrection check\n", GetName());
+		}
+		return;
+	}
+
+	if (gameLocal.rezEntityClassnames->Num() == 0) {
+		if (g_debugResurrection.GetBool()) {
+			common->Warning("This map doesn't have resurrection spawn candidate entities. Aborting resurrection check\n");
+		}
+		return;
+	}
+
+	// Do a dice roll to determine if we will respawn
+	float rezRoll = gameLocal.random.RandomFloat();
+	if (rezRoll >= g_ragdollRezProbability.GetFloat()) {
+		if (g_debugResurrection.GetBool()) {
+			common->Printf("%s doesn't resurrect. Dice roll (%f/%f)\n", GetName(), rezRoll, g_ragdollRezProbability.GetFloat());
+		}
+		return;
+	}
+	if (g_debugResurrection.GetBool()) {
+		common->Printf("%s is resurrecting. Dice roll (%f/%f)\n", GetName(), rezRoll, g_ragdollRezProbability.GetFloat());
+	}
+
+	// We will respawn. Create the thread to check for player
+	idThread* thread = new idThread();
+	function_t* rezFunc = gameLocal.program.FindFunction("auto_resurrect");
+	thread->CallFunction(this, rezFunc, false );
+	thread->DelayedStart( 0 );
+}
+
+void idAFEntity_Base::Event_IsPlayerInBounds(const idVec3 &mins, const idVec3 &maxs) {
+	idBounds bounds = idBounds(mins, maxs);
+	bounds.ExpandSelf(g_ragdollRezBoundsSize.GetFloat());
+
+	if (g_debugResurrection.GetBool()) {
+		gameRenderWorld->DebugBounds( idVec4( 0, 1.0, 0.0, 0.0f ), bounds, vec3_origin, SEC2MS( 5 ) );
+	}
+
+	idEntity* entityList[MAX_GENTITIES];
+	int numEntities = gameLocal.clip.EntitiesTouchingBounds(bounds, CONTENTS_BODY, entityList, MAX_GENTITIES);
+	for (int i = 0; i < numEntities; i++) {
+		if (entityList[i]->IsType(idPlayer::Type)) {
+			return idThread::ReturnInt(true);
+		}
+	}
+	return idThread::ReturnInt(false);
 }
 
 /*
@@ -1280,21 +1335,15 @@ void idAFEntity_Gibbable::Damage( idEntity *inflictor, idEntity *attacker, const
 	}
 }
 
-void idAFEntity_Gibbable::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char* damageDefName, float damageScale, int areaHeat) {
+void idAFEntity_Gibbable::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char* damageDefName, float damageScale) {
 	if (!(thinkFlags & TH_HEAT)) {
 		BecomeActive(TH_HEAT);
 	}
 
-	const idDict *damageDef = gameLocal.FindEntityDefDict( damageDefName );
-	if ( !damageDef ) {
-		gameLocal.Error( "Unknown damageDef '%s'", damageDefName );
-	}
-
-	float projectileHeat = damageDef->GetFloat("heat");
-	InflictHeat((projectileHeat + areaHeat) * damageScale);
+	InflictHeat(damageDefName, damageScale);
 	if (g_debugHeat.GetBool()) {
 		int mass = spawnArgs.GetInt("mass");
-		common->Printf("Target %s (%dKg) current heat: %f/%f - projectile heat: %f\n", (const char*)name, mass, heat, maxHeat, projectileHeat);
+		common->Printf("Target %s (%dKg) current heat: %f/%f\n", (const char*)name, mass, heat, maxHeat);
 	}
 
 	if (heat > maxHeat && isAlive) {
@@ -1318,8 +1367,18 @@ void idAFEntity_Gibbable::ApplyHeat(idEntity* inflictor, idEntity* attacker, int
 	}
 }
 
-void idAFEntity_Gibbable::InflictHeat(float heatToInflict) {
-	heat += heatToInflict;
+void idAFEntity_Gibbable::InflictHeat(const char* damageDefName, float damageScale) {
+	const idDict *damageDef = gameLocal.FindEntityDefDict( damageDefName );
+	if ( !damageDef ) {
+		gameLocal.Error( "Unknown damageDef '%s'", damageDefName );
+	}
+
+	float baseHeat = damageDef->GetFloat("heat");
+	float scaledHeat = baseHeat * damageScale;
+	if (g_debugHeat.GetBool()) {
+		common->Printf("%s applying %f heat: base=%f,damageScale=%f\n", damageDefName, scaledHeat, baseHeat, damageScale);
+	}
+	heat += scaledHeat;
 }
 
 /*
