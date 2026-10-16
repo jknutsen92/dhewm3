@@ -4584,6 +4584,9 @@ void idGameLocal::InitRezEntityList() {
 		idStr className = kv->GetKey();
 		int monsterScore = atoi(kv->GetValue());
 		if (monsterScore > 0 && monsterScore >= minScore && monsterScore <= maxScore) {
+			// Cache the entity so the framerate doesn't hitch when spawning in
+			FindEntityDef(className, false);
+			// Add to candidate list
 			rezEntityClassnames->Append(className);
 			if (g_debugResurrection.GetBool()) {
 				common->Printf("%s is a resurrection candidate on %s with g_skill=%d\n", className.c_str(), mapName.c_str(), skill);
