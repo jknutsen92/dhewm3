@@ -237,6 +237,7 @@ protected:
 	void					Event_SetConstraintPosition( const char *name, const idVec3 &pos );
 	void					CompleteResurrection(void);
 	void 					CheckAutoResurrection(void);
+	virtual void			ApplyResurrectionFx(void);
 
 	// Heat system
 	float 					heat;				// How much heat this entity currently has
@@ -367,6 +368,7 @@ protected:
 	virtual void 			ApplyHeatFx( idDeclSkin* currentSkin );
 	virtual void			RemoveHeatFx( void );
 	virtual void			UpdateHeatShaderParms( float heatRatio );
+	virtual void			ApplyResurrectionFx(void);
 
 private:
 	idEntityPtr<idAFAttachment>	head;

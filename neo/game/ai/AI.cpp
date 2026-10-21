@@ -3346,6 +3346,11 @@ void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const id
 		return;
 	}
 
+
+	if (heatedSkinBody && spawnArgs.FindKey("skin_dropDeath_heated")) {
+		heatedSkinBody = (idDeclSkin*)declManager->FindSkin(spawnArgs.GetString("skin_dropDeath_heated"));
+	}
+
 	if (isOverheat) {				// smolspacer - apply AOE damage and FX
 		fl.takedamage = 0;			// Prevents recursive calling of Killed by multiple enemies heatblasting nearby each other
 		BecomeInactive(TH_HEAT);

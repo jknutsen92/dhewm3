@@ -272,6 +272,8 @@ protected:
 
 	idList<idAttachInfo>	attachments;
 
+	virtual void			PreBurn(void);
+	virtual void			Burn(void);	
 	virtual void			Gib( const idVec3 &dir, const char *damageDefName );
 
 							// removes attachments with "remove" set for when character dies

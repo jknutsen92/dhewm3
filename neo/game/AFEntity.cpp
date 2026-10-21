@@ -1107,12 +1107,7 @@ idEntity* idAFEntity_Base::StartResurrection(const idDict rezEntSpawnArgs) {
 	gameLocal.AddToEntityList(rezEntity);
 	rezEntity->AutoName();
 	
-	// TODO: Find and apply dissolve skin
-
-	// TODO: Update shaderparm 7
-
-	// Play the FX
-	rezDissolveFx = idEntityFx::StartFx("fx/resurrect.fx", &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, false);
+	ApplyResurrectionFx();
 
 	if (g_debugResurrection.GetBool()) {
 		common->Printf("Resurrecting ragdoll %s with %s after fx completes (%d)\n", GetName(), rezEntity->GetName(), rezDissolveFx->Duration());
@@ -1153,6 +1148,14 @@ void idAFEntity_Base::CheckAutoResurrection() {
 	function_t* rezFunc = gameLocal.program.FindFunction("auto_resurrect");
 	thread->CallFunction(this, rezFunc, false );
 	thread->DelayedStart( 0 );
+}
+
+void idAFEntity_Base::ApplyResurrectionFx() {
+	SetSkin(heatedSkinBody);
+	PreBurn();
+	Burn();
+	// Play the FX
+	rezDissolveFx = idEntityFx::StartFx("fx/resurrect.fx", &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, false);
 }
 
 void idAFEntity_Base::Event_IsPlayerInBounds(const idVec3 &mins, const idVec3 &maxs) {
@@ -1972,6 +1975,15 @@ void idAFEntity_WithAttachedHead::UpdateHeatShaderParms(float heatRatio) {
 	if (head.GetEntity()) {
 		head.GetEntity()->SetShaderParm(SHADERPARM_BEAM_WIDTH, heatRatio);
 	}
+}
+
+void idAFEntity_WithAttachedHead::ApplyResurrectionFx() {
+	head.GetEntity()->SetSkin(heatedSkinHead);
+	SetSkin(heatedSkinBody);
+	PreBurn();
+	Burn();
+	// Play the FX
+	rezDissolveFx = idEntityFx::StartFx("fx/resurrect.fx", &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, false);
 }
 
 /*
