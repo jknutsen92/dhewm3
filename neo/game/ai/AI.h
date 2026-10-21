@@ -31,6 +31,7 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "physics/Physics_Monster.h"
 #include "Entity.h"
+#include "AFEntity.h"
 #include "Actor.h"
 #include "Projectile.h"
 #include "script/Script_Program.h"
@@ -162,16 +163,16 @@ extern const idEventDef AI_RandomPath;
 
 class idPathCorner;
 
-typedef struct particleEmitter_s {
-	particleEmitter_s() {
-		particle = NULL;
-		time = 0;
-		joint = INVALID_JOINT;
-	};
-	const idDeclParticle *particle;
-	int					time;
-	jointHandle_t		joint;
-} particleEmitter_t;
+// typedef struct particleEmitter_s {
+// 	particleEmitter_s() {
+// 		particle = NULL;
+// 		time = 0;
+// 		joint = INVALID_JOINT;
+// 	};
+// 	const idDeclParticle *particle;
+// 	int					time;
+// 	jointHandle_t		joint;
+// } particleEmitter_t;
 
 class idMoveState {
 public:
@@ -616,9 +617,6 @@ protected:
 	void					Event_TestMeleeAttack( void );
 	void					Event_TestAnimAttack( const char *animname );
 	void					Event_Shrivel( float shirvel_time );
-	void					Event_Burn( void );
-	void					Event_PreBurn( void );
-	void					Event_ClearBurn( void );
 	void					Event_SetSmokeVisibility( int num, int on );
 	void					Event_NumSmokeEmitters( void );
 	void					Event_StopThinking( void );

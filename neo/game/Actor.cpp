@@ -1036,7 +1036,7 @@ void idActor::Restore( idRestoreGame *savefile ) {
 void idActor::Think() {
 	// smolspacer - heat decay
 	if (thinkFlags & TH_HEAT) {
-		if (isPlasmaHeatable && heat > 0) {
+		if (isPlasmaHeatable) {
 			UpdateHeatState();
 		}
 	}

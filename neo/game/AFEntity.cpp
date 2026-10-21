@@ -523,10 +523,16 @@ void idAFAttachment::UnlinkCombat( void ) {
 
 const idEventDef EV_SetConstraintPosition( "SetConstraintPosition", "sv" );
 const idEventDef EV_IsPlayerInBounds("isPlayerInBounds", "vv", 'd');
+const idEventDef EV_Burn( "burn" );
+const idEventDef EV_ClearBurn( "clearBurn" );
+const idEventDef EV_PreBurn( "preBurn" );
 
 CLASS_DECLARATION( idAnimatedEntity, idAFEntity_Base )
 	EVENT( EV_SetConstraintPosition,	idAFEntity_Base::Event_SetConstraintPosition )
 	EVENT( EV_IsPlayerInBounds,			idAFEntity_Base::Event_IsPlayerInBounds )
+	EVENT( EV_ClearBurn,				idAFEntity_Base::Event_ClearBurn )
+	EVENT( EV_Burn,						idAFEntity_Base::Event_Burn )
+	EVENT( EV_PreBurn,					idAFEntity_Base::Event_PreBurn )
 END_CLASS
 
 static const float BOUNCE_SOUND_MIN_VELOCITY	= 80.0f;
@@ -545,6 +551,8 @@ idAFEntity_Base::idAFEntity_Base( void ) {
 	rezEntity = nullptr;
 	spawnOrigin.Zero();
 	spawnAxis.Identity();
+
+	particles.Clear();
 	
 	isAlive 			= false;
 	heat 				= 0;
@@ -676,9 +684,6 @@ void idAFEntity_Base::Think( void ) {
 		}
 	}
 
-	// TODO: We can update timers here for beginning resurrection
-	
-	// smolspacer - TODO: We can check a timestamp to determine if we should make the ragdoll immortal once a certain amount of time has passed
 	if (rezDissolveFx && rezDissolveFx->Done()) {
 		CompleteResurrection();
 	}
@@ -731,15 +736,14 @@ void idAFEntity_Base::UpdateHeatState() {
 		if (g_debugHeat.GetBool()) {
 			common->Printf("Swapping heated skin for previous skin\n");
 		}
-		if (!isAlive) {
-			BecomeInactive(TH_HEAT);										// Stop updating heat
-		}
+		BecomeInactive(TH_HEAT);												// Stop updating heat
 	}
 	else if (!isAlive) {
 		if (g_debugHeat.GetBool()) {
 			common->Printf("Heat dissolving ragdoll %s\n", GetName());
 		}
 		fl.takedamage = 0;
+		FadeHeatFx();
 		BecomeInactive(TH_HEAT);
 		StartHeatDissolve();
 	}
@@ -753,6 +757,13 @@ void idAFEntity_Base::ApplyHeatFx(idDeclSkin* currentSkin) {
 	heatGlowFx = idEntityFx::StartFx("fx/heatglow.fx", &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, true);
 	// Loop sizzle sound
 	StartSoundShader(declManager->FindSound("heat_sizzle"), SIZZLE_SND_CHANNEL, 0, false, nullptr);
+}
+
+void idAFEntity_Base::FadeHeatFx() {
+	heatGlowFx->Stop();
+	StopSound(SIZZLE_SND_CHANNEL, false);
+	heatGlowFx = idEntityFx::StartFx("fx/heatglow_fade.fx", &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, true);
+	StartSoundShader(declManager->FindSound("heat_dissolve"), SIZZLE_SND_CHANNEL, 0, false, nullptr);
 }
 
 void idAFEntity_Base::RemoveHeatFx() {
@@ -1097,6 +1108,7 @@ idEntity* idAFEntity_Base::StartResurrection(const idDict rezEntSpawnArgs) {
 	rezEntity->AutoName();
 	
 	// TODO: Find and apply dissolve skin
+
 	// TODO: Update shaderparm 7
 
 	// Play the FX
@@ -1162,12 +1174,118 @@ void idAFEntity_Base::Event_IsPlayerInBounds(const idVec3 &mins, const idVec3 &m
 }
 
 /*
+=====================
+idAI::Event_PreBurn
+=====================
+*/
+void idAFEntity_Base::Event_PreBurn( void ) {
+	PreBurn();
+}
+
+/*
+=====================
+idAI::Event_Burn
+=====================
+*/
+void idAFEntity_Base::Event_Burn( void ) {
+	Burn();
+}
+
+/*
+=====================
+idAI::Event_ClearBurn
+=====================
+*/
+void idAFEntity_Base::Event_ClearBurn( void ) {
+	renderEntity.noShadow = spawnArgs.GetBool( "noshadows" );
+	renderEntity.shaderParms[ SHADERPARM_TIME_OF_DEATH ] = 0.0f;
+	UpdateVisuals();
+}
+
+/*
 ================
 idAFEntity_Base::Event_SetConstraintPosition
 ================
 */
 void idAFEntity_Base::Event_SetConstraintPosition( const char *name, const idVec3 &pos ) {
 	af.SetConstraintPosition( name, pos );
+}
+
+/*
+=====================
+idAI::SpawnParticles
+=====================
+*/
+void idAFEntity_Base::SpawnParticles( const char *keyName ) {
+	const idKeyValue *kv = spawnArgs.MatchPrefix( keyName, NULL );
+	while ( kv ) {
+		particleEmitter_t pe;
+
+		idStr particleName = kv->GetValue();
+
+		if ( particleName.Length() ) {
+
+			idStr jointName = kv->GetValue();
+			int dash = jointName.Find('-');
+			if ( dash > 0 ) {
+				particleName = particleName.Left( dash );
+				jointName = jointName.Right( jointName.Length() - dash - 1 );
+			}
+
+			SpawnParticlesOnJoint( pe, particleName, jointName );
+			particles.Append( pe );
+		}
+
+		kv = spawnArgs.MatchPrefix( keyName, kv );
+	}
+}
+
+/*
+=====================
+idAI::SpawnParticlesOnJoint
+=====================
+*/
+const idDeclParticle* idAFEntity_Base::SpawnParticlesOnJoint( particleEmitter_t &pe, const char *particleName, const char *jointName ) {
+	idVec3 origin;
+	idMat3 axis;
+
+	if ( *particleName == '\0' ) {
+		memset( &pe, 0, sizeof( pe ) );
+		return pe.particle;
+	}
+
+	pe.joint = animator.GetJointHandle( jointName );
+	if ( pe.joint == INVALID_JOINT ) {
+		gameLocal.Warning( "Unknown particleJoint '%s' on '%s'", jointName, name.c_str() );
+		pe.time = 0;
+		pe.particle = NULL;
+	} else {
+		animator.GetJointTransform( pe.joint, gameLocal.time, origin, axis );
+		origin = renderEntity.origin + origin * renderEntity.axis;
+
+		BecomeActive( TH_UPDATEPARTICLES );
+		if ( !gameLocal.time ) {
+			// particles with time of 0 don't show, so set the time differently on the first frame
+			pe.time = 1;
+		} else {
+			pe.time = gameLocal.time;
+		}
+		pe.particle = static_cast<const idDeclParticle *>( declManager->FindType( DECL_PARTICLE, particleName ) );
+		gameLocal.smokeParticles->EmitSmoke( pe.particle, pe.time, gameLocal.random.CRandomFloat(), origin, axis );
+	}
+
+	return pe.particle;
+}
+
+void idAFEntity_Base::PreBurn() {
+	// for now this just turns shadows off
+	renderEntity.noShadow = true;
+}
+
+void idAFEntity_Base::Burn() {
+	renderEntity.shaderParms[ SHADERPARM_TIME_OF_DEATH ] = gameLocal.time * 0.001f;
+	SpawnParticles( "smoke_burnParticleSystem" );
+	UpdateVisuals();
 }
 
 /*
@@ -1806,6 +1924,17 @@ void idAFEntity_WithAttachedHead::ProjectOverlay( const idVec3 &origin, const id
 	if ( head.GetEntity() ) {
 		head.GetEntity()->ProjectOverlay( origin, dir, size, material );
 	}
+}
+
+void idAFEntity_WithAttachedHead::PreBurn() {
+	idAFEntity_Base::PreBurn();
+	head.GetEntity()->GetRenderEntity()->noShadow = true;
+}
+
+void idAFEntity_WithAttachedHead::Burn() {
+	idAFEntity_Base::Burn();
+	head.GetEntity()->GetRenderEntity()->shaderParms[ SHADERPARM_TIME_OF_DEATH ] = gameLocal.time * 0.001f;
+	head.GetEntity()->UpdateVisuals();
 }
 
 /*

@@ -111,9 +111,6 @@ const idEventDef AI_TestAnimMove( "testAnimMove", "s", 'd' );
 const idEventDef AI_TestMeleeAttack( "testMeleeAttack", NULL, 'd' );
 const idEventDef AI_TestAnimAttack( "testAnimAttack", "s", 'd' );
 const idEventDef AI_Shrivel( "shrivel", "f" );
-const idEventDef AI_Burn( "burn" );
-const idEventDef AI_ClearBurn( "clearBurn" );
-const idEventDef AI_PreBurn( "preBurn" );
 const idEventDef AI_SetSmokeVisibility( "setSmokeVisibility", "dd" );
 const idEventDef AI_NumSmokeEmitters( "numSmokeEmitters", NULL, 'd' );
 const idEventDef AI_WaitAction( "waitAction", "s" );
@@ -240,11 +237,8 @@ CLASS_DECLARATION( idActor, idAI )
 	EVENT( AI_TestMeleeAttack,					idAI::Event_TestMeleeAttack )
 	EVENT( AI_TestAnimAttack,					idAI::Event_TestAnimAttack )
 	EVENT( AI_Shrivel,							idAI::Event_Shrivel )
-	EVENT( AI_Burn,								idAI::Event_Burn )
-	EVENT( AI_PreBurn,							idAI::Event_PreBurn )
 	EVENT( AI_SetSmokeVisibility,				idAI::Event_SetSmokeVisibility )
 	EVENT( AI_NumSmokeEmitters,					idAI::Event_NumSmokeEmitters )
-	EVENT( AI_ClearBurn,						idAI::Event_ClearBurn )
 	EVENT( AI_StopThinking,						idAI::Event_StopThinking )
 	EVENT( AI_GetTurnDelta,						idAI::Event_GetTurnDelta )
 	EVENT( AI_GetMoveType,						idAI::Event_GetMoveType )
@@ -1826,38 +1820,6 @@ void idAI::Event_Shrivel( float shrivel_time ) {
 	}
 
 	renderEntity.shaderParms[ SHADERPARM_MD5_SKINSCALE ] = 1.0f - t * 0.5f;
-	UpdateVisuals();
-}
-
-/*
-=====================
-idAI::Event_PreBurn
-=====================
-*/
-void idAI::Event_PreBurn( void ) {
-	// for now this just turns shadows off
-	renderEntity.noShadow = true;
-}
-
-/*
-=====================
-idAI::Event_Burn
-=====================
-*/
-void idAI::Event_Burn( void ) {
-	renderEntity.shaderParms[ SHADERPARM_TIME_OF_DEATH ] = gameLocal.time * 0.001f;
-	SpawnParticles( "smoke_burnParticleSystem" );
-	UpdateVisuals();
-}
-
-/*
-=====================
-idAI::Event_ClearBurn
-=====================
-*/
-void idAI::Event_ClearBurn( void ) {
-	renderEntity.noShadow = spawnArgs.GetBool( "noshadows" );
-	renderEntity.shaderParms[ SHADERPARM_TIME_OF_DEATH ] = 0.0f;
 	UpdateVisuals();
 }
 
