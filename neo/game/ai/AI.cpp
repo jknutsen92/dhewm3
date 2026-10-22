@@ -3249,73 +3249,6 @@ bool idAI::Pain( idEntity *inflictor, idEntity *attacker, int damage, const idVe
 	return ( AI_PAIN != 0 );
 }
 
-
-/*
-=====================
-idAI::SpawnParticles
-=====================
-*/
-void idAI::SpawnParticles( const char *keyName ) {
-	const idKeyValue *kv = spawnArgs.MatchPrefix( keyName, NULL );
-	while ( kv ) {
-		particleEmitter_t pe;
-
-		idStr particleName = kv->GetValue();
-
-		if ( particleName.Length() ) {
-
-			idStr jointName = kv->GetValue();
-			int dash = jointName.Find('-');
-			if ( dash > 0 ) {
-				particleName = particleName.Left( dash );
-				jointName = jointName.Right( jointName.Length() - dash - 1 );
-			}
-
-			SpawnParticlesOnJoint( pe, particleName, jointName );
-			particles.Append( pe );
-		}
-
-		kv = spawnArgs.MatchPrefix( keyName, kv );
-	}
-}
-
-/*
-=====================
-idAI::SpawnParticlesOnJoint
-=====================
-*/
-const idDeclParticle *idAI::SpawnParticlesOnJoint( particleEmitter_t &pe, const char *particleName, const char *jointName ) {
-	idVec3 origin;
-	idMat3 axis;
-
-	if ( *particleName == '\0' ) {
-		memset( &pe, 0, sizeof( pe ) );
-		return pe.particle;
-	}
-
-	pe.joint = animator.GetJointHandle( jointName );
-	if ( pe.joint == INVALID_JOINT ) {
-		gameLocal.Warning( "Unknown particleJoint '%s' on '%s'", jointName, name.c_str() );
-		pe.time = 0;
-		pe.particle = NULL;
-	} else {
-		animator.GetJointTransform( pe.joint, gameLocal.time, origin, axis );
-		origin = renderEntity.origin + origin * renderEntity.axis;
-
-		BecomeActive( TH_UPDATEPARTICLES );
-		if ( !gameLocal.time ) {
-			// particles with time of 0 don't show, so set the time differently on the first frame
-			pe.time = 1;
-		} else {
-			pe.time = gameLocal.time;
-		}
-		pe.particle = static_cast<const idDeclParticle *>( declManager->FindType( DECL_PARTICLE, particleName ) );
-		gameLocal.smokeParticles->EmitSmoke( pe.particle, pe.time, gameLocal.random.CRandomFloat(), origin, axis );
-	}
-
-	return pe.particle;
-}
-
 /*
 =====================
 idAI::Killed
@@ -4667,62 +4600,6 @@ void idAI::PlayChatter( void ) {
 
 	// set the next chat time
 	chat_time = gameLocal.time + chat_min + gameLocal.random.RandomFloat() * ( chat_max - chat_min );
-}
-
-/*
-=====================
-idAI::UpdateParticles
-=====================
-*/
-void idAI::UpdateParticles( void ) {
-	if ( ( thinkFlags & TH_UPDATEPARTICLES) && !IsHidden() ) {
-		idVec3 realVector;
-		idMat3 realAxis;
-
-		int particlesAlive = 0;
-		for ( int i = 0; i < particles.Num(); i++ ) {
-			if ( particles[i].particle && particles[i].time ) {
-				particlesAlive++;
-				if (af.IsActive()) {
-					realAxis = mat3_identity;
-					realVector = GetPhysics()->GetOrigin();
-				} else {
-					animator.GetJointTransform( particles[i].joint, gameLocal.time, realVector, realAxis );
-					realAxis *= renderEntity.axis;
-					realVector = physicsObj.GetOrigin() + ( realVector + modelOffset ) * ( viewAxis * physicsObj.GetGravityAxis() );
-				}
-
-				if ( !gameLocal.smokeParticles->EmitSmoke( particles[i].particle, particles[i].time, gameLocal.random.CRandomFloat(), realVector, realAxis )) {
-					if ( restartParticles ) {
-						particles[i].time = gameLocal.time;
-					} else {
-						particles[i].time = 0;
-						particlesAlive--;
-					}
-				}
-			}
-		}
-		if ( particlesAlive == 0 ) {
-			BecomeInactive( TH_UPDATEPARTICLES );
-		}
-	}
-}
-
-/*
-=====================
-idAI::TriggerParticles
-=====================
-*/
-void idAI::TriggerParticles( const char *jointName ) {
-	jointHandle_t jointNum;
-
-	jointNum = animator.GetJointHandle( jointName );
-	for ( int i = 0; i < particles.Num(); i++ ) {
-		if ( particles[i].joint == jointNum ) {
-			particles[i].time = gameLocal.time;
-			BecomeActive( TH_UPDATEPARTICLES );
-		}
-	}
 }
 
 

@@ -622,6 +622,8 @@ void idAFEntity_Base::Spawn( void ) {
 	spawnAxis = GetPhysics()->GetAxis();
 	nextSoundTime = 0;
 
+	spawnArgs.GetVector( "offsetModel", "0 0 0", modelOffset );
+
 	// smolspacer - heat init
 	heatDecayRate = spawnArgs.GetFloat("heat_decay_rate");
 	isPlasmaHeatable = spawnArgs.GetBool("plasma_heatable");
@@ -1240,6 +1242,62 @@ void idAFEntity_Base::SpawnParticles( const char *keyName ) {
 		}
 
 		kv = spawnArgs.MatchPrefix( keyName, kv );
+	}
+}
+
+/*
+=====================
+idAI::UpdateParticles
+=====================
+*/
+void idAFEntity_Base::UpdateParticles( void ) {
+	if ( ( thinkFlags & TH_UPDATEPARTICLES) && !IsHidden() ) {
+		idVec3 realVector;
+		idMat3 realAxis;
+
+		int particlesAlive = 0;
+		for ( int i = 0; i < particles.Num(); i++ ) {
+			if ( particles[i].particle && particles[i].time ) {
+				particlesAlive++;
+				if (af.IsActive()) {
+					realAxis = mat3_identity;
+					realVector = GetPhysics()->GetOrigin();
+				} else {
+					animator.GetJointTransform( particles[i].joint, gameLocal.time, realVector, realAxis );
+					realAxis *= renderEntity.axis;
+					realVector = GetPhysics()->GetOrigin() + ( realVector + modelOffset ) * ( GetPhysics()->GetAxis() * GetPhysics()->GetGravity().ToMat3() );
+				}
+
+				if ( !gameLocal.smokeParticles->EmitSmoke( particles[i].particle, particles[i].time, gameLocal.random.CRandomFloat(), realVector, realAxis )) {
+					if ( restartParticles ) {
+						particles[i].time = gameLocal.time;
+					} else {
+						particles[i].time = 0;
+						particlesAlive--;
+					}
+				}
+			}
+		}
+		if ( particlesAlive == 0 ) {
+			BecomeInactive( TH_UPDATEPARTICLES );
+		}
+	}
+}
+
+/*
+=====================
+idAI::TriggerParticles
+=====================
+*/
+void idAFEntity_Base::TriggerParticles( const char *jointName ) {
+	jointHandle_t jointNum;
+
+	jointNum = animator.GetJointHandle( jointName );
+	for ( int i = 0; i < particles.Num(); i++ ) {
+		if ( particles[i].joint == jointNum ) {
+			particles[i].time = gameLocal.time;
+			BecomeActive( TH_UPDATEPARTICLES );
+		}
 	}
 }
 

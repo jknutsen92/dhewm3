@@ -377,9 +377,7 @@ protected:
 	float					shrivel_rate;
 	int						shrivel_start;
 
-	bool					restartParticles;			// should smoke emissions restart
 	bool					useBoneAxis;				// use the bone vs the model axis
-	idList<particleEmitter_t> particles;				// particle data
 
 	renderLight_t			worldMuzzleFlash;			// positioned on world weapon bone
 	int						worldMuzzleFlashHandle;
@@ -494,11 +492,6 @@ protected:
 	bool					StepDirection( float dir );
 	bool					NewWanderDir( const idVec3 &dest );
 
-	// effects
-	const idDeclParticle	*SpawnParticlesOnJoint( particleEmitter_t &pe, const char *particleName, const char *jointName );
-	void					SpawnParticles( const char *keyName );
-	bool					ParticlesActive( void );
-
 	// turning
 	bool					FacingIdeal( void );
 	void					Turn( void );
@@ -531,8 +524,6 @@ protected:
 	void					TriggerWeaponEffects( const idVec3 &muzzle );
 	void					UpdateMuzzleFlash( void );
 	virtual bool			UpdateAnimationControllers( void );
-	void					UpdateParticles( void );
-	void					TriggerParticles( const char *jointName );
 
 	// AI script state management
 	void					LinkScriptVariables( void );

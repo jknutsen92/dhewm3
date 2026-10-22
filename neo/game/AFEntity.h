@@ -223,11 +223,19 @@ protected:
 	idVec3					spawnOrigin;	// spawn origin
 	idMat3					spawnAxis;		// rotation axis used when spawned
 	int						nextSoundTime;	// next time this can make a sound
+	idVec3					modelOffset;
 
-	// effects
+	// effects - moved from idAI
+	bool					restartParticles;	// should smoke emissions restart
+	idList<particleEmitter_t> particles;		// particle data
+
+	// effects - moved from idAI
 	const idDeclParticle	*SpawnParticlesOnJoint( particleEmitter_t &pe, const char *particleName, const char *jointName );
 	void					SpawnParticles( const char *keyName );
 	bool					ParticlesActive( void );
+	void					UpdateParticles( void );
+	void					TriggerParticles( const char *jointName );
+
 	virtual void			PreBurn(void);
 	virtual void 			Burn(void);
 
@@ -256,8 +264,6 @@ protected:
 	virtual void			RemoveHeatFx( void );
 	virtual void			UpdateHeatShaderParms( float heatRatio );
 	void					StartHeatDissolve(void);
-private:
-	idList<particleEmitter_t> particles;		// particle data
 };
 
 /*
