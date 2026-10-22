@@ -1036,7 +1036,7 @@ void idActor::Restore( idRestoreGame *savefile ) {
 void idActor::Think() {
 	// smolspacer - heat decay
 	if (thinkFlags & TH_HEAT) {
-		if (isPlasmaHeatable && heat > 0) {
+		if (isPlasmaHeatable) {
 			UpdateHeatState();
 		}
 	}
@@ -2178,6 +2178,25 @@ void idActor::SyncAnimChannels( int channel, int syncToChannel, int blendFrames 
 	Damage
 
 ***********************************************************************/
+
+void idActor::PreBurn() {
+	idAFEntity_Base::PreBurn();
+	idEntity* headEnt = head.GetEntity();
+	if (headEnt) {
+		headEnt->GetRenderEntity()->noShadow = true;
+	}
+}
+
+void idActor::Burn() {
+	idAFEntity_Base::Burn();
+	idEntity* headEnt = head.GetEntity();
+	if (headEnt) {
+		// TODO: Figure out why this doesn't work
+		// headEnt->GetRenderEntity()->shaderParms[ SHADERPARM_TIME_OF_DEATH ] = gameLocal.time * 0.001f;
+		headEnt->Hide();				// Workaround for the burn effect not working for some reason
+		headEnt->UpdateVisuals();
+	}
+}
 
 /*
 ============

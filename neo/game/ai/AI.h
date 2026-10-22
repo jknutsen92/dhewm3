@@ -31,6 +31,7 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "physics/Physics_Monster.h"
 #include "Entity.h"
+#include "AFEntity.h"
 #include "Actor.h"
 #include "Projectile.h"
 #include "script/Script_Program.h"
@@ -162,16 +163,16 @@ extern const idEventDef AI_RandomPath;
 
 class idPathCorner;
 
-typedef struct particleEmitter_s {
-	particleEmitter_s() {
-		particle = NULL;
-		time = 0;
-		joint = INVALID_JOINT;
-	};
-	const idDeclParticle *particle;
-	int					time;
-	jointHandle_t		joint;
-} particleEmitter_t;
+// typedef struct particleEmitter_s {
+// 	particleEmitter_s() {
+// 		particle = NULL;
+// 		time = 0;
+// 		joint = INVALID_JOINT;
+// 	};
+// 	const idDeclParticle *particle;
+// 	int					time;
+// 	jointHandle_t		joint;
+// } particleEmitter_t;
 
 class idMoveState {
 public:
@@ -376,9 +377,7 @@ protected:
 	float					shrivel_rate;
 	int						shrivel_start;
 
-	bool					restartParticles;			// should smoke emissions restart
 	bool					useBoneAxis;				// use the bone vs the model axis
-	idList<particleEmitter_t> particles;				// particle data
 
 	renderLight_t			worldMuzzleFlash;			// positioned on world weapon bone
 	int						worldMuzzleFlashHandle;
@@ -493,11 +492,6 @@ protected:
 	bool					StepDirection( float dir );
 	bool					NewWanderDir( const idVec3 &dest );
 
-	// effects
-	const idDeclParticle	*SpawnParticlesOnJoint( particleEmitter_t &pe, const char *particleName, const char *jointName );
-	void					SpawnParticles( const char *keyName );
-	bool					ParticlesActive( void );
-
 	// turning
 	bool					FacingIdeal( void );
 	void					Turn( void );
@@ -530,8 +524,6 @@ protected:
 	void					TriggerWeaponEffects( const idVec3 &muzzle );
 	void					UpdateMuzzleFlash( void );
 	virtual bool			UpdateAnimationControllers( void );
-	void					UpdateParticles( void );
-	void					TriggerParticles( const char *jointName );
 
 	// AI script state management
 	void					LinkScriptVariables( void );
@@ -616,9 +608,6 @@ protected:
 	void					Event_TestMeleeAttack( void );
 	void					Event_TestAnimAttack( const char *animname );
 	void					Event_Shrivel( float shirvel_time );
-	void					Event_Burn( void );
-	void					Event_PreBurn( void );
-	void					Event_ClearBurn( void );
 	void					Event_SetSmokeVisibility( int num, int on );
 	void					Event_NumSmokeEmitters( void );
 	void					Event_StopThinking( void );

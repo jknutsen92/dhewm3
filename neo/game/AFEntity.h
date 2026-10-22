@@ -148,6 +148,20 @@ idAFEntity_Base
 */
 
 extern const idEventDef		EV_IsPlayerInBounds;
+extern const idEventDef 	EV_Burn;
+extern const idEventDef 	EV_ClearBurn;
+extern const idEventDef 	EV_PreBurn;
+
+typedef struct particleEmitter_s {
+	particleEmitter_s() {
+		particle = NULL;
+		time = 0;
+		joint = INVALID_JOINT;
+	};
+	const idDeclParticle *particle;
+	int					time;
+	jointHandle_t		joint;
+} particleEmitter_t;
 
 class idAFEntity_Base : public idAnimatedEntity {
 public:
@@ -198,6 +212,9 @@ public:
 	virtual idEntity*		StartResurrection(const idDict rezEntSpawnArgs);
 
 	void					Event_IsPlayerInBounds(const idVec3& mins, const idVec3& maxs);
+	void					Event_Burn( void );
+	void					Event_PreBurn( void );
+	void					Event_ClearBurn( void );
 
 protected:
 	idAF					af;				// articulated figure
@@ -206,6 +223,21 @@ protected:
 	idVec3					spawnOrigin;	// spawn origin
 	idMat3					spawnAxis;		// rotation axis used when spawned
 	int						nextSoundTime;	// next time this can make a sound
+	idVec3					modelOffset;
+
+	// effects - moved from idAI
+	bool					restartParticles;	// should smoke emissions restart
+	idList<particleEmitter_t> particles;		// particle data
+
+	// effects - moved from idAI
+	const idDeclParticle	*SpawnParticlesOnJoint( particleEmitter_t &pe, const char *particleName, const char *jointName );
+	void					SpawnParticles( const char *keyName );
+	bool					ParticlesActive( void );
+	void					UpdateParticles( void );
+	void					TriggerParticles( const char *jointName );
+
+	virtual void			PreBurn(void);
+	virtual void 			Burn(void);
 
 	idEntityFx*				rezDissolveFx;	// FX that plays during corpse resurrection
 	idEntity*				rezEntity;		// Entity that will be spawned after the dissolve
@@ -213,6 +245,7 @@ protected:
 	void					Event_SetConstraintPosition( const char *name, const idVec3 &pos );
 	void					CompleteResurrection(void);
 	void 					CheckAutoResurrection(void);
+	virtual void			ApplyResurrectionFx(void);
 
 	// Heat system
 	float 					heat;				// How much heat this entity currently has
@@ -227,6 +260,7 @@ protected:
 	// Heat system
 	void					UpdateHeatState( void );
 	virtual void 			ApplyHeatFx( idDeclSkin* currentSkin );
+	virtual void			FadeHeatFx( void );
 	virtual void			RemoveHeatFx( void );
 	virtual void			UpdateHeatShaderParms( float heatRatio );
 	void					StartHeatDissolve(void);
@@ -334,10 +368,13 @@ public:
 	virtual void			UnlinkCombat( void );
 
 protected:
+	virtual void			PreBurn();
+	virtual void			Burn();
 	virtual void			Gib( const idVec3 &dir, const char *damageDefName );
 	virtual void 			ApplyHeatFx( idDeclSkin* currentSkin );
 	virtual void			RemoveHeatFx( void );
 	virtual void			UpdateHeatShaderParms( float heatRatio );
+	virtual void			ApplyResurrectionFx(void);
 
 private:
 	idEntityPtr<idAFAttachment>	head;

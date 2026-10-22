@@ -4548,7 +4548,8 @@ void idGameLocal::GetMapLoadingGUI( char gui[ MAX_STRING_CHARS ] ) { }
 void idGameLocal::InitRezEntityList() {
 	// Get the map score, the map worldspawn arg overrides the resurrect.def value if applicable
 	int currentMapScore;
-	idStr mapName = GetMapName();
+	idStr mapName;
+	idStr(GetMapName()).ExtractFileBase(mapName);
 	if (g_rezMapScoreOverride.GetInteger() >= 0) {
 		currentMapScore = g_rezMapScoreOverride.GetInteger();
 		if (g_debugResurrection.GetBool()) {
@@ -4557,7 +4558,7 @@ void idGameLocal::InitRezEntityList() {
 	}
 	else {
 		const idDict* mapScores = FindEntityDefDict("map_resurrector_score");
-		currentMapScore = mapScores->GetInt(mapName, "0");
+		currentMapScore = mapScores->GetInt(mapName);
 		if (g_debugResurrection.GetBool()) {
 			common->Printf("Retrieved resurrector score of %d for %s from resurrect.def\n", currentMapScore, mapName.c_str());
 		}
