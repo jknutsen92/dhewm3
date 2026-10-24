@@ -1591,6 +1591,34 @@ void idPlayer::Spawn( void ) {
 		hiddenWeapon = false;
 	}
 
+	//Setup the weapon toggle lists
+	const idKeyValue *kv;
+	kv = spawnArgs.MatchPrefix( "weapontoggle", NULL );
+	while( kv ) {
+		WeaponToggle_t newToggle;
+		strcpy(newToggle.name, kv->GetKey().c_str());
+
+		idStr toggleData = kv->GetValue();
+
+		idLexer src;
+		idToken token;
+		src.LoadMemory(toggleData, toggleData.Length(), "toggleData");
+		while(1) {
+			if(!src.ReadToken(&token)) {
+				break;
+			}
+			int index = atoi(token.c_str());
+			newToggle.toggleList.Append(index);
+
+			//Skip the ,
+			src.ReadToken(&token);
+		}
+		newToggle.currentIndex = 0;
+		weaponToggles.Set(newToggle.name, newToggle);
+
+		kv = spawnArgs.MatchPrefix( "weapontoggle", kv );
+	}
+
 	if ( hud ) {
 		UpdateHudWeapon();
 		hud->StateChanged( gameLocal.time );
@@ -1846,6 +1874,17 @@ void idPlayer::Save( idSaveGame *savefile ) const {
 	if ( hud ) {
 		hud->SetStateString( "message", common->GetLanguageDict()->GetString( "#str_02916" ) );
 		hud->HandleNamedEvent( "Message" );
+	}
+
+	savefile->WriteInt(weaponToggles.Num());
+	for (i = 0; i < weaponToggles.Num(); i++) {
+		WeaponToggle_t* weaponToggle = weaponToggles.GetIndex(i);
+		savefile->WriteString(weaponToggle->name);
+		savefile->WriteInt(weaponToggle->toggleList.Num());
+		for (int j = 0; j < weaponToggle->toggleList.Num(); j++) {
+			savefile->WriteInt(weaponToggle->toggleList[j]);
+		}
+		savefile->WriteInt(weaponToggle->currentIndex);
 	}
 }
 
@@ -2108,6 +2147,27 @@ void idPlayer::Restore( idRestoreGame *savefile ) {
 	//      shown, and then load)
 	if ( hud ) {
 		hud->SetStateString( "message", "" );
+	}
+
+	int weaponToggleCount;
+	savefile->ReadInt(weaponToggleCount);
+	for(i = 0; i < weaponToggleCount; i++) {
+		WeaponToggle_t newToggle;
+		memset(&newToggle, 0, sizeof(newToggle));
+
+		idStr name;
+		savefile->ReadString(name);
+		strcpy(newToggle.name, name.c_str());
+
+		int indexCount;
+		savefile->ReadInt(indexCount);
+		for(int j = 0; j < indexCount; j++) {
+			int temp;
+			savefile->ReadInt(temp);
+			newToggle.toggleList.Append(temp);
+		}
+		savefile->ReadInt(newToggle.currentIndex);
+		weaponToggles.Set(newToggle.name, newToggle);
 	}
 }
 
@@ -3702,6 +3762,19 @@ void idPlayer::SelectWeapon( int num, bool force ) {
 		}
 	}
 
+	//Is the weapon a toggle weapon
+	WeaponToggle_t* weaponToggle;
+	int curToggleIndex;
+	if(weaponToggles.Get(va("weapontoggle%d", num), &weaponToggle)) {
+		curToggleIndex = weaponToggle->currentIndex;
+		//Find the current Weapon in the list
+		if (IsSwitchingFromToggleWeapon(weaponToggle, currentWeapon)) {
+			// If we're pressing the toggle button with the weapon already out, cycle between toggle weapons
+			curToggleIndex = (curToggleIndex + 1) % weaponToggle->toggleList.Num();
+		}
+		num = weaponToggle->toggleList[curToggleIndex];
+	}
+
 	weap = spawnArgs.GetString( va( "def_weapon%d", num ) );
 	if ( !weap[ 0 ] ) {
 		gameLocal.Printf( "Invalid weapon\n" );
@@ -3725,7 +3798,19 @@ void idPlayer::SelectWeapon( int num, bool force ) {
 			idealWeapon = num;
 		}
 		UpdateHudWeapon();
+		if (weaponToggle) {
+			weaponToggle->currentIndex = curToggleIndex;
+		}
 	}
+}
+
+bool idPlayer::IsSwitchingFromToggleWeapon(WeaponToggle_t *weaponToggle, int curWeapon) {
+	for (int i = 0; i < weaponToggle->toggleList.Num(); i++) {
+		if (weaponToggle->toggleList[i] == curWeapon) {
+			return true;
+		}
+	}
+	return false;
 }
 
 /*

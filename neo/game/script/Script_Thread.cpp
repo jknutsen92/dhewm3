@@ -56,6 +56,7 @@ const idEventDef EV_Thread_GetTime( "getTime", NULL, 'f' );
 const idEventDef EV_Thread_KillThread( "killthread", "s" );
 const idEventDef EV_Thread_SetThreadName( "threadname", "s" );
 const idEventDef EV_Thread_GetEntity( "getEntity", "s", 'e' );
+const idEventDef EV_Thread_CacheEntity("cacheEntity", "s");
 const idEventDef EV_Thread_ResurrectRagdoll("resurrectRagdoll", "e", 'e');
 const idEventDef EV_Thread_GetResurrectionClass("getResurrectionClass", NULL, 's');
 const idEventDef EV_Thread_Spawn( "spawn", "s", 'e' );
@@ -140,6 +141,7 @@ CLASS_DECLARATION( idClass, idThread )
 	EVENT( EV_Thread_KillThread,			idThread::Event_KillThread )
 	EVENT( EV_Thread_SetThreadName,			idThread::Event_SetThreadName )
 	EVENT( EV_Thread_GetEntity,				idThread::Event_GetEntity )
+	EVENT( EV_Thread_CacheEntity,			idThread::Event_CacheEntity ) 
 	EVENT( EV_Thread_ResurrectRagdoll,		idThread::Event_ResurrectRagdoll )
 	EVENT( EV_Thread_GetResurrectionClass,	idThread::Event_GetResurrectionClass )
 	EVENT( EV_Thread_Spawn,					idThread::Event_Spawn )
@@ -1126,6 +1128,10 @@ void idThread::Event_GetEntity( const char *name ) {
 		ent = gameLocal.FindEntity( name );
 		ReturnEntity( ent );
 	}
+}
+
+void idThread::Event_CacheEntity(const char* name) {
+	gameLocal.FindEntityDef(name, false);
 }
 
 /*

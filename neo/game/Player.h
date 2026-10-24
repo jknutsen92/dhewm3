@@ -127,6 +127,12 @@ enum {
 	INFLUENCE_LEVEL3,			// slow player movement
 };
 
+typedef struct {
+	char		name[64];
+	idList<int>	toggleList;
+	int 		currentIndex;
+} WeaponToggle_t;
+
 class idInventory {
 public:
 	int						maxHealth;
@@ -566,6 +572,7 @@ private:
 	int						weaponSwitchTime;
 	bool					weaponEnabled;
 	bool					showWeaponViewModel;
+	idHashTable<WeaponToggle_t>	weaponToggles;
 
 	const idDeclSkin *		skin;
 	const idDeclSkin *		powerUpSkin;
@@ -649,6 +656,8 @@ private:
 	bool					selfSmooth;
 
 	void					LookAtKiller( idEntity *inflictor, idEntity *attacker );
+
+	bool					IsSwitchingFromToggleWeapon(WeaponToggle_t* weaponToggle, int curWeapon);
 
 	void					StopFiring( void );
 	void					FireWeapon( void );

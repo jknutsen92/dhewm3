@@ -2381,6 +2381,9 @@ idStr idActor::GetWeakpointSoundShader(idEntity* inflictor) {
 	if (!idStr::Icmp(projectileName, "projectile_rocket")) {
 		return spawnArgs.GetString("snd_weakpoint_rocket");
 	}
+	if (!idStr::Icmp(projectileName, "projectile_bullet_shotgun_classic")) {
+		return spawnArgs.GetString("snd_weakpoint_shotgun");
+	}
 	common->Error("No sound shader for %s", projectileName);
 	return "";
 }
