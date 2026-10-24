@@ -3191,53 +3191,6 @@ bool idGameLocal::SpawnEntityDef( const idDict &args, idEntity **ent, bool setDe
 	return false;
 }
 
-idEntity* idGameLocal::CreateEntityDef(const idDict& args) {
-	idStr		error;
-
-	const char* classname;
-	args.GetString("classname", "", &classname);
-
-	// Validate spawn class
-	const idDeclEntityDef* def = FindEntityDef(classname, false);
-	if (!def) {
-		Warning( "Unknown classname '%s'%s.", classname, error.c_str() );
-		return nullptr;
-	}
-
-	idDict spawnArgs = args;
-	// Sets defaults if keys not present
-	spawnArgs.SetDefaults(&def->dict);
-
-	// Instance an idClass, if applicable
-	const char* spawn;
-	spawnArgs.GetString("spawnclass", "", &spawn);
-	if (spawn) {
-		idTypeInfo*	cls = idClass::GetClass(spawn);
-		if (!cls) {
-			Warning( "Could not spawn '%s'.  Class '%s' not found%s.", classname, spawn, error.c_str() );
-			return nullptr;
-		}
-
-		idClass* obj = cls->CreateInstance();
-		if (!obj) {
-			Warning( "Could not spawn '%s'. Instance could not be created%s.", classname, error.c_str() );
-			return nullptr;	
-		}
-		obj->spawnArgs = spawnArgs;
-
-		if (!obj->IsType(idEntity::Type)) {
-			Warning("spawnclass %s doesn't inherit from idEntity", spawn);
-			return nullptr;
-		}
-		return static_cast<idEntity*>(obj);
-	}
-}
-
-void idGameLocal::SpawnEntity(idEntity* ent) {
-	idClass* obj = reinterpret_cast<idClass*>(ent);
-	obj->CallSpawn();
-}
-
 /*
 ================
 idGameLocal::FindEntityDef

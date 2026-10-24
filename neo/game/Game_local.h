@@ -382,8 +382,6 @@ public:
 	idEntity *				SpawnEntityType( const idTypeInfo &classdef, const idDict *args = NULL, bool bIsClientReadSnapshot = false );
 	bool					SpawnEntityDef( const idDict &args, idEntity **ent = NULL, bool setDefaults = true );
 	int						GetSpawnId( const idEntity *ent ) const;
-	idEntity*				CreateEntityDef(const idDict &args);	// Creates an entity but defers the actual spawn - used by rezRagdoll
-	void					SpawnEntity(idEntity* ent);				// Spawns the entity created by CreateEntityDef
 
 	const idDeclEntityDef *	FindEntityDef( const char *name, bool makeDefault = true ) const;
 	const idDict *			FindEntityDefDict( const char *name, bool makeDefault = true ) const;

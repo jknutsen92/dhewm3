@@ -29,6 +29,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "Entity.h"
 #include "Game_local.h"
 #include "framework/DeclEntityDef.h"
+#include "ai/AI.h"
 #include "sys/platform.h"
 #include "idlib/geometry/JointTransform.h"
 #include "renderer/ModelManager.h"
@@ -577,7 +578,7 @@ idAFEntity_Base::~idAFEntity_Base( void ) {
 		if (g_debugResurrection.GetBool()) {
 			common->Printf("Ragdoll %s destroyed before resurrection could complete, freeing %s.\n", GetName(), rezEntity->GetName());
 		}
-		delete rezEntity;
+		rezEntity->PostEventMS(&EV_SafeRemove, 0);
 	}
 	StopSound(SIZZLE_SND_CHANNEL, false);
 }
@@ -697,8 +698,16 @@ void idAFEntity_Base::Think( void ) {
 }
 
 void idAFEntity_Base::CompleteResurrection() {
-	// Spawn monster
-	gameLocal.SpawnEntity(rezEntity);
+	if (!IsClearToResurrect()) {
+		if (g_debugResurrection.GetBool()) {
+			common->Printf("%s prevented from resurrecting. Cancelling rezEntity spawn", GetName());
+		}
+		return;
+	}
+
+	idVec3 spawnPos = GetPhysics()->GetOrigin();
+	((idAI*)rezEntity)->MovePointToNearestValidLocation(spawnPos);
+	SetOrigin(spawnPos);
 
 	// Trigger monster
 	rezEntity->Signal( SIG_TRIGGER );
@@ -710,7 +719,11 @@ void idAFEntity_Base::CompleteResurrection() {
 	}
 
 	// Clean up the dissolved ragdoll after spawning the resurrected creature
-	delete this;
+	PostEventMS(&EV_SafeRemove, 0);
+}
+
+bool idAFEntity_Base::IsClearToResurrect() {
+	return true;
 }
 
 // smolspacer -- Updates the heat values with the decay amount and also manages the materials
@@ -1099,15 +1112,13 @@ idEntity* idAFEntity_Base::StartResurrection(const idDict rezEntSpawnArgs) {
 	args.Set("teleport", "1");
 	args.Set("origin", GetPhysics()->GetOrigin().ToString());
 	args.Set("angle", va("%f", GetPhysics()->GetAxis().ToAngles().yaw));
+	args.Set("hide", "1");
 	// Create the entity
-	rezEntity = gameLocal.CreateEntityDef(args);
+	gameLocal.SpawnEntityDef(args, &rezEntity);
 	if (!rezEntity) {
 		common->Warning("Unable to spawn %s from %s\n", args.GetString("classname"), GetName());
 		return nullptr;
 	}
-	// Doesn't spawn, but we need to reserve a spot on the entity list in order for the scripting to work
-	gameLocal.AddToEntityList(rezEntity);
-	rezEntity->AutoName();
 	
 	ApplyResurrectionFx();
 
@@ -1397,6 +1408,8 @@ idAFEntity_Gibbable::Save
 void idAFEntity_Gibbable::Save( idSaveGame *savefile ) const {
 	savefile->WriteBool( gibbed );
 	savefile->WriteBool( combatModel != NULL );
+	savefile->WriteObject(rezDissolveFx);
+	savefile->WriteObject(rezEntity);
 }
 
 /*
@@ -1409,6 +1422,9 @@ void idAFEntity_Gibbable::Restore( idRestoreGame *savefile ) {
 
 	savefile->ReadBool( gibbed );
 	savefile->ReadBool( hasCombatModel );
+	savefile->ReadObject(reinterpret_cast<idClass*&>(rezDissolveFx));
+	savefile->ReadObject(reinterpret_cast<idClass*&>(rezEntity));
+	
 
 	InitSkeletonModel();
 
@@ -1459,6 +1475,10 @@ void idAFEntity_Gibbable::InitSkeletonModel( void ) {
 			}
 		}
 	}
+}
+
+bool idAFEntity_Gibbable::IsClearToResurrect() {
+	return !gibbed;
 }
 
 /*
@@ -1642,8 +1662,11 @@ void idAFEntity_Gibbable::Gib( const idVec3 &dir, const char *damageDefName ) {
 			renderEntity.noShadow = true;
 			renderEntity.shaderParms[ SHADERPARM_TIME_OF_DEATH ] = gameLocal.time * 0.001f;
 			StartSound( "snd_gibbed", SND_CHANNEL_ANY, 0, false, NULL );
-			gibbed = true;
 		}
+		else {
+			Hide();				// smolspacer - quick win here, probably want to just apply the skin_dropGib skin instead
+		}
+		gibbed = true;
 	} else {
 		gibbed = true;
 	}

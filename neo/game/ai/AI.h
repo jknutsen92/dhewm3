@@ -264,6 +264,7 @@ public:
 	bool					GetAimDir( const idVec3 &firePos, idEntity *aimAtEnt, const idEntity *ignore, idVec3 &aimDir ) const;
 
 	void					TouchedByFlashlight( idActor *flashlight_owner );
+	void					MovePointToNearestValidLocation(idVec3& pos);
 
 							// Outputs a list of all monsters to the console.
 	static void				List_f( const idCmdArgs &args );

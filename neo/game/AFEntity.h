@@ -244,6 +244,7 @@ protected:
 
 	void					Event_SetConstraintPosition( const char *name, const idVec3 &pos );
 	void					CompleteResurrection(void);
+	virtual bool 			IsClearToResurrect(void);
 	void 					CheckAutoResurrection(void);
 	virtual void			ApplyResurrectionFx(void);
 
@@ -302,6 +303,7 @@ protected:
 	virtual void			InflictHeat(const char* damageDefName, float damageScale);
 	virtual void			Gib( const idVec3 &dir, const char *damageDefName );
 	void					InitSkeletonModel( void );
+	virtual bool			IsClearToResurrect(void);
 
 	void					Event_Gib( const char *damageDefName );
 };
