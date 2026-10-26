@@ -549,7 +549,16 @@ bool idProjectile::Collide( const trace_t &collision, const idVec3 &velocity ) {
 		if ( !projectileFlags.detonate_on_actor ) {
 			return false;
 		}
-	} else {
+	}
+		
+	// Including ragdolls as actors
+	if ( ent->IsType( idAFEntity_Base::Type ) || ( ent->IsType( idAFAttachment::Type ) && static_cast<const idAFAttachment*>(ent)->GetBody()->IsType( idAFEntity_Base::Type ) ) ) {
+		if ( !projectileFlags.detonate_on_actor ) {
+			return false;
+		}
+	}
+	
+	else {
 		if ( !projectileFlags.detonate_on_world ) {
 			if ( !StartSound( "snd_ricochet", SND_CHANNEL_ITEM, 0, true, NULL ) ) {
 				float len = velocity.Length();
@@ -1051,7 +1060,9 @@ bool idProjectile::ClientPredictionCollide( idEntity *soundEnt, const idDict &pr
 		if ( !projectileDef.GetBool( "detonate_on_actor" ) ) {
 			return false;
 		}
-	} else {
+	}
+
+	else {
 		if ( !projectileDef.GetBool( "detonate_on_world" ) ) {
 			return false;
 		}

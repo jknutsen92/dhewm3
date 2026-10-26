@@ -68,7 +68,6 @@ extern const idEventDef EV_SetSkin;
 extern const idEventDef EV_StartSoundShader;
 extern const idEventDef EV_StopSound;
 extern const idEventDef EV_CacheSoundShader;
-extern const idEventDef EV_IsSpawned;
 
 // Think flags
 enum {
@@ -188,7 +187,6 @@ public:
 	virtual	void			DormantBegin( void );	// called when entity becomes dormant
 	virtual	void			DormantEnd( void );		// called when entity wakes from being dormant
 	bool					IsActive( void ) const;
-	bool 					IsSpawned(void) const;
 	void					BecomeActive( int flags );
 	void					BecomeInactive( int flags );
 	void					UpdatePVSAreas( const idVec3 &pos );
@@ -480,8 +478,6 @@ private:
 	void					Event_HasFunction( const char *name );
 	void					Event_CallFunction( const char *name );
 	void					Event_SetNeverDormant( int enable );
-	void					Event_IsSpawned(void);
-
 };
 
 /*

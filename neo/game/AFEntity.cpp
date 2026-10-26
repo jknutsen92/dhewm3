@@ -574,7 +574,7 @@ idAFEntity_Base::~idAFEntity_Base
 idAFEntity_Base::~idAFEntity_Base( void ) {
 	delete combatModel;
 	combatModel = NULL;
-	if (rezEntity && !rezEntity->IsSpawned()) {
+	if (rezEntity && rezEntity->IsHidden()) {
 		if (g_debugResurrection.GetBool()) {
 			common->Printf("Ragdoll %s destroyed before resurrection could complete, freeing %s.\n", GetName(), rezEntity->GetName());
 		}
@@ -700,12 +700,14 @@ void idAFEntity_Base::Think( void ) {
 void idAFEntity_Base::CompleteResurrection() {
 	if (!IsClearToResurrect()) {
 		if (g_debugResurrection.GetBool()) {
-			common->Printf("%s prevented from resurrecting. Cancelling rezEntity spawn", GetName());
+			common->Printf("%s prevented from resurrecting. Cancelling rezEntity spawn\n", GetName());
 		}
+		rezDissolveFx->Stop();
+		rezDissolveFx = nullptr;
 		return;
 	}
 
-	idVec3 spawnPos = GetPhysics()->GetOrigin();
+	idVec3 spawnPos = idVec3(GetPhysics()->GetOrigin());
 	((idAI*)rezEntity)->MovePointToNearestValidLocation(spawnPos);
 	SetOrigin(spawnPos);
 
@@ -1113,6 +1115,7 @@ idEntity* idAFEntity_Base::StartResurrection(const idDict rezEntSpawnArgs) {
 	args.Set("origin", GetPhysics()->GetOrigin().ToString());
 	args.Set("angle", va("%f", GetPhysics()->GetAxis().ToAngles().yaw));
 	args.Set("hide", "1");
+	args.Set("neverdormant", "1");
 	// Create the entity
 	gameLocal.SpawnEntityDef(args, &rezEntity);
 	if (!rezEntity) {
