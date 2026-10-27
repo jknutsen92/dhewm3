@@ -319,7 +319,7 @@ public:
 
 	virtual void			InflictHeat(const char* damageDefName, float damageScale);
 	virtual void 			ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, float damageScale);
-
+	virtual void			ApplyRezFx(void);
 
 	// scripting
 	virtual bool			ShouldConstructScriptObjectAtSpawn( void ) const;

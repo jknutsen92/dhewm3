@@ -3570,7 +3570,9 @@ void idAI::TouchedByFlashlight( idActor *flashlight_owner ) {
 
 void idAI::MovePointToNearestValidLocation(idVec3& pos) {
 	int areaNum = PointReachableAreaNum(pos);
-	aas->PushPointIntoAreaNum(areaNum, pos);
+	if (aas) {
+		aas->PushPointIntoAreaNum(areaNum, pos);
+	}
 }
 
 /*

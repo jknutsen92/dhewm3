@@ -1175,6 +1175,7 @@ void idAFEntity_Base::ApplyResurrectionFx() {
 	Burn();
 	// Play the FX
 	rezDissolveFx = idEntityFx::StartFx("fx/resurrect.fx", &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, false);
+	rezEntity->ApplyRezFx();
 }
 
 void idAFEntity_Base::Event_IsPlayerInBounds(const idVec3 &mins, const idVec3 &maxs) {

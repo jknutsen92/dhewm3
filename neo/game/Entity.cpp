@@ -3108,6 +3108,8 @@ void idEntity::InflictHeat(const char* damageDefName, float damageScale) {
 void idEntity::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, float damageScale) {
 }
 
+void idEntity::ApplyRezFx() {
+}
 
 /***********************************************************************
 
