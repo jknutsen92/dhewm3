@@ -554,6 +554,8 @@ idAFEntity_Base::idAFEntity_Base( void ) {
 	spawnAxis.Identity();
 
 	particles.Clear();
+
+	rezCompleted = false;
 	
 	isAlive 			= false;
 	heat 				= 0;
@@ -574,7 +576,7 @@ idAFEntity_Base::~idAFEntity_Base
 idAFEntity_Base::~idAFEntity_Base( void ) {
 	delete combatModel;
 	combatModel = NULL;
-	if (rezEntity && rezEntity->IsHidden()) {
+	if (rezEntity && !rezCompleted) {
 		if (g_debugResurrection.GetBool()) {
 			common->Printf("Ragdoll %s destroyed before resurrection could complete, freeing %s.\n", GetName(), rezEntity->GetName());
 		}
@@ -706,6 +708,7 @@ void idAFEntity_Base::CompleteResurrection() {
 		rezDissolveFx = nullptr;
 		return;
 	}
+	rezCompleted = true;
 
 	idVec3 spawnPos = idVec3(GetPhysics()->GetOrigin());
 	((idAI*)rezEntity)->MovePointToNearestValidLocation(spawnPos);

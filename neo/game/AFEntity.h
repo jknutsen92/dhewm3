@@ -241,6 +241,7 @@ protected:
 
 	idEntityFx*				rezDissolveFx;	// FX that plays during corpse resurrection
 	idEntity*				rezEntity;		// Entity that will be spawned after the dissolve
+	bool					rezCompleted;	// Indicates if we have completed the resurrection process
 
 	void					Event_SetConstraintPosition( const char *name, const idVec3 &pos );
 	void					CompleteResurrection(void);

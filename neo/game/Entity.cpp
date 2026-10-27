@@ -124,6 +124,8 @@ const idEventDef EV_StartFx( "startFx", "s" );
 const idEventDef EV_HasFunction( "hasFunction", "s", 'd' );
 const idEventDef EV_CallFunction( "callFunction", "s" );
 const idEventDef EV_SetNeverDormant( "setNeverDormant", "d" );
+const idEventDef EV_InPlayerPVS("inPlayerPVS", NULL, 'd');
+const idEventDef EV_IsLiving("isLiving", NULL, 'd');
 
 ABSTRACT_DECLARATION( idClass, idEntity )
 	EVENT( EV_GetName,				idEntity::Event_GetName )
@@ -193,6 +195,8 @@ ABSTRACT_DECLARATION( idClass, idEntity )
 	EVENT( EV_HasFunction,			idEntity::Event_HasFunction )
 	EVENT( EV_CallFunction,			idEntity::Event_CallFunction )
 	EVENT( EV_SetNeverDormant,		idEntity::Event_SetNeverDormant )
+	EVENT( EV_InPlayerPVS,			idEntity::Event_InPlayerPVS )
+	EVENT( EV_IsLiving,				idEntity::Event_IsLiving )
 END_CLASS
 
 /*
@@ -4657,6 +4661,14 @@ idEntity::Event_SetNeverDormant
 void idEntity::Event_SetNeverDormant( int enable ) {
 	fl.neverDormant	= ( enable != 0 );
 	dormantStart = 0;
+}
+
+void idEntity::Event_InPlayerPVS() {
+	return idThread::ReturnInt(gameLocal.InPlayerPVS(this));
+}
+
+void idEntity::Event_IsLiving() {
+	return idThread::ReturnInt(isAlive);
 }
 
 /***********************************************************************

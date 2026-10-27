@@ -1325,6 +1325,8 @@ bool idGameLocal::InitFromSaveGame( const char *mapName, idRenderWorld *renderWo
 	savegame.ReadInt( i );
 	g_skill.SetInteger( i );
 
+	CallDoomMainScript();
+
 	// precache the player
 	FindEntityDef( "player_doommarine", false );
 
@@ -1895,6 +1897,10 @@ void idGameLocal::InitScriptForMap( void ) {
 	frameCommandThread->SetThreadName( "frameCommands" );
 
 	// run the main game script function (not the level specific main)
+	CallDoomMainScript();
+}
+
+void idGameLocal::CallDoomMainScript() {
 	const function_t *func = program.FindFunction( SCRIPT_DEFAULTFUNC );
 	if ( func != NULL ) {
 		idThread *thread = new idThread( func );

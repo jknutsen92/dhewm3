@@ -68,6 +68,8 @@ extern const idEventDef EV_SetSkin;
 extern const idEventDef EV_StartSoundShader;
 extern const idEventDef EV_StopSound;
 extern const idEventDef EV_CacheSoundShader;
+extern const idEventDef EV_InPlayerPVS;
+extern const idEventDef EV_IsLiving;
 
 // Think flags
 enum {
@@ -478,6 +480,8 @@ private:
 	void					Event_HasFunction( const char *name );
 	void					Event_CallFunction( const char *name );
 	void					Event_SetNeverDormant( int enable );
+	void					Event_InPlayerPVS(void);
+	void					Event_IsLiving(void);
 };
 
 /*

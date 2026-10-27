@@ -532,6 +532,7 @@ private:
 	void					RunDebugInfo( void );
 
 	void					InitScriptForMap( void );
+	void					CallDoomMainScript(void);
 
 	void					InitConsoleCommands( void );
 	void					ShutdownConsoleCommands( void );
