@@ -215,6 +215,7 @@ public:
 	void					SetWaitState( const char *_waitstate );
 	bool					AnimDone( int channel, int blendFrames ) const;
 	virtual void			SpawnGibs( const idVec3 &dir, const char *damageDefName );
+	virtual void 			ApplyRezFx(void);
 
 protected:
 	friend class			idAnimState;

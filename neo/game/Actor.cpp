@@ -2490,6 +2490,14 @@ void idActor::SpawnGibs( const idVec3 &dir, const char *damageDefName ) {
 	RemoveAttachments();
 }
 
+void idActor::ApplyRezFx() {
+	SetSkin(declManager->FindSkin(va("skins/%s_rez.skin", spawnArgs.GetString("classname"))));
+	idEntity* headEnt = head.GetEntity();
+	if (headEnt) {
+		headEnt->SetSkin(declManager->FindSkin(va("skins/%s_rez.skin", spawnArgs.GetString("def_head"))));
+	}
+}
+
 /*
 =====================
 idActor::SetupDamageGroups

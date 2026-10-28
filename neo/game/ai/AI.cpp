@@ -3568,6 +3568,13 @@ void idAI::TouchedByFlashlight( idActor *flashlight_owner ) {
 	}
 }
 
+void idAI::MovePointToNearestValidLocation(idVec3& pos) {
+	int areaNum = PointReachableAreaNum(pos);
+	if (aas) {
+		aas->PushPointIntoAreaNum(areaNum, pos);
+	}
+}
+
 /*
 =====================
 idAI::ClearEnemy

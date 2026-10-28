@@ -68,7 +68,10 @@ extern const idEventDef EV_SetSkin;
 extern const idEventDef EV_StartSoundShader;
 extern const idEventDef EV_StopSound;
 extern const idEventDef EV_CacheSoundShader;
-extern const idEventDef EV_IsSpawned;
+extern const idEventDef EV_InPlayerPVS;
+extern const idEventDef EV_IsLiving;
+extern const idEventDef EV_TakeDamage;
+extern const idEventDef EV_AddTarget;
 
 // Think flags
 enum {
@@ -188,7 +191,6 @@ public:
 	virtual	void			DormantBegin( void );	// called when entity becomes dormant
 	virtual	void			DormantEnd( void );		// called when entity wakes from being dormant
 	bool					IsActive( void ) const;
-	bool 					IsSpawned(void) const;
 	void					BecomeActive( int flags );
 	void					BecomeInactive( int flags );
 	void					UpdatePVSAreas( const idVec3 &pos );
@@ -319,7 +321,7 @@ public:
 
 	virtual void			InflictHeat(const char* damageDefName, float damageScale);
 	virtual void 			ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, float damageScale);
-
+	virtual void			ApplyRezFx(void);
 
 	// scripting
 	virtual bool			ShouldConstructScriptObjectAtSpawn( void ) const;
@@ -480,8 +482,10 @@ private:
 	void					Event_HasFunction( const char *name );
 	void					Event_CallFunction( const char *name );
 	void					Event_SetNeverDormant( int enable );
-	void					Event_IsSpawned(void);
-
+	void					Event_InPlayerPVS(void);
+	void					Event_IsLiving(void);
+	void					Event_TakeDamage(int enable);
+	void					Event_AddTarget(idEntity* ent);
 };
 
 /*

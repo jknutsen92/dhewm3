@@ -845,6 +845,11 @@ bool idInventory::Give( idPlayer *owner, const idDict &spawnArgs, const char *st
 						owner->hud->SetStateInt( "newWeapon", i );
 						owner->hud->HandleNamedEvent( "newWeapon" );
 						lastGiveTime = gameLocal.time;
+						if (i == 6) {
+							idStr title = common->GetLanguageDict()->GetString("#str_07245");
+							idStr text = common->GetLanguageDict()->GetString("#str_07246");
+							owner->ShowTip(title, text, false);
+						}
 					}
 					weaponPulse = true;
 					weapons |= ( 1 << i );
@@ -991,7 +996,7 @@ idPlayer::idPlayer() {
 	lastHitTime				= 0;
 	lastSndHitTime			= 0;
 	lastSavingThrowTime		= 0;
-	reticleCritColor		= idVec3(1.0f, 0.5f, 0.0f);
+	reticleCritColor		= idVec3(0.8f, 0.3f, 0.0f);
 	reticleHitColor			= idVec3(0.8f, 0.0f, 0.0f);
 	reticleDimColor			= idVec3(0.15f, 0.00f, 0.05f);
 	reticleHeatColor		= idVec3(0.0, 0.0, 0.8f);
@@ -3773,6 +3778,13 @@ void idPlayer::SelectWeapon( int num, bool force ) {
 			curToggleIndex = (curToggleIndex + 1) % weaponToggle->toggleList.Num();
 		}
 		num = weaponToggle->toggleList[curToggleIndex];
+		if (!inventory.HasWeapon(num)) {
+			// If we don't have this weapon, loop through all weapons in the toggle
+			curToggleIndex = 0;
+			while (!inventory.HasWeapon(num) && curToggleIndex < weaponToggle->toggleList.Num()) {
+				num = weaponToggle->toggleList[curToggleIndex++ % weaponToggle->toggleList.Num()];
+			}
+		}
 	}
 
 	weap = spawnArgs.GetString( va( "def_weapon%d", num ) );
@@ -8489,6 +8501,10 @@ idPlayer::ShowTip
 ===============
 */
 void idPlayer::ShowTip( const char *title, const char *tip, bool autoHide ) {
+	if (!g_showTips.GetBool()) {
+		return;
+	}
+
 	if ( tipUp ) {
 		return;
 	}

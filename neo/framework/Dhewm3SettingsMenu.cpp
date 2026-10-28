@@ -1192,6 +1192,7 @@ static void InitBindingEntries()
 			}
 		}
 	}
+	bindingEntries.Append( BindingEntry( "_impulse16", "Pistol+Flashlight" ) );
 
 	for ( const BindingEntryTemplate& bet : betsOther ) {
 		bindingEntries.Append( BindingEntry( bet ) );
@@ -1199,7 +1200,6 @@ static void InitBindingEntries()
 
 	firstObscureEntryIndex = bindingEntries.Num();
 
-	bindingEntries.Append( BindingEntry( "_impulse16", "Pistol+Flashlight" ) );				// smolspacer
 	bindingEntries.Append( BindingEntry( "_impulse21", "_impulse21" ) );
 	// _impulse22 is "spectate", handled in "Other" section
 	bindingEntries.Append( BindingEntry( "_impulse23", "_impulse23" ) );
@@ -2348,6 +2348,7 @@ static CVarOption gameOptions[] = {
 	CVarOption( "g_doubleVision", "Show Double Vision when Taking Damage", OT_BOOL ),
 	CVarOption( "g_hitEffect", "Mess Up Player Camera when Taking Damage", OT_BOOL ),
 	CVarOption( "con_noPrint", "Print console output only to console, don't show when it's closed", OT_BOOL ),
+	CVarOption( "g_showTips", "Show tutorial pop ups during gameplay", OT_BOOL ),
 };
 
 static char playerNameBuf[128] = {};

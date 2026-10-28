@@ -124,7 +124,10 @@ const idEventDef EV_StartFx( "startFx", "s" );
 const idEventDef EV_HasFunction( "hasFunction", "s", 'd' );
 const idEventDef EV_CallFunction( "callFunction", "s" );
 const idEventDef EV_SetNeverDormant( "setNeverDormant", "d" );
-const idEventDef EV_IsSpawned("isSpawned", NULL, 'd');
+const idEventDef EV_InPlayerPVS("inPlayerPVS", NULL, 'd');
+const idEventDef EV_IsLiving("isLiving", NULL, 'd');
+const idEventDef EV_TakeDamage("takeDamage", "d");
+const idEventDef EV_AddTarget("addTarget", "e", 'd');
 
 ABSTRACT_DECLARATION( idClass, idEntity )
 	EVENT( EV_GetName,				idEntity::Event_GetName )
@@ -194,7 +197,10 @@ ABSTRACT_DECLARATION( idClass, idEntity )
 	EVENT( EV_HasFunction,			idEntity::Event_HasFunction )
 	EVENT( EV_CallFunction,			idEntity::Event_CallFunction )
 	EVENT( EV_SetNeverDormant,		idEntity::Event_SetNeverDormant )
-	EVENT( EV_IsSpawned,			idEntity::Event_IsSpawned )
+	EVENT( EV_InPlayerPVS,			idEntity::Event_InPlayerPVS )
+	EVENT( EV_IsLiving,				idEntity::Event_IsLiving )
+	EVENT( EV_TakeDamage,			idEntity::Event_TakeDamage )
+	EVENT( EV_AddTarget, 			idEntity::Event_AddTarget )
 END_CLASS
 
 /*
@@ -948,10 +954,6 @@ idEntity::IsActive
 */
 bool idEntity::IsActive( void ) const {
 	return activeNode.InList();
-}
-
-bool idEntity::IsSpawned(void) const {
-	return spawnNode.InList();
 }
 
 /*
@@ -3110,6 +3112,8 @@ void idEntity::InflictHeat(const char* damageDefName, float damageScale) {
 void idEntity::ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, float damageScale) {
 }
 
+void idEntity::ApplyRezFx() {
+}
 
 /***********************************************************************
 
@@ -4665,8 +4669,21 @@ void idEntity::Event_SetNeverDormant( int enable ) {
 	dormantStart = 0;
 }
 
-void idEntity::Event_IsSpawned() {
-	idThread::ReturnInt(IsSpawned());
+void idEntity::Event_InPlayerPVS() {
+	return idThread::ReturnInt(gameLocal.InPlayerPVS(this));
+}
+
+void idEntity::Event_IsLiving() {
+	return idThread::ReturnInt(isAlive);
+}
+
+void idEntity::Event_TakeDamage(int enable) {
+	fl.takedamage = enable;
+}
+
+void idEntity::Event_AddTarget(idEntity* ent) {
+	idEntityPtr<idEntity> entPtr;
+	return idThread::ReturnInt(targets.Append(entPtr));
 }
 
 /***********************************************************************
