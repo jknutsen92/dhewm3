@@ -70,6 +70,8 @@ extern const idEventDef EV_StopSound;
 extern const idEventDef EV_CacheSoundShader;
 extern const idEventDef EV_InPlayerPVS;
 extern const idEventDef EV_IsLiving;
+extern const idEventDef EV_TakeDamage;
+extern const idEventDef EV_AddTarget;
 
 // Think flags
 enum {
@@ -482,6 +484,8 @@ private:
 	void					Event_SetNeverDormant( int enable );
 	void					Event_InPlayerPVS(void);
 	void					Event_IsLiving(void);
+	void					Event_TakeDamage(int enable);
+	void					Event_AddTarget(idEntity* ent);
 };
 
 /*

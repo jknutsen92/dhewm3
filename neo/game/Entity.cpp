@@ -126,6 +126,8 @@ const idEventDef EV_CallFunction( "callFunction", "s" );
 const idEventDef EV_SetNeverDormant( "setNeverDormant", "d" );
 const idEventDef EV_InPlayerPVS("inPlayerPVS", NULL, 'd');
 const idEventDef EV_IsLiving("isLiving", NULL, 'd');
+const idEventDef EV_TakeDamage("takeDamage", "d");
+const idEventDef EV_AddTarget("addTarget", "e", 'd');
 
 ABSTRACT_DECLARATION( idClass, idEntity )
 	EVENT( EV_GetName,				idEntity::Event_GetName )
@@ -197,6 +199,8 @@ ABSTRACT_DECLARATION( idClass, idEntity )
 	EVENT( EV_SetNeverDormant,		idEntity::Event_SetNeverDormant )
 	EVENT( EV_InPlayerPVS,			idEntity::Event_InPlayerPVS )
 	EVENT( EV_IsLiving,				idEntity::Event_IsLiving )
+	EVENT( EV_TakeDamage,			idEntity::Event_TakeDamage )
+	EVENT( EV_AddTarget, 			idEntity::Event_AddTarget )
 END_CLASS
 
 /*
@@ -4671,6 +4675,15 @@ void idEntity::Event_InPlayerPVS() {
 
 void idEntity::Event_IsLiving() {
 	return idThread::ReturnInt(isAlive);
+}
+
+void idEntity::Event_TakeDamage(int enable) {
+	fl.takedamage = enable;
+}
+
+void idEntity::Event_AddTarget(idEntity* ent) {
+	idEntityPtr<idEntity> entPtr;
+	return idThread::ReturnInt(targets.Append(entPtr));
 }
 
 /***********************************************************************
