@@ -478,7 +478,12 @@ void idPlayerView::SingleView( idUserInterface *hud, const renderView_t *view ) 
 				renderSystem->DrawStretchPic( blob->x, blob->y, blob->w, blob->h,blob->s1, blob->t1, blob->s2, blob->t2, blob->material );
 			}
 		}
-		player->DrawHUD( hud );
+		if (player->isCheckingInventory) {
+			player->DrawInventory();
+		}
+		else {
+			player->DrawHUD( hud );
+		}
 
 		// armor impulse feedback
 		float	armorPulse = ( gameLocal.time - player->lastArmorPulse ) / 250.0f;

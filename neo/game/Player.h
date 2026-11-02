@@ -278,8 +278,10 @@ public:
 
 	idEntityPtr<idWeapon>	weapon;
 	idUserInterface *		hud;				// MP: is NULL if not local player
+	idUserInterface*		inventoryHud;			// GUI screen that shows all player weapons/ammo/other resources
 	idUserInterface *		objectiveSystem;
 	bool					objectiveSystemOpen;
+	bool					isCheckingInventory;	// If using the inventory GUI to check ammo
 
 	int						weapon_soulcube;
 	int						weapon_pda;
@@ -411,6 +413,7 @@ public:
 	void					CalculateFirstPersonView( void );
 
 	void					DrawHUD( idUserInterface *hud );
+	void					DrawInventory();
 
 	void					WeaponFireFeedback( const idDict *weaponDef );
 
@@ -499,6 +502,8 @@ public:
 	bool					IsTipVisible( void ) { return tipUp; };
 	void					ShowObjective( const char *obj );
 	void					HideObjective( void );
+	void					CheckInventory();
+	void 					DismissInventory();
 
 	virtual void			ClientPredictionThink( void );
 	virtual void			WriteToSnapshot( idBitMsgDelta &msg ) const;

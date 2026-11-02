@@ -1004,8 +1004,10 @@ idPlayer::idPlayer() {
 	weapon					= NULL;
 
 	hud						= NULL;
+	inventoryHud			= nullptr;
 	objectiveSystem			= NULL;
 	objectiveSystemOpen		= false;
+	isCheckingInventory		= false;
 
 	heartRate				= BASE_HEARTRATE;
 	heartInfo.Init( 0, 0, 0, 0 );
@@ -1503,6 +1505,8 @@ void idPlayer::Spawn( void ) {
 
 			cursor->Activate( true, gameLocal.time );
 		}
+
+		inventoryHud = uiManager->FindGui("guis/inventory.gui", true, false, true);
 
 		objectiveSystem = uiManager->FindGui( "guis/pda.gui", true, false, true );
 		objectiveSystemOpen = false;
@@ -2742,6 +2746,22 @@ void idPlayer::DrawHUD( idUserInterface *_hud ) {
 			cursor->Redraw( gameLocal.realClientTime );
 		}
 	}
+}
+
+void idPlayer::DrawInventory() {
+	if ( !weapon.GetEntity() || influenceActive != INFLUENCE_NONE || privateCameraView || gameLocal.GetCamera() || !inventoryHud || !g_showHud.GetBool() ) {
+		return;
+	}
+
+	// Bullets section
+	float weapon1ClipRatio = ((float)inventory.clip[1]) / gameLocal.FindEntityDef(spawnArgs.GetString("def_weapon1"))->dict.GetFloat("clipSize");
+	float bulletsCountRatio = inventory.ammo[2] / (float)inventory.MaxAmmoForAmmoClass(this, "ammo_bullets");
+	inventoryHud->SetStateInt("player_weapon1_clip", inventory.clip[1]);
+	inventoryHud->SetStateFloat("player_weapon1_clip_ratio", weapon1ClipRatio);
+	inventoryHud->SetStateInt("player_bullets_count", inventory.ammo[2]);
+	inventoryHud->SetStateFloat("player_bullets_ratio", bulletsCountRatio);
+
+	inventoryHud->Redraw(gameLocal.realClientTime);
 }
 
 /*
@@ -5757,6 +5777,20 @@ void idPlayer::PerformImpulse( int impulse ) {
 			}
 			break;
 		}
+		case IMPULSE_21: {
+			if (g_toggleInventory.GetBool()) {
+				if (isCheckingInventory) {
+					DismissInventory();
+				}
+				else {
+					CheckInventory();
+				}
+			}
+			else {
+				CheckInventory();
+			}
+			break;
+		}
 		case IMPULSE_22: {
 			if ( gameLocal.isClient || entityNumber == gameLocal.localClientNum ) {
 				gameLocal.mpGame.ToggleSpectate();
@@ -8554,6 +8588,14 @@ idPlayer::HideObjective
 void idPlayer::HideObjective( void ) {
 	hud->HandleNamedEvent( "closeObjective" );
 	objectiveUp = false;
+}
+
+void idPlayer::CheckInventory() {	
+	isCheckingInventory = true;
+}
+
+void idPlayer::DismissInventory() {
+	isCheckingInventory = false;
 }
 
 /*

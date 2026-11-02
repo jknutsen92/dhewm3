@@ -32,7 +32,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "framework/CVarSystem.h"
 #include "framework/KeyInput.h"
 #include "framework/async/AsyncNetwork.h"
-
+#include "../game/gamesys/SysCvar.h"
 #include "framework/UsercmdGen.h"
 
 /*
