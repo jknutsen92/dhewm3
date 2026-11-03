@@ -1004,6 +1004,10 @@ void idUsercmdGenLocal::CmdButtons( void ) {
 	if ( ButtonState( UB_MLOOK ) ^ in_freeLook.GetInteger() ) {
 		cmd.buttons |= BUTTON_MLOOK;
 	}
+
+	if ( ButtonState(UB_IMPULSE21) ) {
+		cmd.buttons |= BUTTON_INVENTORY;
+	}
 }
 
 /*

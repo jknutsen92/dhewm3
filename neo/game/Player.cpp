@@ -5914,9 +5914,6 @@ void idPlayer::PerformImpulse( int impulse ) {
 					CheckInventory();
 				}
 			}
-			else {
-				CheckInventory();
-			}
 			break;
 		}
 		case IMPULSE_22: {
@@ -6570,6 +6567,15 @@ void idPlayer::Think( void ) {
 			zoomFov.Init( gameLocal.time, 200.0f, CalcFov( false ), weapon.GetEntity()->GetZoomFov() );
 		} else {
 			zoomFov.Init( gameLocal.time, 200.0f, zoomFov.GetCurrentValue( gameLocal.time ), DefaultFov() );
+		}
+	}
+
+	if (!g_toggleInventory.GetBool()) {
+		if ((usercmd.buttons & BUTTON_INVENTORY) && !isCheckingInventory) {
+			CheckInventory();
+		}
+		else if (!(usercmd.buttons & BUTTON_INVENTORY) && isCheckingInventory) {
+			DismissInventory();
 		}
 	}
 
