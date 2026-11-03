@@ -2754,12 +2754,140 @@ void idPlayer::DrawInventory() {
 	}
 
 	// Bullets section
-	float weapon1ClipRatio = ((float)inventory.clip[1]) / gameLocal.FindEntityDef(spawnArgs.GetString("def_weapon1"))->dict.GetFloat("clipSize");
-	float bulletsCountRatio = inventory.ammo[2] / (float)inventory.MaxAmmoForAmmoClass(this, "ammo_bullets");
-	inventoryHud->SetStateInt("player_weapon1_clip", inventory.clip[1]);
-	inventoryHud->SetStateFloat("player_weapon1_clip_ratio", weapon1ClipRatio);
-	inventoryHud->SetStateInt("player_bullets_count", inventory.ammo[2]);
+	bool hasPistol = inventory.weapons & WEAPON_PISTOL;
+	if (hasPistol) {
+		const idDict pistolDef = gameLocal.FindEntityDef(spawnArgs.GetString("def_weapon1"))->dict;
+		float pistolClipRatio = ((float)inventory.clip[1]) / pistolDef.GetFloat("clipSize");
+		inventoryHud->SetStateInt("player_pistol_clip", inventory.clip[1]);
+		inventoryHud->SetStateFloat("player_pistol_clip_ratio", pistolClipRatio);
+	}
+	float bulletsCountRatio = inventory.ammo[AMMO_BULLETS] / (float)inventory.MaxAmmoForAmmoClass(this, "ammo_bullets");
+	inventoryHud->SetStateInt("player_bullets_count", inventory.ammo[AMMO_BULLETS]);
 	inventoryHud->SetStateFloat("player_bullets_ratio", bulletsCountRatio);
+	inventoryHud->SetStateBool("player_pistol_posession", hasPistol);
+	inventoryHud->SetStateBool("player_bullets_posession", hasPistol || inventory.ammo[AMMO_BULLETS] > 0);
+
+	// Shells section
+	bool hasShotgun = inventory.weapons & WEAPON_SHOTGUN;
+	bool hasClassic = inventory.weapons & WEAPON_CLASSIC;
+	if (hasShotgun) {	
+		const idDict shotgunDef = gameLocal.FindEntityDef(spawnArgs.GetString("def_weapon2"))->dict;
+		float shotgunClipRatio = ((float)inventory.clip[2])/ shotgunDef.GetFloat("clipSize");
+		inventoryHud->SetStateInt("player_shotgun_clip", inventory.clip[2]);
+		inventoryHud->SetStateFloat("player_shotgun_clip_ratio", shotgunClipRatio);
+	}
+	if (hasClassic) {
+		const idDict classicDef = gameLocal.FindEntityDef(spawnArgs.GetString("def_weapon14"))->dict;
+		float classicClipRatio = ((float)inventory.clip[14])/ classicDef.GetFloat("clipSize");
+		inventoryHud->SetStateInt("player_classic_clip", inventory.clip[14]);
+		inventoryHud->SetStateFloat("player_classic_clip_ratio", classicClipRatio);
+	}
+	float shellsCountRatio = inventory.ammo[AMMO_SHELLS] / (float)inventory.MaxAmmoForAmmoClass(this, "ammo_shells");
+	inventoryHud->SetStateInt("player_shells_count", inventory.ammo[AMMO_SHELLS]);
+	inventoryHud->SetStateFloat("player_shells_ratio", shellsCountRatio);
+	inventoryHud->SetStateBool("player_shotgun_posession", hasShotgun);
+	inventoryHud->SetStateBool("player_classic_posession", hasClassic);
+	inventoryHud->SetStateBool("player_shells_posession", hasShotgun || hasClassic || inventory.ammo[AMMO_SHELLS] > 0);
+
+	// Clip section
+	bool hasMachinegun = inventory.weapons & WEAPON_MACHINEGUN;
+	if (hasMachinegun) {
+		const idDict machinegunDef = gameLocal.FindEntityDef(spawnArgs.GetString("def_weapon3"))->dict;
+		float machinegunClipRatio = ((float)inventory.clip[3]) / machinegunDef.GetFloat("clipSize");
+		inventoryHud->SetStateInt("player_machinegun_clip", inventory.clip[3]);
+		inventoryHud->SetStateFloat("player_machinegun_clip_ratio", machinegunClipRatio);
+	}
+	float clipCountRatio = inventory.ammo[AMMO_CLIP] / (float)inventory.MaxAmmoForAmmoClass(this, "ammo_clip");
+	inventoryHud->SetStateInt("player_clip_count", inventory.ammo[AMMO_CLIP]);
+	inventoryHud->SetStateFloat("player_clip_ratio", clipCountRatio);
+	inventoryHud->SetStateBool("player_machinegun_posession", hasMachinegun);
+	inventoryHud->SetStateBool("player_clip_posession", hasMachinegun || inventory.ammo[AMMO_CLIP] > 0);
+
+	// Grenades section TODO: Implement thumper
+	bool hasGrenades = inventory.weapons & WEAPON_GRENADE;
+	// bool hasThumper = inventory.weapons & WEAPON_THUMPER;
+	// if (hasThumper) {
+	// 	const idDict thumperDef = gameLocal.FindEntityDef(spawnArgs.GetString("def_weapon15"))->dict;
+	// 	float thumperClipRatio = ((float)inventory.clip[15]) / thumperDef.GetFloat("clipSize");
+	// 	inventoryHud->SetStateInt("player_thumper_clip", inventory.clip[15]);
+	// 	inventoryHud->SetStateFloat("player_thumper_clip_ratio", thumperClipRatio);
+	// }
+	float grenadeCountRatio = inventory.ammo[AMMO_GRENADES] / (float)inventory.MaxAmmoForAmmoClass(this, "ammo_grenades");
+	inventoryHud->SetStateInt("player_grenade_count", inventory.ammo[AMMO_GRENADES]);
+	inventoryHud->SetStateFloat("player_grenade_ratio", grenadeCountRatio);
+	inventoryHud->SetStateBool("player_thumper_posession", false);
+	inventoryHud->SetStateBool("player_grenade_posession", hasGrenades || inventory.ammo[AMMO_GRENADES] > 0);
+
+	// Belt Section
+	bool hasChaingun = inventory.weapons & WEAPON_CHAINGUN;
+	if (hasChaingun) {
+		const idDict chaingunDef = gameLocal.FindEntityDef(spawnArgs.GetString("def_weapon4"))->dict;
+		float chaingunClipRatio = ((float)inventory.clip[4]) / chaingunDef.GetFloat("clipSize");
+		inventoryHud->SetStateInt("player_chaingun_clip", inventory.clip[4]);
+		inventoryHud->SetStateFloat("player_chaingun_clip_ratio", chaingunClipRatio);
+	}
+	float beltCountRatio = inventory.ammo[AMMO_BELT] / (float)inventory.MaxAmmoForAmmoClass(this, "ammo_belt");
+	inventoryHud->SetStateInt("player_belt_count", inventory.ammo[AMMO_BELT]);
+	inventoryHud->SetStateFloat("player_belt_ratio", beltCountRatio);
+	inventoryHud->SetStateBool("player_chaingun_posession", hasChaingun);
+	inventoryHud->SetStateBool("player_belt_posession", hasChaingun || inventory.ammo[AMMO_BELT] > 0);
+
+	// Cells section
+	bool hasPlasmagun = inventory.weapons & WEAPON_PLASMAGUN;
+	if (hasPlasmagun) {
+		const idDict plasmagunDef = gameLocal.FindEntityDef(spawnArgs.GetString("def_weapon6"))->dict;
+		float plasmagunClipRatio = ((float)inventory.clip[6]) / plasmagunDef.GetFloat("clipSize");
+		inventoryHud->SetStateInt("player_plasmagun_clip", inventory.clip[6]);
+		inventoryHud->SetStateFloat("player_plasmagun_clip_ratio", plasmagunClipRatio);
+	}
+	float cellsCountRatio = inventory.ammo[AMMO_CELLS] / (float)inventory.MaxAmmoForAmmoClass(this, "ammo_cells");
+	inventoryHud->SetStateInt("player_cells_count", inventory.ammo[AMMO_CELLS]);
+	inventoryHud->SetStateFloat("player_cells_ratio", cellsCountRatio);
+	inventoryHud->SetStateBool("player_plasmagun_posession", hasPlasmagun);
+	inventoryHud->SetStateBool("player_cells_posession", hasPlasmagun || inventory.ammo[AMMO_CELLS] > 0);
+
+	// Rockets section
+	bool hasRocketLauncher = inventory.weapons & WEAPON_ROCKET;
+	if (hasRocketLauncher) {
+		const idDict rocketLauncherDef = gameLocal.FindEntityDef(spawnArgs.GetString("def_weapon7"))->dict;
+		float rocketClipRatio = ((float)inventory.clip[7]) / rocketLauncherDef.GetFloat("clipSize");
+		inventoryHud->SetStateInt("player_rocket_clip", inventory.clip[7]);
+		inventoryHud->SetStateFloat("player_rocket_clip_ratio", rocketClipRatio);
+	}
+	float rocketsCountRatio = inventory.ammo[AMMO_ROCKETS] / (float)inventory.MaxAmmoForAmmoClass(this, "ammo_rockets");
+	inventoryHud->SetStateInt("player_rockets_count", inventory.ammo[AMMO_ROCKETS]);
+	inventoryHud->SetStateFloat("player_rockets_ratio", rocketsCountRatio);
+	inventoryHud->SetStateBool("player_rocketlauncher_posession", hasRocketLauncher);
+	inventoryHud->SetStateBool("player_rockets_posession", hasRocketLauncher || inventory.ammo[AMMO_ROCKETS] > 0);
+
+	// Chainsaw section
+	bool hasChainsaw = inventory.weapons & WEAPON_CHAINSAW;
+	// TODO: Chainsaw fuel here
+	inventoryHud->SetStateBool("player_chainsaw_posession", hasChainsaw);
+
+	// BFG section
+	bool hasBFG = inventory.weapons & WEAPON_BFG;
+	if (hasBFG) {
+		const idDict bfgDef = gameLocal.FindEntityDef(spawnArgs.GetString("def_weapon8"))->dict;
+		float bfgClipRatio = ((float)inventory.clip[8]) / bfgDef.GetFloat("clipSize");
+		inventoryHud->SetStateInt("player_bfg_clip", inventory.clip[8]);
+		inventoryHud->SetStateFloat("player_bfg_clip_ratio", bfgClipRatio);
+	}
+	float bfgCellCountRatio = inventory.ammo[AMMO_BFG] / (float)inventory.MaxAmmoForAmmoClass(this, "ammo_bfg");
+	inventoryHud->SetStateInt("player_bfgcell_count", inventory.ammo[AMMO_BFG]);
+	inventoryHud->SetStateFloat("player_bfgcell_ratio", bfgCellCountRatio);
+	inventoryHud->SetStateBool("player_bfg_posession", hasBFG);
+	inventoryHud->SetStateBool("player_bfgcell_posession", hasBFG || inventory.ammo[AMMO_BFG] > 0);
+
+	// Soulcube section
+	bool hasSoulcube = inventory.weapons & WEAPON_SOULCUBE;
+	if (hasSoulcube) {
+		const idDict soulCubeDef = gameLocal.FindEntityDef(spawnArgs.GetString("def_weapon9"))->dict;
+		float cubeSoulRatio = ((float)inventory.ammo[AMMO_SOULS]) / soulCubeDef.GetFloat("ammoRequired");
+		inventoryHud->SetStateFloat("player_soul_count", inventory.ammo[AMMO_SOULS]);
+		inventoryHud->SetStateFloat("player_soulcube_ratio", cubeSoulRatio);
+	}
+	inventoryHud->SetStateBool("player_soulcube_posession", hasSoulcube);
 
 	inventoryHud->Redraw(gameLocal.realClientTime);
 }

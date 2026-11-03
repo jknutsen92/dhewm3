@@ -40,6 +40,29 @@ If you have questions concerning this license or the applicable additional terms
 #include "PlayerIcon.h"
 #include "GameEdit.h"
 
+
+#define WEAPON_PISTOL 		( 1 << 1 )
+#define WEAPON_SHOTGUN		( 1 << 2 )
+#define WEAPON_MACHINEGUN	( 1 << 3 )
+#define WEAPON_CHAINGUN 	( 1 << 4 )
+#define WEAPON_GRENADE		( 1 << 5 )
+#define WEAPON_PLASMAGUN	( 1 << 6 )
+#define WEAPON_ROCKET		( 1 << 7 )
+#define WEAPON_BFG			( 1 << 8 )
+#define WEAPON_SOULCUBE 	( 1 << 9 )
+#define WEAPON_CHAINSAW		( 1 << 10 )
+#define WEAPON_CLASSIC		( 1 << 14 )
+
+#define AMMO_BULLETS	2
+#define AMMO_SHELLS		1
+#define AMMO_CLIP		8
+#define AMMO_GRENADES	5
+#define AMMO_BELT		9
+#define AMMO_CELLS		4
+#define AMMO_ROCKETS	3
+#define AMMO_BFG		7
+#define AMMO_SOULS		6
+
 class idAI;
 
 /*
