@@ -1709,7 +1709,9 @@ void idPlayer::Save( idSaveGame *savefile ) const {
 
 	savefile->WriteUserInterface( hud, false );
 	savefile->WriteUserInterface( objectiveSystem, false );
+	savefile->WriteUserInterface(inventoryHud, false);
 	savefile->WriteBool( objectiveSystemOpen );
+	savefile->WriteBool(isCheckingInventory);
 
 	savefile->WriteInt( weapon_soulcube );
 	savefile->WriteInt( weapon_pda );
@@ -1944,7 +1946,9 @@ void idPlayer::Restore( idRestoreGame *savefile ) {
 
 	savefile->ReadUserInterface( hud );
 	savefile->ReadUserInterface( objectiveSystem );
+	savefile->ReadUserInterface(inventoryHud);
 	savefile->ReadBool( objectiveSystemOpen );
+	savefile->ReadBool(isCheckingInventory);
 
 	savefile->ReadInt( weapon_soulcube );
 	savefile->ReadInt( weapon_pda );
@@ -8725,11 +8729,15 @@ void idPlayer::HideObjective( void ) {
 }
 
 void idPlayer::CheckInventory() {	
+	hiddenWeapon = true;
+	StartSoundShader(declManager->FindSound("player_inventory_zip_open"), SND_CHANNEL_VOICE, 0, false, nullptr);
 	isCheckingInventory = true;
 }
 
 void idPlayer::DismissInventory() {
+	StartSoundShader(declManager->FindSound("player_inventory_zip_closed"), SND_CHANNEL_VOICE, 0, false, nullptr);
 	isCheckingInventory = false;
+	hiddenWeapon = false;
 }
 
 /*
