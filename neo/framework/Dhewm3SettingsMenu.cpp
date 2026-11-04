@@ -1102,6 +1102,7 @@ static void InitBindingEntries()
 		{ "_impulse14",     "Next Weapon"  , "#str_02114" },
 		{ "_zoom",          "Zoom View"    , "#str_02120" },
 		{ "clientDropWeapon", "Drop Weapon", "#str_04071" },
+		{"_impulse21", 		"Check Inventory", "#str_07247"},
 
 		// also the heading for weapons, but the weapons entries are generated below..
 		{ nullptr,          "Weapons"    , "#str_01416" },
@@ -1200,7 +1201,6 @@ static void InitBindingEntries()
 
 	firstObscureEntryIndex = bindingEntries.Num();
 
-	bindingEntries.Append( BindingEntry( "_impulse21", "_impulse21" ) );
 	// _impulse22 is "spectate", handled in "Other" section
 	bindingEntries.Append( BindingEntry( "_impulse23", "_impulse23" ) );
 	bindingEntries.Append( BindingEntry( "_impulse24", "_impulse24" ) );
@@ -2329,6 +2329,7 @@ static CVarOption gameOptions[] = {
 	CVarOption( "in_toggleRun", "Toggle Run (Multiplayer-only by default)", OT_BOOL ),
 	CVarOption( "in_toggleCrouch", "Toggle Crouch", OT_BOOL ),
 	CVarOption( "in_toggleZoom", "Toggle Zoom", OT_BOOL ),
+	CVarOption( "g_toggleInventory", "Toggle Inventory", OT_BOOL ),
 	CVarOption( "ui_autoReload", "Auto Weapon Reload", OT_BOOL ),
 	CVarOption( "ui_autoSwitch", "Auto Weapon Switch", OT_BOOL ),
 	CVarOption( "Visual" ),

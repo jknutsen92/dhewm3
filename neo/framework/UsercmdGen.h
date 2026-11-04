@@ -46,7 +46,7 @@ const int BUTTON_RUN			= BIT(1);
 const int BUTTON_ZOOM			= BIT(2);
 const int BUTTON_SCORES			= BIT(3);
 const int BUTTON_MLOOK			= BIT(4);
-const int BUTTON_5				= BIT(5);
+const int BUTTON_INVENTORY		= BIT(5);
 const int BUTTON_6				= BIT(6);
 const int BUTTON_7				= BIT(7);
 

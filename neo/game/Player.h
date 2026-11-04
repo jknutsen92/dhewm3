@@ -40,6 +40,29 @@ If you have questions concerning this license or the applicable additional terms
 #include "PlayerIcon.h"
 #include "GameEdit.h"
 
+
+#define WEAPON_PISTOL 		( 1 << 1 )
+#define WEAPON_SHOTGUN		( 1 << 2 )
+#define WEAPON_MACHINEGUN	( 1 << 3 )
+#define WEAPON_CHAINGUN 	( 1 << 4 )
+#define WEAPON_GRENADE		( 1 << 5 )
+#define WEAPON_PLASMAGUN	( 1 << 6 )
+#define WEAPON_ROCKET		( 1 << 7 )
+#define WEAPON_BFG			( 1 << 8 )
+#define WEAPON_SOULCUBE 	( 1 << 9 )
+#define WEAPON_CHAINSAW		( 1 << 10 )
+#define WEAPON_CLASSIC		( 1 << 14 )
+
+#define AMMO_BULLETS	2
+#define AMMO_SHELLS		1
+#define AMMO_CLIP		8
+#define AMMO_GRENADES	5
+#define AMMO_BELT		9
+#define AMMO_CELLS		4
+#define AMMO_ROCKETS	3
+#define AMMO_BFG		7
+#define AMMO_SOULS		6
+
 class idAI;
 
 /*
@@ -278,8 +301,10 @@ public:
 
 	idEntityPtr<idWeapon>	weapon;
 	idUserInterface *		hud;				// MP: is NULL if not local player
+	idUserInterface*		inventoryHud;			// GUI screen that shows all player weapons/ammo/other resources
 	idUserInterface *		objectiveSystem;
 	bool					objectiveSystemOpen;
+	bool					isCheckingInventory;	// If using the inventory GUI to check ammo
 
 	int						weapon_soulcube;
 	int						weapon_pda;
@@ -411,6 +436,7 @@ public:
 	void					CalculateFirstPersonView( void );
 
 	void					DrawHUD( idUserInterface *hud );
+	void					DrawInventory();
 
 	void					WeaponFireFeedback( const idDict *weaponDef );
 
@@ -499,6 +525,8 @@ public:
 	bool					IsTipVisible( void ) { return tipUp; };
 	void					ShowObjective( const char *obj );
 	void					HideObjective( void );
+	void					CheckInventory();
+	void 					DismissInventory();
 
 	virtual void			ClientPredictionThink( void );
 	virtual void			WriteToSnapshot( idBitMsgDelta &msg ) const;

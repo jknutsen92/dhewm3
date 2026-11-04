@@ -780,7 +780,10 @@ void idAFEntity_Base::ApplyHeatFx(idDeclSkin* currentSkin) {
 }
 
 void idAFEntity_Base::FadeHeatFx() {
-	heatGlowFx->Stop();
+	if (heatGlowFx) {
+		heatGlowFx->Stop();
+		heatGlowFx = nullptr;
+	}
 	StopSound(SIZZLE_SND_CHANNEL, false);
 	heatGlowFx = idEntityFx::StartFx("fx/heatglow_fade.fx", &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, true);
 	StartSoundShader(declManager->FindSound("heat_dissolve"), SIZZLE_SND_CHANNEL, 0, false, nullptr);
@@ -788,7 +791,10 @@ void idAFEntity_Base::FadeHeatFx() {
 
 void idAFEntity_Base::RemoveHeatFx() {
 	SetSkin(previousSkinBody);
-	heatGlowFx->Stop();
+	if (heatGlowFx) {
+		heatGlowFx->Stop();
+		heatGlowFx = nullptr;
+	}
 	StopSound(SIZZLE_SND_CHANNEL, false);
 }
 
@@ -1556,6 +1562,7 @@ void idAFEntity_Gibbable::ApplyHeat(idEntity* inflictor, idEntity* attacker, int
 		StopSound(SIZZLE_SND_CHANNEL, false);
 		if (heatGlowFx) {
 			heatGlowFx->Stop();
+			heatGlowFx = nullptr;
 		}
 		Killed( inflictor, attacker, damage, dir, location, true );
 		if (spawnArgs.GetBool("gib") || spawnArgs.GetBool("heatgib")) {

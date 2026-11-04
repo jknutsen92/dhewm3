@@ -32,7 +32,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "framework/CVarSystem.h"
 #include "framework/KeyInput.h"
 #include "framework/async/AsyncNetwork.h"
-
+#include "../game/gamesys/SysCvar.h"
 #include "framework/UsercmdGen.h"
 
 /*
@@ -1003,6 +1003,10 @@ void idUsercmdGenLocal::CmdButtons( void ) {
 	// check the mouse look button
 	if ( ButtonState( UB_MLOOK ) ^ in_freeLook.GetInteger() ) {
 		cmd.buttons |= BUTTON_MLOOK;
+	}
+
+	if ( ButtonState(UB_IMPULSE21) ) {
+		cmd.buttons |= BUTTON_INVENTORY;
 	}
 }
 
