@@ -2617,6 +2617,15 @@ void idPlayer::UpdateHudAmmo( idUserInterface *_hud ) {
 	_hud->SetStateBool( "player_clip_empty", ( weapon.GetEntity()->ClipSize() ? inclip == 0 : false ) );
 	_hud->SetStateBool( "player_clip_low", ( weapon.GetEntity()->ClipSize() ? inclip <= weapon.GetEntity()->LowAmmo() : false ) );
 
+	const char* ammoType = weapon.GetEntity()->spawnArgs.GetString("ammoType");
+	int maxAmmoType = inventory.MaxAmmoForAmmoClass(this, ammoType);
+	if (maxAmmoType > 0) {
+		_hud->SetStateFloat("player_totalammo_ratio", ((float)ammoamount) / ((float)maxAmmoType));
+	}
+	else {
+		_hud->SetStateFloat("player_totalammo_ratio", 0);
+	}
+
 	_hud->HandleNamedEvent( "updateAmmo" );
 }
 
@@ -2866,7 +2875,12 @@ void idPlayer::DrawInventory() {
 
 	// Chainsaw section
 	bool hasChainsaw = inventory.weapons & WEAPON_CHAINSAW;
-	// TODO: Chainsaw fuel here
+	if (hasChainsaw) {
+		const idDict chainsawDef = gameLocal.FindEntityDef(spawnArgs.GetString("def_weapon10"))->dict;
+		float fuelRatio = inventory.ammo[AMMO_FUEL] / (float)inventory.MaxAmmoForAmmoClass(this, "ammo_fuel");
+		inventoryHud->SetStateInt("player_fuel_count", inventory.ammo[AMMO_FUEL]);
+		inventoryHud->SetStateFloat("player_fuel_ratio", fuelRatio);
+	}
 	inventoryHud->SetStateBool("player_chainsaw_posession", hasChainsaw);
 
 	// BFG section
