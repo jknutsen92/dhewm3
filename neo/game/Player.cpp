@@ -31,7 +31,6 @@ If you have questions concerning this license or the applicable additional terms
 #include "framework/async/NetworkSystem.h"
 #include "framework/DeclEntityDef.h"
 #include "renderer/RenderSystem.h"
-
 #include "gamesys/SysCvar.h"
 #include "script/Script_Thread.h"
 #include "ai/AI.h"
@@ -3064,7 +3063,7 @@ void idPlayer::FireWeapon( void ) {
 	}
 
 	if ( !hiddenWeapon && weapon.GetEntity()->IsReady() ) {
-		if ( weapon.GetEntity()->AmmoInClip() || weapon.GetEntity()->AmmoAvailable() ) {
+		if ( weapon.GetEntity()->AmmoInClip() || weapon.GetEntity()->AmmoAvailable() || !ui_autoSwitch.GetBool() ) {
 			AI_ATTACK_HELD = true;
 			weapon.GetEntity()->BeginAttack();
 			if ( ( weapon_soulcube >= 0 ) && ( currentWeapon == weapon_soulcube ) ) {

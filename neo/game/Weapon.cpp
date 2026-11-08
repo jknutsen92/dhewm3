@@ -80,6 +80,7 @@ const idEventDef EV_Weapon_AutoReload( "autoReload", NULL, 'f' );
 const idEventDef EV_Weapon_NetReload( "netReload" );
 const idEventDef EV_Weapon_IsInvisible( "isInvisible", NULL, 'f' );
 const idEventDef EV_Weapon_NetEndReload( "netEndReload" );
+const idEventDef EV_Weapon_SetContinuousSmoke("setContinuousSmoke", "d");
 
 //
 // class def
@@ -123,6 +124,7 @@ CLASS_DECLARATION( idAnimatedEntity, idWeapon )
 	EVENT( EV_Weapon_NetReload,					idWeapon::Event_NetReload )
 	EVENT( EV_Weapon_IsInvisible,				idWeapon::Event_IsInvisible )
 	EVENT( EV_Weapon_NetEndReload,				idWeapon::Event_NetEndReload )
+	EVENT( EV_Weapon_SetContinuousSmoke, 		idWeapon::Event_SetContinuousSmoke )
 END_CLASS
 
 /***********************************************************************
@@ -3213,4 +3215,14 @@ idWeapon::ClientPredictionThink
 */
 void idWeapon::ClientPredictionThink( void ) {
 	UpdateAnimation();
+}
+
+void idWeapon::Event_SetContinuousSmoke(bool state) {
+	if (state) {
+		weaponSmokeStartTime = gameLocal.time;
+	}
+	else {
+		weaponSmokeStartTime = 0;
+	}
+	continuousSmoke = state;
 }
