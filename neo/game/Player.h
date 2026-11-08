@@ -62,6 +62,7 @@ If you have questions concerning this license or the applicable additional terms
 #define AMMO_ROCKETS	3
 #define AMMO_BFG		7
 #define AMMO_SOULS		6
+#define AMMO_FUEL		10
 
 class idAI;
 

@@ -275,6 +275,9 @@ extern idCVar	si_spectators;
 extern idCVar	net_clientSelfSmoothing;
 extern idCVar	net_clientLagOMeter;
 
+extern idCVar   ui_autoSwitch;
+extern idCVar   ui_autoReload;
+
 extern const char *si_gameTypeArgs[];
 
 extern const char *ui_skinArgs[];

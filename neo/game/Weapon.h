@@ -360,6 +360,7 @@ private:
 	void					Event_NetReload( void );
 	void					Event_IsInvisible( void );
 	void					Event_NetEndReload( void );
+	void					Event_SetContinuousSmoke(bool state);
 };
 
 ID_INLINE bool idWeapon::IsLinked( void ) {
