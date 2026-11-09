@@ -73,7 +73,7 @@ const idEventDef EV_Weapon_Flashlight( "flashlight", "d" );
 const idEventDef EV_Weapon_LaunchProjectiles( "launchProjectiles", "dffff" );
 const idEventDef EV_Weapon_CreateProjectile( "createProjectile", NULL, 'e' );
 const idEventDef EV_Weapon_EjectBrass( "ejectBrass" );
-const idEventDef EV_Weapon_EjectClip("ejectClip");
+const idEventDef EV_Weapon_EjectClip("ejectClip", "s");
 const idEventDef EV_Weapon_Melee( "melee", NULL, 'd' );
 const idEventDef EV_Weapon_GetWorldModel( "getWorldModel", NULL, 'e' );
 const idEventDef EV_Weapon_AllowDrop( "allowDrop", "d" );
@@ -3233,7 +3233,7 @@ void idWeapon::Event_EjectBrass( void ) {
 }
 
 // Launch an idDebris representing a spent weapon clip from a joint defined in spawnargs
-void idWeapon::Event_EjectClip() {
+void idWeapon::Event_EjectClip(const char* clipSkin) {
 	if ( !g_showBrass.GetBool() || !owner->CanShowWeaponViewmodel() || gameLocal.isClient ) {
 		return;
 	}
@@ -3259,9 +3259,8 @@ void idWeapon::Event_EjectClip() {
 		gameLocal.Error("'%s' is not an idDebris", clipDict.GetString("classname"));
 	}
 
-	const idKeyValue* emptySkinKv = spawnArgs.FindKey("skin_ejectClipEmpty");
-	if (emptySkinKv) {
-		ent->SetSkin(declManager->FindSkin(emptySkinKv->GetValue()));
+	if (clipSkin[0]) {
+		ent->SetSkin(declManager->FindSkin(clipSkin));
 	}
 
 	idDebris* debris = (idDebris*)ent;

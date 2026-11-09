@@ -354,7 +354,7 @@ private:
 	void					Event_LaunchProjectiles( int num_projectiles, float spread, float fuseOffset, float launchPower, float dmgPower );
 	void					Event_CreateProjectile( void );
 	void					Event_EjectBrass( void );
-	void 					Event_EjectClip(void);
+	void 					Event_EjectClip(const char* clipSkin);
 	void					Event_Melee( void );
 	void					Event_GetWorldModel( void );
 	void					Event_AllowDrop( int allow );
