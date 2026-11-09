@@ -219,6 +219,7 @@ private:
 	idStr					meleeDefName;
 	idDict					brassDict;
 	int						brassDelay;
+	idDict					clipDict;
 	idStr					icon;
 
 	// view weapon gui light
@@ -353,6 +354,7 @@ private:
 	void					Event_LaunchProjectiles( int num_projectiles, float spread, float fuseOffset, float launchPower, float dmgPower );
 	void					Event_CreateProjectile( void );
 	void					Event_EjectBrass( void );
+	void 					Event_EjectClip(void);
 	void					Event_Melee( void );
 	void					Event_GetWorldModel( void );
 	void					Event_AllowDrop( int allow );

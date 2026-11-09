@@ -73,6 +73,7 @@ const idEventDef EV_Weapon_Flashlight( "flashlight", "d" );
 const idEventDef EV_Weapon_LaunchProjectiles( "launchProjectiles", "dffff" );
 const idEventDef EV_Weapon_CreateProjectile( "createProjectile", NULL, 'e' );
 const idEventDef EV_Weapon_EjectBrass( "ejectBrass" );
+const idEventDef EV_Weapon_EjectClip("ejectClip");
 const idEventDef EV_Weapon_Melee( "melee", NULL, 'd' );
 const idEventDef EV_Weapon_GetWorldModel( "getWorldModel", NULL, 'e' );
 const idEventDef EV_Weapon_AllowDrop( "allowDrop", "d" );
@@ -117,6 +118,7 @@ CLASS_DECLARATION( idAnimatedEntity, idWeapon )
 	EVENT( EV_Weapon_LaunchProjectiles,			idWeapon::Event_LaunchProjectiles )
 	EVENT( EV_Weapon_CreateProjectile,			idWeapon::Event_CreateProjectile )
 	EVENT( EV_Weapon_EjectBrass,				idWeapon::Event_EjectBrass )
+	EVENT( EV_Weapon_EjectClip,					idWeapon::Event_EjectClip )
 	EVENT( EV_Weapon_Melee,						idWeapon::Event_Melee )
 	EVENT( EV_Weapon_GetWorldModel,				idWeapon::Event_GetWorldModel )
 	EVENT( EV_Weapon_AllowDrop,					idWeapon::Event_AllowDrop )
@@ -254,6 +256,19 @@ void idWeapon::CacheWeapon( const char *weaponName ) {
 			}
 			// load the trace model
 			collisionModelManager->TrmFromModel( clipModelName, trm );
+		}
+	}
+
+	// precache the clip collision model
+	const char* clipDefName = weaponDef->dict.GetString("def_ejectClip");
+	if (clipDefName[0]) {
+		const idDeclEntityDef* clipDef = gameLocal.FindEntityDef(clipDefName, false);
+		if (clipDef) {
+			const char* collisionModelName = clipDef->dict.GetString("clipmodel");
+			if (!collisionModelName[0]) {
+				collisionModelName = clipDef->dict.GetString("model");
+			}
+			collisionModelManager->TrmFromModel(collisionModelName, trm);
 		}
 	}
 
@@ -456,6 +471,14 @@ void idWeapon::Restore( idRestoreGame *savefile ) {
 		brassDict = brassDef->dict;
 	} else {
 		brassDict.Clear();
+	}
+
+	const idDeclEntityDef* clipDef = gameLocal.FindEntityDef(weaponDef->dict.GetString("def_ejectClip"), false);
+	if (clipDef) {
+		clipDict = clipDef->dict;
+	}
+	else {
+		clipDict.Clear();
 	}
 
 	savefile->ReadFloat( meleeDistance );
@@ -678,6 +701,7 @@ void idWeapon::Clear( void ) {
 	meleeDefName	= "";
 	meleeDistance	= 0.0f;
 	brassDict.Clear();
+	clipDict.Clear();
 
 	flashTime		= 250;
 	lightOn			= false;
@@ -974,6 +998,19 @@ void idWeapon::GetWeaponDef( const char *objectname, int ammoinclip ) {
 			gameLocal.Warning( "Unknown brass '%s'", brassDefName );
 		} else {
 			brassDict = brassDef->dict;
+		}
+	}
+
+	// Get the clip def
+	clipDict.Clear();
+	const idKeyValue* clipKv = weaponDef->dict.FindKey("def_ejectClip");
+	if (clipKv) {
+		const idDeclEntityDef* clipDef = gameLocal.FindEntityDef(clipKv->GetValue());
+		if (clipDef) {
+			clipDict = clipDef->dict;
+		}
+		else {
+			gameLocal.Warning("Unknown clip debris '%s'", clipKv->GetKey().c_str());
 		}
 	}
 
@@ -3193,6 +3230,47 @@ void idWeapon::Event_EjectBrass( void ) {
 
 	debris->GetPhysics()->SetLinearVelocity( linear_velocity );
 	debris->GetPhysics()->SetAngularVelocity( angular_velocity );
+}
+
+// Launch an idDebris representing a spent weapon clip from a joint defined in spawnargs
+void idWeapon::Event_EjectClip() {
+	if ( !g_showBrass.GetBool() || !owner->CanShowWeaponViewmodel() || gameLocal.isClient ) {
+		return;
+	}
+
+	jointHandle_t clipEjectJointView = animator.GetJointHandle(spawnArgs.GetString("ejectClipJoint"));
+	if (clipEjectJointView == INVALID_JOINT) {
+		return;
+	}
+
+	idMat3 axis;
+	idVec3 origin;
+	if ( !GetGlobalJointTransform( true, ejectJointView, origin, axis ) ) {
+		return;
+	}
+
+	idVec3 offset;
+	spawnArgs.GetVector("ejectClipOffset", "0 0 0", offset);
+	origin += offset;
+
+	idEntity* ent;
+	gameLocal.SpawnEntityDef(clipDict, &ent, false);
+	if (!ent || !ent->IsType(idDebris::Type)) {
+		gameLocal.Error("'%s' is not an idDebris", clipDict.GetString("classname"));
+	}
+
+	const idKeyValue* emptySkinKv = spawnArgs.FindKey("skin_ejectClipEmpty");
+	if (emptySkinKv) {
+		ent->SetSkin(declManager->FindSkin(emptySkinKv->GetValue()));
+	}
+
+	idDebris* debris = (idDebris*)ent;
+	debris->Create(owner, origin, axis);
+	debris->Launch();
+
+	idVec3 angularVelocity = idVec3(10 * gameLocal.random.CRandomFloat(), 10 * gameLocal.random.CRandomFloat(), 10 * gameLocal.random.CRandomFloat());
+
+	debris->GetPhysics()->SetAngularVelocity(angularVelocity);
 }
 
 /*
