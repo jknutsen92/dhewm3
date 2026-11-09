@@ -3245,7 +3245,7 @@ void idWeapon::Event_EjectClip(const char* clipSkin) {
 
 	idMat3 axis;
 	idVec3 origin;
-	if ( !GetGlobalJointTransform( true, ejectJointView, origin, axis ) ) {
+	if ( !GetGlobalJointTransform( true, clipEjectJointView, origin, axis ) ) {
 		return;
 	}
 
