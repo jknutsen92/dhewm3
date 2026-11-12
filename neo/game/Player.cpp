@@ -5384,10 +5384,13 @@ void idPlayer::UpdateAir( void ) {
 		}
 	}
 
+	idSoundWorld* soundWorld = soundSystem->GetPlayingSoundWorld();
 	if ( newAirless ) {
 		if ( !airless ) {
 			StartSound( "snd_decompress", SND_CHANNEL_ANY, SSF_GLOBAL, false, NULL );
 			StartSound( "snd_noAir", SND_CHANNEL_BODY2, 0, false, NULL );
+			soundWorld->SetEnviroSuit(true);
+			soundWorld->FadeSoundClasses(0, -10, 3.0);
 			if ( hud ) {
 				hud->HandleNamedEvent( "noAir" );
 			}
@@ -5408,6 +5411,8 @@ void idPlayer::UpdateAir( void ) {
 		if ( airless ) {
 			StartSound( "snd_recompress", SND_CHANNEL_ANY, SSF_GLOBAL, false, NULL );
 			StopSound( SND_CHANNEL_BODY2, false );
+			soundWorld->SetEnviroSuit(false);
+			soundWorld->FadeSoundClasses(0, 10, 3.0);
 			if ( hud ) {
 				hud->HandleNamedEvent( "Air" );
 			}
