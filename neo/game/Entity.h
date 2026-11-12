@@ -319,8 +319,7 @@ public:
 							// notifies this entity that is has been killed
 	virtual void			Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat = false );
 
-	virtual void			InflictHeat(const char* damageDefName, float damageScale);
-	virtual void 			ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, float damageScale);
+	virtual bool			IsHeated(void);
 	virtual void			ApplyRezFx(void);
 
 	// scripting
@@ -379,6 +378,8 @@ protected:
 	int						modelDefHandle;						// handle to static renderer model
 	refSound_t				refSound;							// used to present sound to the audio engine
 
+	virtual void			InflictHeat(const char* damageDefName, float damageScale);
+	virtual void 			ApplyHeat(idEntity* inflictor, idEntity* attacker, int damage, const idVec3 &dir, const int location, const char *damageDefName, float damageScale);
 private:
 	idPhysics_Static		defaultPhysicsObj;					// default physics object
 	idPhysics *				physics;							// physics used for this entity

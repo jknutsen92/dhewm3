@@ -35,6 +35,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "Projectile.h"
 #include "WorldSpawn.h"
 #include "Fx.h"
+#include "SmokeParticles.h"
 
 #include "Actor.h"
 
@@ -2320,11 +2321,17 @@ int idActor::CalcDamagePoints(idEntity *inflictor, idEntity *attacker, const idD
 	}
 	idStr weakpointZone = spawnArgs.GetString("weakpoint_zone"); 
 	if (inflictor->spawnArgs.GetBool("weakpoint_bonus") && IsWeakpointGroup(dmgGroup)) {
+		// Apply sound and particle effects for weakpoint hit
 		if (g_extendedSoundFeedback.GetBool()) {
 			idStr weakpointSound = GetWeakpointSoundShader(inflictor);
 			StartSoundShader(declManager->FindSound(weakpointSound), SND_CHANNEL_ANY, 0, false, nullptr);
 		}
-		// TODO: Spawn a particle effect for headshot burst
+		if (g_bloodEffects.GetBool()) {
+			idDeclParticle* smoke = (idDeclParticle*)declManager->FindType(DECL_PARTICLE, spawnArgs.GetString("smoke_weakpoint_impact"));
+			const idVec3 projectileOrigin = inflictor->GetPhysics()->GetOrigin();
+			const idMat3 projectileAxis = inflictor->GetPhysics()->GetAxis();
+			gameLocal.smokeParticles->EmitSmoke(smoke, gameLocal.time, gameLocal.random.CRandomFloat(), projectileOrigin, projectileAxis);
+		}
 
 		// Apply damage scaling based on damage_scale head monster spawn args and weakpoint_bonus on the projectile
 		float weapWeakpointBonus = inflictor->spawnArgs.GetFloat("weakpoint_bonus");

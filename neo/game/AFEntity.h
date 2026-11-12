@@ -208,6 +208,8 @@ public:
 
 	static void				DropAFs( idEntity *ent, const char *type, idList<idEntity *> *list );
 
+	virtual bool			IsHeated(void);
+
 	// Starts the resurrection process
 	virtual idEntity*		StartResurrection(const idDict rezEntSpawnArgs);
 
