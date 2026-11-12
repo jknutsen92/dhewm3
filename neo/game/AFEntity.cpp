@@ -2074,11 +2074,7 @@ void idAFEntity_WithAttachedHead::UpdateHeatShaderParms(float heatRatio) {
 
 void idAFEntity_WithAttachedHead::ApplyResurrectionFx() {
 	head.GetEntity()->SetSkin(heatedSkinHead);
-	SetSkin(heatedSkinBody);
-	PreBurn();
-	Burn();
-	// Play the FX
-	rezDissolveFx = idEntityFx::StartFx("fx/resurrect.fx", &GetPhysics()->GetOrigin(), &GetPhysics()->GetAxis(), this, false);
+	idAFEntity_Base::ApplyResurrectionFx();
 }
 
 /*
