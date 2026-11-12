@@ -2264,8 +2264,6 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 	float dmgZoneScale, heatRatio;
 	int damage = idActor::CalcDamagePoints(inflictor, attacker, damageDef, damageScale, location, dmgZoneScale, heatRatio);
 
-	Signal(SIG_DAMAGE);
-
 	// inform the attacker that they hit someone, and if it was a weakpoint hit
 	attacker->DamageFeedback( this, inflictor, damage, dmgZoneScale, heatRatio );
 
@@ -2296,6 +2294,8 @@ void idActor::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &dir
 			BecomeActive( TH_PHYSICS );
 		}
 	}
+
+	Signal(SIG_DAMAGE);
 }
 
 int idActor::CalcDamagePoints(idEntity *inflictor, idEntity *attacker, const idDict *damageDef, const float damageScale, const int location, float& dmgZoneScale, float& heatRatio) {

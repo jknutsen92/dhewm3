@@ -1542,3 +1542,24 @@ bool idAI::PredictTrajectory( const idVec3 &firePos, const idVec3 &target, float
 	// there is no collision free trajectory
 	return false;
 }
+
+bool idAI::IsClearPath(const idEntity* ent1, const idEntity* ent2, float range) {
+	const idVec3 ent1Pos = ent1->GetPhysics()->GetOrigin();
+	const idVec3 ent2Pos = ent2->GetPhysics()->GetOrigin();
+	float distSqr = (ent1Pos - ent2Pos).LengthSqr();
+	if (distSqr <= pow(range, 2)) {
+		trace_t trace;
+		gameLocal.clip.TracePoint(trace, ent1Pos, ent2Pos, MASK_SOLID, ent1);
+		if (trace.fraction >= 1.0f || gameLocal.GetTraceEntity(trace) == ent2) {
+			return true;
+		}
+	}
+	return false;
+}
+
+idVec3 idAI::GetRandomPointInBounds(const idBounds &bounds) {
+	float randomX = bounds[0].x + ((bounds[1].x - bounds[0].x) * gameLocal.random.RandomFloat());
+	float randomY = bounds[0].y + ((bounds[1].y - bounds[0].y) * gameLocal.random.RandomFloat());
+	float randomZ = bounds[0].z + ((bounds[1].z - bounds[0].z) * gameLocal.random.RandomFloat());
+	return idVec3(randomX, randomY, randomZ);
+}

@@ -159,6 +159,8 @@ const idEventDef AI_CanReachPosition( "canReachPosition", "v", 'd' );
 const idEventDef AI_CanReachEntity( "canReachEntity", "E", 'd' );
 const idEventDef AI_CanReachEnemy( "canReachEnemy", NULL, 'd' );
 const idEventDef AI_GetReachableEntityPosition( "getReachableEntityPosition", "e", 'v' );
+const idEventDef AI_GetTeleportPathNearTarget("getTeleportPathNearTarget", "efs", 'e');
+const idEventDef AI_TeleportNearTarget("teleportNearTarget", "ef");
 
 CLASS_DECLARATION( idActor, idAI )
 	EVENT( EV_Activate,							idAI::Event_Activate )
@@ -286,6 +288,8 @@ CLASS_DECLARATION( idActor, idAI )
 	EVENT( AI_CanReachEntity,					idAI::Event_CanReachEntity )
 	EVENT( AI_CanReachEnemy,					idAI::Event_CanReachEnemy )
 	EVENT( AI_GetReachableEntityPosition,		idAI::Event_GetReachableEntityPosition )
+	EVENT( AI_GetTeleportPathNearTarget,		idAI::Event_GetTeleportPathNearTarget )
+	EVENT( AI_TeleportNearTarget,				idAI::Event_TeleportNearTarget )
 END_CLASS
 
 /*
@@ -2667,4 +2671,58 @@ void idAI::Event_GetReachableEntityPosition( idEntity *ent ) {
 	}
 
 	idThread::ReturnVector( pos );
+}
+
+void idAI::Event_GetTeleportPathNearTarget(idEntity* target, float range, const char *lastPath) {
+	idEntity* path = gameLocal.FindEntityUsingDef(nullptr, "path_teleport");
+	while (path) {
+		if (idStr::Icmp(path->GetName(), lastPath)) {
+			// If this isn't the path we just teleported to
+			if (idAI::IsClearPath(path, target, range)) {
+				// And the path is in range and has clear LOS to target
+				return idThread::ReturnEntity(path);
+			}
+		}
+		path = gameLocal.FindEntityUsingDef(path, "path_teleport");
+	}
+	return idThread::ReturnEntity(nullptr);
+}
+
+void idAI::Event_TeleportNearTarget(idEntity *target, float range) {
+	int iterations = 0;
+	int samples = 0;
+	// Get the bounding box around the target in range
+	idBounds targetBounds = idBounds(target->GetPhysics()->GetOrigin());
+	targetBounds.ExpandSelf(range);
+	
+	// Sample a random point in bounds 
+	idVec3 pointInBounds = idAI::GetRandomPointInBounds(targetBounds);
+	int areaNum = PointReachableAreaNum(pointInBounds);
+	while (targetBounds.GetRadius() > 0) {
+		iterations += 1;
+		while (!areaNum) {
+			samples += 1;
+			// Shrink the bounds 2% per run to avoid runaway loops
+			targetBounds.ExpandSelf(-(range / 50.0f));
+			pointInBounds = idAI::GetRandomPointInBounds(targetBounds);
+			areaNum = PointReachableAreaNum(pointInBounds);
+			if (g_debugBounds.GetBool()) {
+				common->Printf("%s failed random bounds test. Shrinking bounds radius to %f\n", GetName(), targetBounds.GetRadius());
+			}
+		}
+		aas->PushPointIntoAreaNum(areaNum, pointInBounds);
+		// Fix the point to the floor of the aas
+		pointInBounds.z = aas->AreaCenter(areaNum).z;
+		SetOrigin(pointInBounds);
+		if (idAI::IsClearPath(this, target, range)) {
+			if (g_debugBounds.GetBool()) {
+				common->Printf("%s found teleport destination after %d iterations and sampling %d random points\n", GetName(), iterations, samples);
+			}
+			return;
+		}
+		areaNum = 0;
+	}
+	if (g_debugBounds.GetBool()) {
+		common->Printf("%s failed to find teleport destination after %d iterations and sampling %d random points\n", GetName(), iterations, samples);
+	}
 }
