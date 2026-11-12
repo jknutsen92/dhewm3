@@ -3105,6 +3105,10 @@ void idEntity::Killed( idEntity *inflictor, idEntity *attacker, int damage, cons
 	isAlive = false;
 }
 
+bool idEntity::IsHeated(void) {
+	return false;
+}
+
 // For subclasses to implement - smolspacer
 void idEntity::InflictHeat(const char* damageDefName, float damageScale) {
 }

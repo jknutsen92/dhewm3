@@ -605,6 +605,12 @@ bool idProjectile::Collide( const trace_t &collision, const idVec3 &velocity ) {
 		}
 	}
 
+	const char* heatedImpactSmokeName = spawnArgs.GetString("smoke_heated_impact");
+	if (ent->IsHeated() && heatedImpactSmokeName[0]) {
+		idDeclParticle* heatedImpactSmoke = (idDeclParticle*)declManager->FindType(DECL_PARTICLE, heatedImpactSmokeName);
+		gameLocal.smokeParticles->EmitSmoke(heatedImpactSmoke, gameLocal.time, gameLocal.random.CRandomFloat(), GetPhysics()->GetOrigin(), GetPhysics()->GetAxis());
+	}
+
 	// if the projectile causes a damage effect
 	if ( spawnArgs.GetBool( "impact_damage_effect" ) ) {
 		// if the hit entity has a special damage effect
