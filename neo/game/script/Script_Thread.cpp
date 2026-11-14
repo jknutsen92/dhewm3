@@ -119,6 +119,7 @@ const idEventDef EV_Thread_DebugBounds( "debugBounds", "vvvf" );
 const idEventDef EV_Thread_DrawText( "drawText", "svfvdf" );
 const idEventDef EV_Thread_InfluenceActive( "influenceActive", NULL, 'd' );
 const idEventDef EV_Thread_ParseFloat("parseFloat", "s", 'f');
+const idEventDef EV_Thread_FindEntityUsingDef("findEntityUsingDef", "Es", 'e');
 
 CLASS_DECLARATION( idClass, idThread )
 	EVENT( EV_Thread_Execute,				idThread::Event_Execute )
@@ -206,6 +207,7 @@ CLASS_DECLARATION( idClass, idThread )
 	EVENT( EV_Thread_DrawText,				idThread::Event_DrawText )
 	EVENT( EV_Thread_InfluenceActive,		idThread::Event_InfluenceActive )
 	EVENT( EV_Thread_ParseFloat,			idThread::Event_ParseFloat )
+	EVENT( EV_Thread_FindEntityUsingDef,	idThread::Event_FindEntityUsingDef )
 END_CLASS
 
 idThread			*idThread::currentThread = NULL;
@@ -1898,6 +1900,10 @@ void idThread::Event_ParseFloat(const char *string) {
 	idThread::ReturnFloat(atof(string));
 }
 
+void idThread::Event_FindEntityUsingDef(idEntity *from, const char *match) {
+	return idThread::ReturnEntity(gameLocal.FindEntityUsingDef(from, match));
+}
+
 int idGameEditExt::ThreadGetNum(const idThread* thread) const
 {
 	return const_cast<idThread*>(thread)->GetThreadNum();
@@ -1943,4 +1949,3 @@ void idGameEditExt::MSG_WriteThreadInfo(idBitMsg* msg, const idThread* thread, c
 	msg->WriteBits((int)const_cast<idThread*>(thread)->IsWaiting(), 1);
 	msg->WriteBits((int)const_cast<idThread*>(thread)->IsDying(), 1);
 }
-

@@ -72,6 +72,8 @@ extern const idEventDef EV_InPlayerPVS;
 extern const idEventDef EV_IsLiving;
 extern const idEventDef EV_TakeDamage;
 extern const idEventDef EV_AddTarget;
+extern const idEventDef EV_GetEntityNum;
+extern const idEventDef EV_GetClassname;
 
 // Think flags
 enum {
@@ -487,6 +489,8 @@ private:
 	void					Event_IsLiving(void);
 	void					Event_TakeDamage(int enable);
 	void					Event_AddTarget(idEntity* ent);
+	void					Event_GetEntityNum(void);
+	void 					Event_GetClassname(void);
 };
 
 /*
