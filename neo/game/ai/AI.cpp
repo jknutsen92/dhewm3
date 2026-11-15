@@ -318,6 +318,7 @@ idAI::idAI() {
 	lastAttackTime		= 0;
 	melee_range			= 0.0f;
 	projectile_height_to_distance_ratio = 1.0f;
+
 	projectileDef		= NULL;
 	projectile			= NULL;
 	projectileClipModel	= NULL;
@@ -325,6 +326,15 @@ idAI::idAI() {
 	projectileVelocity	= vec3_origin;
 	projectileGravity	= vec3_origin;
 	projectileSpeed		= 0.0f;
+
+	grenadeDef 			= NULL;
+	grenade 			= NULL;
+	grenadeClipModel 	= NULL;
+	grenadeRadius		= 0.0f;
+	grenadeVelocity		= vec3_origin;
+	grenadeGravity		= vec3_origin;
+	grenadeSpeed		= 0.0f;
+
 	chat_snd			= NULL;
 	chat_min			= 0;
 	chat_max			= 0;
@@ -467,6 +477,15 @@ void idAI::Save( idSaveGame *savefile ) const {
 	projectile.Save( savefile );
 	savefile->WriteString( attack );
 
+	idStr grenadeName;
+	spawnArgs.GetString("def_grenade", "", grenadeName);
+	savefile->WriteString(grenadeName);
+	savefile->WriteFloat(grenadeRadius);
+	savefile->WriteFloat(grenadeSpeed);
+	savefile->WriteVec3(grenadeVelocity);
+	savefile->WriteVec3(grenadeGravity);
+	grenade.Save(savefile);
+
 	savefile->WriteSoundShader( chat_snd );
 	savefile->WriteInt( chat_min );
 	savefile->WriteInt( chat_max );
@@ -607,6 +626,20 @@ void idAI::Restore( idRestoreGame *savefile ) {
 	savefile->ReadVec3( projectileGravity );
 	projectile.Restore( savefile );
 	savefile->ReadString( attack );
+
+	idStr grenadeName;
+	savefile->ReadString(grenadeName);
+	if (grenadeName.Length()) {
+		grenadeDef = gameLocal.FindEntityDefDict(grenadeName);
+	}
+	else {
+		grenadeDef = NULL;
+	}
+	savefile->ReadFloat(grenadeRadius);
+	savefile->ReadFloat(grenadeSpeed);
+	savefile->ReadVec3(grenadeVelocity);
+	savefile->ReadVec3(grenadeGravity);
+	grenade.Restore(savefile);	
 
 	savefile->ReadSoundShader( chat_snd );
 	savefile->ReadInt( chat_min );
@@ -899,6 +932,11 @@ void idAI::Spawn( void ) {
 		delete projectile.GetEntity();
 		projectile = NULL;
 	}
+
+	grenade				= NULL;
+	grenadeDef			= NULL;
+	grenadeClipModel 	= NULL;
+	//TODO finish setting up the grenade entity
 
 	particles.Clear();
 	restartParticles = true;

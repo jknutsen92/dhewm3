@@ -152,7 +152,9 @@ typedef enum {
 	FC_ENABLE_LEG_IK,
 	FC_DISABLE_LEG_IK,
 	FC_RECORDDEMO,
-	FC_AVIGAME
+	FC_AVIGAME,
+	FC_CREATEGRENADE,
+	FC_LAUNCHGRENADE
 } frameCommandType_t;
 
 typedef struct {

@@ -149,7 +149,9 @@ extern const idEventDef AI_BeginAttack;
 extern const idEventDef AI_EndAttack;
 extern const idEventDef AI_MuzzleFlash;
 extern const idEventDef AI_CreateMissile;
+extern const idEventDef AI_CreateGrenade;
 extern const idEventDef AI_AttackMissile;
+extern const idEventDef AI_LaunchGrenade;
 extern const idEventDef AI_FireMissileAtTarget;
 extern const idEventDef AI_AttackMelee;
 extern const idEventDef AI_DirectDamage;
@@ -346,6 +348,14 @@ protected:
 	idVec3					projectileGravity;
 	idEntityPtr<idProjectile> projectile;
 	idStr					attack;
+
+	const idDict*			grenadeDef;
+	mutable idClipModel*	grenadeClipModel;
+	float					grenadeRadius;
+	float 					grenadeSpeed;
+	idVec3					grenadeVelocity;
+	idVec3					grenadeGravity;
+	idEntityPtr<idProjectile> grenade;
 
 	// chatter/talking
 	const idSoundShader		*chat_snd;
@@ -548,7 +558,9 @@ protected:
 	void					Event_ClearEnemy( void );
 	void					Event_MuzzleFlash( const char *jointname );
 	void					Event_CreateMissile( const char *jointname );
+	void 					Event_CreateGrenade(const char* jointname);
 	void					Event_AttackMissile( const char *jointname );
+	void 					Event_LaunchGrenade(const char* jointname);
 	void					Event_FireMissileAtTarget( const char *jointname, const char *targetname );
 	void					Event_LaunchMissile( const idVec3 &muzzle, const idAngles &ang );
 	void					Event_AttackMelee( const char *meleeDefName );
@@ -602,6 +614,7 @@ protected:
 	void					Event_GetEnemyEyePos( void );
 	void					Event_PredictEnemyPos( float time );
 	void					Event_CanHitEnemy( void );
+	void					Event_CanHitEnemyWithGrenade(const char* animname);
 	void					Event_CanHitEnemyFromAnim( const char *animname );
 	void					Event_CanHitEnemyFromJoint( const char *jointname );
 	void					Event_EnemyPositionValid( void );

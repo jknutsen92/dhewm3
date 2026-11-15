@@ -48,7 +48,9 @@ const idEventDef AI_SetEnemy( "setEnemy", "E" );
 const idEventDef AI_ClearEnemy( "clearEnemy" );
 const idEventDef AI_MuzzleFlash( "muzzleFlash", "s" );
 const idEventDef AI_CreateMissile( "createMissile", "s", 'e' );
+const idEventDef AI_CreateGrenade("createGrenade", "s", 'e');
 const idEventDef AI_AttackMissile( "attackMissile", "s", 'e' );
+const idEventDef AI_LaunchGrenade("lanchGrenade", "s", 'e');
 const idEventDef AI_FireMissileAtTarget( "fireMissileAtTarget", "ss", 'e' );
 const idEventDef AI_LaunchMissile( "launchMissile", "vv", 'e' );
 const idEventDef AI_AttackMelee( "attackMelee", "s", 'd' );
@@ -100,6 +102,7 @@ const idEventDef AI_GetEnemyPos( "getEnemyPos", NULL, 'v' );
 const idEventDef AI_GetEnemyEyePos( "getEnemyEyePos", NULL, 'v' );
 const idEventDef AI_PredictEnemyPos( "predictEnemyPos", "f", 'v' );
 const idEventDef AI_CanHitEnemy( "canHitEnemy", NULL, 'd' );
+const idEventDef AI_CanHitEnemyWithGrenade("canHitEnemyWithGrenade", "s", 'd');
 const idEventDef AI_CanHitEnemyFromAnim( "canHitEnemyFromAnim", "s", 'd' );
 const idEventDef AI_CanHitEnemyFromJoint( "canHitEnemyFromJoint", "s", 'd' );
 const idEventDef AI_EnemyPositionValid( "enemyPositionValid", NULL, 'd' );
@@ -174,7 +177,9 @@ CLASS_DECLARATION( idActor, idAI )
 	EVENT( AI_ClearEnemy,						idAI::Event_ClearEnemy )
 	EVENT( AI_MuzzleFlash,						idAI::Event_MuzzleFlash )
 	EVENT( AI_CreateMissile,					idAI::Event_CreateMissile )
+	EVENT( AI_CreateGrenade,					idAI::Event_CreateGrenade )
 	EVENT( AI_AttackMissile,					idAI::Event_AttackMissile )
+	EVENT( AI_LaunchGrenade,					idAI::Event_LaunchGrenade )
 	EVENT( AI_FireMissileAtTarget,				idAI::Event_FireMissileAtTarget )
 	EVENT( AI_LaunchMissile,					idAI::Event_LaunchMissile )
 	EVENT( AI_AttackMelee,						idAI::Event_AttackMelee )
@@ -228,6 +233,7 @@ CLASS_DECLARATION( idActor, idAI )
 	EVENT( AI_GetEnemyEyePos,					idAI::Event_GetEnemyEyePos )
 	EVENT( AI_PredictEnemyPos,					idAI::Event_PredictEnemyPos )
 	EVENT( AI_CanHitEnemy,						idAI::Event_CanHitEnemy )
+	EVENT( AI_CanHitEnemyWithGrenade,			idAI::Event_CanHitEnemyWithGrenade )
 	EVENT( AI_CanHitEnemyFromAnim,				idAI::Event_CanHitEnemyFromAnim )
 	EVENT( AI_CanHitEnemyFromJoint,				idAI::Event_CanHitEnemyFromJoint )
 	EVENT( AI_EnemyPositionValid,				idAI::Event_EnemyPositionValid )
@@ -567,6 +573,10 @@ void idAI::Event_CreateMissile( const char *jointname ) {
 	idThread::ReturnEntity( projectile.GetEntity() );
 }
 
+void idAI::Event_CreateGrenade(const char* jointname) {
+	// TODO
+}
+
 /*
 =====================
 idAI::Event_AttackMissile
@@ -577,6 +587,10 @@ void idAI::Event_AttackMissile( const char *jointname ) {
 
 	proj = LaunchProjectile( jointname, enemy.GetEntity(), true );
 	idThread::ReturnEntity( proj );
+}
+
+void idAI::Event_LaunchGrenade(const char *jointname) {
+	// TODO
 }
 
 /*
@@ -1457,6 +1471,11 @@ void idAI::Event_CanHitEnemy( void ) {
 	}
 
 	idThread::ReturnInt( lastHitCheckResult );
+}
+
+void idAI::Event_CanHitEnemyWithGrenade(const char *animname) {
+	// TODO
+	idThread::ReturnInt(true);
 }
 
 /*
