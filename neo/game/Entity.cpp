@@ -3107,6 +3107,7 @@ This is a virtual function that subclasses are expected to implement.
 */
 void idEntity::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat ) {
 	isAlive = false;
+	Signal(SIG_KILLED);
 }
 
 bool idEntity::IsHeated(void) {

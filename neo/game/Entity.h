@@ -98,10 +98,12 @@ typedef enum {
 	SIG_DAMAGE,				// object was damaged
 	SIG_BLOCKED,			// object was blocked
 
+
 	SIG_MOVER_POS1,			// mover at position 1 (door closed)
 	SIG_MOVER_POS2,			// mover at position 2 (door open)
 	SIG_MOVER_1TO2,			// mover changing from position 1 to 2
 	SIG_MOVER_2TO1,			// mover changing from position 2 to 1
+	SIG_KILLED,				// object was killed
 
 	NUM_SIGNALS
 } signalNum_t;

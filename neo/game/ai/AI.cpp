@@ -3345,6 +3345,8 @@ void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const id
 
 	restartParticles = false;
 
+	Signal(SIG_KILLED);
+
 	state = GetScriptFunction( "state_Killed" );
 	SetState( state );
 	SetWaitState( "" );

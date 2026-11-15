@@ -536,6 +536,8 @@ void idSecurityCamera::Killed( idEntity *inflictor, idEntity *attacker, int dama
 	physicsObj.SetClipMask( MASK_SOLID | CONTENTS_BODY | CONTENTS_CORPSE | CONTENTS_MOVEABLECLIP );
 	SetPhysics( &physicsObj );
 	physicsObj.DropToFloor();
+
+	Signal(SIG_KILLED);
 }
 
 

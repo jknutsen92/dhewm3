@@ -990,6 +990,7 @@ void idBrittleFracture::Killed( idEntity *inflictor, idEntity *attacker, int dam
 		ActivateTargets( this );
 		Break();
 	}
+	Signal(SIG_KILLED);
 }
 
 /*

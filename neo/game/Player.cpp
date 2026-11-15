@@ -6886,6 +6886,8 @@ void idPlayer::Killed( idEntity *inflictor, idEntity *attacker, int damage, cons
 	UpdateVisuals();
 
 	isChatting = false;
+
+	Signal(SIG_KILLED);
 }
 
 /*
