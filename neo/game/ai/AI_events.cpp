@@ -1497,18 +1497,17 @@ void idAI::Event_CanHitEnemyWithGrenade() {
 
 	const idActor* enemyEnt = enemy.GetEntity(); 
 	if (!enemyEnt) {
-		launchTypeTestPass = LAUNCH_NONE;
+		grenadeLaunchType = LAUNCH_NONE;
 		return idThread::ReturnInt(false);
 	}
 
 	// Case 1: Direct throw + bounce - are there no obstacles occluding
 	idVec3 pos = GetPhysics()->GetOrigin();
 	idVec3 enemyPos = GetPhysics()->GetOrigin();
-	// Case 1: Direct throw + bounce
 	gameLocal.clip.TracePoint(trace, pos, enemyPos, MASK_SHOT_BOUNDINGBOX, this);
 	hit = gameLocal.GetTraceEntity(trace);
 	if (trace.fraction == 1.0f || hit == enemyEnt) {
-		launchTypeTestPass = LAUNCH_DIRECT;
+		grenadeLaunchType = LAUNCH_DIRECT;
 		return idThread::ReturnInt(true);
 	}
 
@@ -1520,20 +1519,20 @@ void idAI::Event_CanHitEnemyWithGrenade() {
 	idVec3 aboveEnemyPos 	= enemyPos + maxHeightDisplacement;
 	gameLocal.clip.TracePoint(trace, abovePos, aboveEnemyPos, MASK_SHOT_BOUNDINGBOX, this);
 	if (trace.fraction == 1.0f) {
-		launchTypeTestPass = LAUNCH_ABOVE;
+		grenadeLaunchType = LAUNCH_ABOVE;
 		return idThread::ReturnInt(true);
 	}
 
 	// Case 3: Arc around obstacle - can we hit with nearby blast radius?
 	const char* splashDamageName = grenadeDef->GetString("def_splash_damage");
-	float blastRadius;
+	float blastRadius = 0.0f;
 	if (splashDamageName[0]) {
 		const idDict* damageDict = gameLocal.FindEntityDefDict(splashDamageName, false);
 		damageDict->GetFloat("radius", "0", blastRadius);
 	}
 	// Get vectors at 90 degrees to the left and right of the dir (and the obstacle) point to the furthest effective point (blast radius)
+	idVec3 targetDir = (enemyPos - pos);
 	if (blastRadius) {
-		idVec3 targetDir = (enemyPos - pos);
 		targetDir.Normalize();
 		// 2d 90 rotation to the left and right
 		idVec3 left 	= idVec3(-targetDir.y, targetDir.x, enemyPos.z);		// Use height of the target
@@ -1541,13 +1540,29 @@ void idAI::Event_CanHitEnemyWithGrenade() {
 
 		// It's a valid arc around if the furthest possible target to the left is clear to the shooter and the target
 		trace_t targetTrace;
-		idVec3 leftFurthestTarget = enemyPos + left * blastRadius;
-		// Test between the shooter and leftmost target around the obstacle
+		idVec3 leftFurthestTarget = left * blastRadius + enemyPos;
 		gameLocal.clip.TracePoint(trace, pos, leftFurthestTarget, MASK_SHOT_BOUNDINGBOX, this);
+		gameLocal.clip.TracePoint(targetTrace, enemyPos, leftFurthestTarget, MASK_SHOT_BOUNDINGBOX, this);
+		if (trace.fraction == 1.0f && targetTrace.fraction == 1.0f) {
+			grenadeLaunchType = LAUNCH_AROUND_LEFT;
+			return idThread::ReturnInt(true);
+		}
+		// Check the furthest effective point to the right side of the 
+		idVec3 rightFurthestTarget = right * blastRadius + enemyPos;
+		gameLocal.clip.TracePoint(trace, pos, rightFurthestTarget, MASK_SHOT_BOUNDINGBOX, this);
+		gameLocal.clip.TracePoint(targetTrace, enemyPos, rightFurthestTarget, MASK_SHOT_BOUNDINGBOX, this);
+		if (trace.fraction == 1.0f && targetTrace.fraction == 1.0f) {
+			grenadeLaunchType = LAUNCH_AROUND_RIGHT;
+			return idThread::ReturnInt(true);
+		}
 	}
-	
 
-	// Case 4: Reflection bounce off obstacle
+	// Case 4: Reflection bounce off obstacle - find candidate surfaces behind and to the left and right of target (maybe above as well)
+	trace_t surfaceTrace;
+	float range = targetDir.Length();								// A simple filter heuristic for surface distance
+	float minHeight = enemyEnt->GetPhysics()->GetAbsBounds()[0].z;	// Minimum height for candidate surface is the top of the target's bounding box
+	idVec3 behind = idVec3();
+	
 	idThread::ReturnInt(false);
 }
 

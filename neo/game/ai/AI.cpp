@@ -334,7 +334,7 @@ idAI::idAI() {
 	grenadeVelocity		= vec3_origin;
 	grenadeGravity		= vec3_origin;
 	grenadeSpeed		= 0.0f;
-	launchTypeTestPass 	= LAUNCH_NONE;
+	grenadeLaunchType 	= LAUNCH_NONE;
 
 	chat_snd			= NULL;
 	chat_min			= 0;
@@ -486,7 +486,7 @@ void idAI::Save( idSaveGame *savefile ) const {
 	savefile->WriteVec3(grenadeVelocity);
 	savefile->WriteVec3(grenadeGravity);
 	grenade.Save(savefile);
-	savefile->WriteInt(launchTypeTestPass);
+	savefile->WriteInt(grenadeLaunchType);
 
 	savefile->WriteSoundShader( chat_snd );
 	savefile->WriteInt( chat_min );
@@ -644,7 +644,7 @@ void idAI::Restore( idRestoreGame *savefile ) {
 	grenade.Restore(savefile);
 	int launchTypeTestEnum;
 	savefile->ReadInt(launchTypeTestEnum);
-	launchTypeTestPass = static_cast<launchType_t>(launchTypeTestEnum);
+	grenadeLaunchType = static_cast<launchType_t>(launchTypeTestEnum);
 
 	savefile->ReadSoundShader( chat_snd );
 	savefile->ReadInt( chat_min );
@@ -952,7 +952,7 @@ void idAI::Spawn( void ) {
 		delete grenade.GetEntity();
 		grenade = NULL;
 	}
-	launchTypeTestPass = LAUNCH_NONE;
+	grenadeLaunchType = LAUNCH_NONE;
 
 	particles.Clear();
 	restartParticles = true;

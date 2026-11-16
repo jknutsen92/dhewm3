@@ -1563,3 +1563,8 @@ idVec3 idAI::GetRandomPointInBounds(const idBounds &bounds) {
 	float randomZ = bounds[0].z + ((bounds[1].z - bounds[0].z) * gameLocal.random.RandomFloat());
 	return idVec3(randomX, randomY, randomZ);
 }
+
+idVec3 idAI::GetPlanarReflectionImagePos(const idVec3 &point, const idVec3 &surfaceNormal, const idVec3 &surfaceContact) {
+	float planeDistance = (point - surfaceContact) * surfaceNormal;
+	return point - 2.0f * planeDistance * surfaceNormal; 
+}

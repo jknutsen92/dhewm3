@@ -146,8 +146,12 @@ typedef enum {
 	LAUNCH_NONE,
 	LAUNCH_DIRECT,
 	LAUNCH_ABOVE,
-	LAUNCH_AROUND,
-	LAUNCH_REFLECT
+	LAUNCH_AROUND_LEFT,
+	LAUNCH_AROUND_RIGHT,
+	LAUNCH_REFLECT_BEHIND,
+	LAUNCH_REFLECT_LEFT,
+	LAUNCH_REFELCT_RIGHT,
+	LAUNCH_REFLECT_ABOVE
 } launchType_t;
 
 //
@@ -293,6 +297,7 @@ public:
 	static bool				PredictTrajectory( const idVec3 &firePos, const idVec3 &target, float projectileSpeed, const idVec3 &projGravity, const idClipModel *clip, int clipmask, float max_height, const idEntity *ignore, const idEntity *targetEntity, int drawtime, idVec3 &aimDir );
 	static bool				IsClearPath(const idEntity* ent1, const idEntity* ent2, float range);
 	static idVec3			GetRandomPointInBounds(const idBounds& bounds);
+	static idVec3			GetPlanarReflectionImagePos(const idVec3& point, const idVec3& surfaceNormal, const idVec3& surfaceContact);
 
 protected:
 	// navigation
@@ -364,7 +369,7 @@ protected:
 	idVec3					grenadeVelocity;
 	idVec3					grenadeGravity;
 	idEntityPtr<idProjectile> grenade;
-	launchType_t			launchTypeTestPass;
+	launchType_t			grenadeLaunchType;
 
 	// chatter/talking
 	const idSoundShader		*chat_snd;
