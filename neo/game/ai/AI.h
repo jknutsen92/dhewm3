@@ -142,6 +142,14 @@ typedef struct predictedPath_s {
 	const idEntity *	blockingEntity;				// entity that blocks the movement
 } predictedPath_t;
 
+typedef enum {
+	LAUNCH_NONE,
+	LAUNCH_DIRECT,
+	LAUNCH_ABOVE,
+	LAUNCH_AROUND,
+	LAUNCH_REFLECT
+} launchType_t;
+
 //
 // events
 //
@@ -356,6 +364,7 @@ protected:
 	idVec3					grenadeVelocity;
 	idVec3					grenadeGravity;
 	idEntityPtr<idProjectile> grenade;
+	launchType_t			launchTypeTestPass;
 
 	// chatter/talking
 	const idSoundShader		*chat_snd;
@@ -524,6 +533,8 @@ protected:
 	void					CreateProjectileClipModel( void ) const;
 	idProjectile			*CreateProjectile( const idVec3 &pos, const idVec3 &dir );
 	void					RemoveProjectile( void );
+	idProjectile*			CreateGrenade(const idVec3& pos, const idVec3& dir);
+	void					RemoveGrenade(void);
 	idProjectile			*LaunchProjectile( const char *jointname, idEntity *target, bool clampToAttackCone );
 	virtual void			DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, float damageZoneScale = 1.0, float heatRatio = 0.0f);
 	void					DirectDamage( const char *meleeDefName, idEntity *ent );
@@ -614,7 +625,7 @@ protected:
 	void					Event_GetEnemyEyePos( void );
 	void					Event_PredictEnemyPos( float time );
 	void					Event_CanHitEnemy( void );
-	void					Event_CanHitEnemyWithGrenade(const char* animname);
+	void					Event_CanHitEnemyWithGrenade(void);
 	void					Event_CanHitEnemyFromAnim( const char *animname );
 	void					Event_CanHitEnemyFromJoint( const char *jointname );
 	void					Event_EnemyPositionValid( void );

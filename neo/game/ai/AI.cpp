@@ -334,6 +334,7 @@ idAI::idAI() {
 	grenadeVelocity		= vec3_origin;
 	grenadeGravity		= vec3_origin;
 	grenadeSpeed		= 0.0f;
+	launchTypeTestPass 	= LAUNCH_NONE;
 
 	chat_snd			= NULL;
 	chat_min			= 0;
@@ -485,6 +486,7 @@ void idAI::Save( idSaveGame *savefile ) const {
 	savefile->WriteVec3(grenadeVelocity);
 	savefile->WriteVec3(grenadeGravity);
 	grenade.Save(savefile);
+	savefile->WriteInt(launchTypeTestPass);
 
 	savefile->WriteSoundShader( chat_snd );
 	savefile->WriteInt( chat_min );
@@ -639,7 +641,10 @@ void idAI::Restore( idRestoreGame *savefile ) {
 	savefile->ReadFloat(grenadeSpeed);
 	savefile->ReadVec3(grenadeVelocity);
 	savefile->ReadVec3(grenadeGravity);
-	grenade.Restore(savefile);	
+	grenade.Restore(savefile);
+	int launchTypeTestEnum;
+	savefile->ReadInt(launchTypeTestEnum);
+	launchTypeTestPass = static_cast<launchType_t>(launchTypeTestEnum);
 
 	savefile->ReadSoundShader( chat_snd );
 	savefile->ReadInt( chat_min );
@@ -936,7 +941,18 @@ void idAI::Spawn( void ) {
 	grenade				= NULL;
 	grenadeDef			= NULL;
 	grenadeClipModel 	= NULL;
-	//TODO finish setting up the grenade entity
+	idStr grenadeName;
+	if (spawnArgs.GetString("def_grenade", "", grenadeName) && grenadeName.Length()) {
+		grenadeDef = gameLocal.FindEntityDefDict(grenadeName);
+		CreateGrenade(vec3_origin, viewAxis[0]);
+		grenadeRadius 	= grenade.GetEntity()->GetPhysics()->GetClipModel()->GetBounds().GetRadius();
+		grenadeVelocity	= idProjectile::GetVelocity(grenadeDef);
+		grenadeGravity 	= idProjectile::GetGravity(grenadeDef);
+		grenadeSpeed 	= grenadeVelocity.Length();
+		delete grenade.GetEntity();
+		grenade = NULL;
+	}
+	launchTypeTestPass = LAUNCH_NONE;
 
 	particles.Clear();
 	restartParticles = true;
@@ -4071,6 +4087,29 @@ idProjectile *idAI::CreateProjectile( const idVec3 &pos, const idVec3 &dir ) {
 	return projectile.GetEntity();
 }
 
+idProjectile* idAI::CreateGrenade(const idVec3 &pos, const idVec3 &dir) {
+	idEntity *ent;
+	const char *clsname;
+
+	if ( !grenade.GetEntity() ) {
+		gameLocal.SpawnEntityDef( *grenadeDef, &ent, false );
+		if ( !ent ) {
+			clsname = grenadeDef->GetString( "classname" );
+			gameLocal.Error( "Could not spawn entityDef '%s'", clsname );
+		}
+
+		if ( !ent->IsType( idProjectile::Type ) ) {
+			clsname = ent->GetClassname();
+			gameLocal.Error( "'%s' is not an idProjectile", clsname );
+		}
+		grenade = ( idProjectile * )ent;
+	}
+
+	grenade.GetEntity()->Create( this, pos, dir );
+
+	return grenade.GetEntity();
+}
+
 /*
 =====================
 idAI::RemoveProjectile
@@ -4080,6 +4119,14 @@ void idAI::RemoveProjectile( void ) {
 	if ( projectile.GetEntity() ) {
 		projectile.GetEntity()->PostEventMS( &EV_Remove, 0 );
 		projectile = NULL;
+	}
+}
+
+void idAI::RemoveGrenade(void) {
+	idProjectile* grenadeEnt = grenade.GetEntity();
+	if (grenadeEnt) {
+		grenadeEnt->PostEventMS(&EV_Remove, 0);
+		grenade = NULL;
 	}
 }
 

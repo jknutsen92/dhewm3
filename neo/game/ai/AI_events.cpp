@@ -102,7 +102,7 @@ const idEventDef AI_GetEnemyPos( "getEnemyPos", NULL, 'v' );
 const idEventDef AI_GetEnemyEyePos( "getEnemyEyePos", NULL, 'v' );
 const idEventDef AI_PredictEnemyPos( "predictEnemyPos", "f", 'v' );
 const idEventDef AI_CanHitEnemy( "canHitEnemy", NULL, 'd' );
-const idEventDef AI_CanHitEnemyWithGrenade("canHitEnemyWithGrenade", "s", 'd');
+const idEventDef AI_CanHitEnemyWithGrenade("canHitEnemyWithGrenade", NULL, 'd');
 const idEventDef AI_CanHitEnemyFromAnim( "canHitEnemyFromAnim", "s", 'd' );
 const idEventDef AI_CanHitEnemyFromJoint( "canHitEnemyFromJoint", "s", 'd' );
 const idEventDef AI_EnemyPositionValid( "enemyPositionValid", NULL, 'd' );
@@ -574,7 +574,24 @@ void idAI::Event_CreateMissile( const char *jointname ) {
 }
 
 void idAI::Event_CreateGrenade(const char* jointname) {
-	// TODO
+	if (!grenadeDef) {
+		gameLocal.Warning("%s (%s) doesn't have a def_grenade specified", name.c_str(), GetEntityDefName());
+		return idThread::ReturnEntity(NULL);
+	}
+
+	idVec3 muzzle;
+	idMat3 axis;
+	GetMuzzle(jointname, muzzle, axis);
+	CreateGrenade(muzzle, viewAxis[0] * physicsObj.GetGravityAxis());
+	if (grenade.GetEntity()) {
+		if (!jointname || !jointname[0]) {
+			grenade.GetEntity()->Bind(this, true);
+		}
+		else {
+			grenade.GetEntity()->BindToJoint(this, jointname, true);
+		}
+	}
+	idThread::ReturnEntity(grenade.GetEntity());
 }
 
 /*
@@ -590,7 +607,8 @@ void idAI::Event_AttackMissile( const char *jointname ) {
 }
 
 void idAI::Event_LaunchGrenade(const char *jointname) {
-	// TODO
+	// TODO call the real method LaunchGrenade
+	idThread::ReturnEntity(LaunchProjectile(jointname, enemy.GetEntity(), true));
 }
 
 /*
@@ -1473,9 +1491,64 @@ void idAI::Event_CanHitEnemy( void ) {
 	idThread::ReturnInt( lastHitCheckResult );
 }
 
-void idAI::Event_CanHitEnemyWithGrenade(const char *animname) {
-	// TODO
-	idThread::ReturnInt(true);
+void idAI::Event_CanHitEnemyWithGrenade() {
+	trace_t trace;
+	idEntity* hit;
+
+	const idActor* enemyEnt = enemy.GetEntity(); 
+	if (!enemyEnt) {
+		launchTypeTestPass = LAUNCH_NONE;
+		return idThread::ReturnInt(false);
+	}
+
+	// Case 1: Direct throw + bounce - are there no obstacles occluding
+	idVec3 pos = GetPhysics()->GetOrigin();
+	idVec3 enemyPos = GetPhysics()->GetOrigin();
+	// Case 1: Direct throw + bounce
+	gameLocal.clip.TracePoint(trace, pos, enemyPos, MASK_SHOT_BOUNDINGBOX, this);
+	hit = gameLocal.GetTraceEntity(trace);
+	if (trace.fraction == 1.0f || hit == enemyEnt) {
+		launchTypeTestPass = LAUNCH_DIRECT;
+		return idThread::ReturnInt(true);
+	}
+
+	// Case 2: Arc over obstacle - is the space over obstacle clear
+	float projectileGravity = grenadeDef->GetFloat("gravity");
+	float maxHeight = grenadeSpeed * grenadeSpeed / (2.0 * projectileGravity);
+	idVec3 maxHeightDisplacement = -GetPhysics()->GetGravityNormal() * maxHeight;
+	idVec3 abovePos 		= pos + maxHeightDisplacement;
+	idVec3 aboveEnemyPos 	= enemyPos + maxHeightDisplacement;
+	gameLocal.clip.TracePoint(trace, abovePos, aboveEnemyPos, MASK_SHOT_BOUNDINGBOX, this);
+	if (trace.fraction == 1.0f) {
+		launchTypeTestPass = LAUNCH_ABOVE;
+		return idThread::ReturnInt(true);
+	}
+
+	// Case 3: Arc around obstacle - can we hit with nearby blast radius?
+	const char* splashDamageName = grenadeDef->GetString("def_splash_damage");
+	float blastRadius;
+	if (splashDamageName[0]) {
+		const idDict* damageDict = gameLocal.FindEntityDefDict(splashDamageName, false);
+		damageDict->GetFloat("radius", "0", blastRadius);
+	}
+	// Get vectors at 90 degrees to the left and right of the dir (and the obstacle) point to the furthest effective point (blast radius)
+	if (blastRadius) {
+		idVec3 targetDir = (enemyPos - pos);
+		targetDir.Normalize();
+		// 2d 90 rotation to the left and right
+		idVec3 left 	= idVec3(-targetDir.y, targetDir.x, enemyPos.z);		// Use height of the target
+		idVec3 right	= idVec3(targetDir.y, -targetDir.x, enemyPos.z);		// Use height of the target
+
+		// It's a valid arc around if the furthest possible target to the left is clear to the shooter and the target
+		trace_t targetTrace;
+		idVec3 leftFurthestTarget = enemyPos + left * blastRadius;
+		// Test between the shooter and leftmost target around the obstacle
+		gameLocal.clip.TracePoint(trace, pos, leftFurthestTarget, MASK_SHOT_BOUNDINGBOX, this);
+	}
+	
+
+	// Case 4: Reflection bounce off obstacle
+	idThread::ReturnInt(false);
 }
 
 /*
