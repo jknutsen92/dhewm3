@@ -4040,6 +4040,17 @@ bool idAI::GetAimDir( const idVec3 &firePos, idEntity *aimAtEnt, const idEntity 
 	return result;
 }
 
+bool idAI::GetLaunchDir(const idVec3 &launchPos, float maxHeight, float bounceCoeffcient, idEntity *target, const idEntity *ignore, idVec3 &aimDir) const {
+	int debugDrawTime = g_debugGrenades.GetBool() ? 5 : 0; 
+	const idVec3 enemyPos = target->GetPhysics()->GetAbsBounds().GetCenter();
+	// TODO lerp the bounceCoefficient
+	if (PredictTrajectory(launchPos, enemyPos, grenadeSpeed, grenadeGravity, 
+				grenadeClipModel, MASK_MONSTERSOLID, maxHeight, this, target, debugDrawTime, aimDir)) {
+		return true;	
+	}
+	return false;
+}
+
 /*
 =====================
 idAI::BeginAttack
@@ -4256,7 +4267,7 @@ idProjectile *idAI::LaunchProjectile( const char *jointname, idEntity *target, b
 }
 
 idProjectile* idAI::LaunchGrenade(const char *jointname, idEntity *target) {
-	if (!grenadeDef) {
+	if (!grenadeDef || (grenadeLaunchType == LAUNCH_NONE && !TestGrenadeLaunchStrategies())) {
 		gameLocal.Warning( "%s (%s) doesn't have a grenade specified", name.c_str(), GetEntityDefName() );
 		return NULL;
 	}
@@ -4268,10 +4279,41 @@ idProjectile* idAI::LaunchGrenade(const char *jointname, idEntity *target) {
 	if (!grenade.GetEntity()) {
 		CreateGrenade(launchPoint, launchAxis[0]);
 	}
-
 	idProjectile* nade = grenade.GetEntity();
-	const idBounds& ownerBounds = GetPhysics()->GetAbsBounds();
-	const idClipModel* grenadeClip = grenade->
+
+	float bounceCoeffcient = 0.0f;
+	if (!grenadeDef->GetBool("detonate_on_world") && grenadeDef->GetFloat("bounce")) {
+		if (grenadeDef->FindKey("bounceCoefficient")) {
+			bounceCoeffcient = grenadeDef->GetFloat("bounceCoefficient");
+		}
+		else {
+			bounceCoeffcient = pow(grenadeDef->GetFloat("bounceCoefficient"), 2);
+		}
+	}
+
+	idVec3 aimDir, midpointCeil;
+	trace_t surfaceTrace, targetTrace;
+	const idVec3 up = -GetPhysics()->GetGravityNormal();
+	const idVec3 enemyPos = target->GetPhysics()->GetAbsBounds().GetCenter();
+	idVec3 midpoint = (enemyPos - launchPoint) / 2;
+	float maxKinematicHeight = grenadeSpeed * grenadeSpeed / (2.0f * grenadeGravity.Length());
+	gameLocal.clip.Translation(surfaceTrace, midpoint, up * maxKinematicHeight, grenadeClipModel, 
+		grenadeClipModel->GetAxis(), MASK_SOLID, NULL);
+	midpointCeil = surfaceTrace.endpos;
+	float maxHeight = (midpointCeil - midpoint).Length();
+
+	switch (grenadeLaunchType) {
+		case LAUNCH_DIRECT: {
+			if (GetLaunchDir(launchPoint, maxHeight, bounceCoeffcient, target, this, aimDir)) {
+				nade->Launch(launchPoint, aimDir, vec3_origin);
+				grenade = NULL;
+			}
+			break;
+		}
+
+	}
+	grenadeLaunchType = LAUNCH_NONE;
+	return nade;
 }
 
 /*

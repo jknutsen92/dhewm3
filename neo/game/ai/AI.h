@@ -278,10 +278,12 @@ public:
 	talkState_t				GetTalkState( void ) const;
 
 	bool					GetAimDir( const idVec3 &firePos, idEntity *aimAtEnt, const idEntity *ignore, idVec3 &aimDir ) const;
+	bool					GetLaunchDir(const idVec3& launchPos, float maxHeight, float bounceCoeffcient, idEntity* target, const idEntity* ignore, idVec3& aimDir) const;
 
 	void					TouchedByFlashlight( idActor *flashlight_owner );
 	void					MovePointToNearestValidLocation(idVec3& pos);
 
+	bool 					TestGrenadeLaunchStrategies(void);
 	bool 					TestReflectionBouncePoint(const trace_t surfaceTrace, const idEntity* target, const idVec3& targetImagePos);
 
 							// Outputs a list of all monsters to the console.
