@@ -4255,6 +4255,25 @@ idProjectile *idAI::LaunchProjectile( const char *jointname, idEntity *target, b
 	return lastProjectile;
 }
 
+idProjectile* idAI::LaunchGrenade(const char *jointname, idEntity *target) {
+	if (!grenadeDef) {
+		gameLocal.Warning( "%s (%s) doesn't have a grenade specified", name.c_str(), GetEntityDefName() );
+		return NULL;
+	}
+
+	idVec3 launchPoint;
+	idMat3 launchAxis;
+	GetMuzzle(jointname, launchPoint, launchAxis);
+
+	if (!grenade.GetEntity()) {
+		CreateGrenade(launchPoint, launchAxis[0]);
+	}
+
+	idProjectile* nade = grenade.GetEntity();
+	const idBounds& ownerBounds = GetPhysics()->GetAbsBounds();
+	const idClipModel* grenadeClip = grenade->
+}
+
 /*
 ================
 idAI::DamageFeedback

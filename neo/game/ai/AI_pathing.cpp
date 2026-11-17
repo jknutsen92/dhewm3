@@ -1568,3 +1568,28 @@ idVec3 idAI::GetPlanarReflectionImagePos(const idVec3 &point, const idVec3 &surf
 	float planeDistance = (point - surfaceContact) * surfaceNormal;
 	return point - 2.0f * planeDistance * surfaceNormal; 
 }
+
+bool idAI::TestReflectionBouncePoint(const trace_t surfaceTrace, const idEntity *target, const idVec3 &targetImagePos) {
+	trace_t validationTrace;
+	idVec3 enemyPos		= target->GetPhysics()->GetOrigin();
+	idVec3 bouncePos 	= (enemyPos + targetImagePos) / 2.0f;
+	
+	gameLocal.clip.TracePoint(validationTrace, enemyPos, bouncePos, MASK_SHOT_BOUNDINGBOX, this);
+	// Make sure bounce point is actually on a surface
+	if (validationTrace.fraction == 1.0f || !validationTrace.endpos.Compare(bouncePos, 1.0f)) {
+		return false;
+	}
+	// Bounce point is on a valid surface, let's make sure it has the same angle for bouncing
+	if (surfaceTrace.c.normal * validationTrace.c.normal < 0.999f) {
+		return false;
+	}
+
+	// Make sure there is clear line of sight between shooter and bounce point
+	idVec3 pos = GetPhysics()->GetOrigin();
+	gameLocal.clip.TracePoint(validationTrace, pos, bouncePos, MASK_SHOT_BOUNDINGBOX, this);
+	if (validationTrace.fraction == 1.0f || !validationTrace.endpos.Compare(bouncePos, 1.0f)) {
+		return false;
+	}
+
+	return true;
+}

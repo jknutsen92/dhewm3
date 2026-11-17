@@ -282,6 +282,8 @@ public:
 	void					TouchedByFlashlight( idActor *flashlight_owner );
 	void					MovePointToNearestValidLocation(idVec3& pos);
 
+	bool 					TestReflectionBouncePoint(const trace_t surfaceTrace, const idEntity* target, const idVec3& targetImagePos);
+
 							// Outputs a list of all monsters to the console.
 	static void				List_f( const idCmdArgs &args );
 
@@ -541,6 +543,7 @@ protected:
 	idProjectile*			CreateGrenade(const idVec3& pos, const idVec3& dir);
 	void					RemoveGrenade(void);
 	idProjectile			*LaunchProjectile( const char *jointname, idEntity *target, bool clampToAttackCone );
+	idProjectile*			LaunchGrenade(const char* jointname, idEntity* target);
 	virtual void			DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, float damageZoneScale = 1.0, float heatRatio = 0.0f);
 	void					DirectDamage( const char *meleeDefName, idEntity *ent );
 	bool					TestMelee( void ) const;

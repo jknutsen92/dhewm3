@@ -54,6 +54,7 @@ extern idCVar	g_hitEffect;
 extern idCVar	g_muzzleFlash;
 
 extern idCVar	g_disasm;
+extern idCVar   g_debugGrenades;
 extern idCVar	g_debugBounds;
 extern idCVar	g_debugAnim;
 extern idCVar	g_debugMove;
