@@ -487,6 +487,7 @@ void idAI::Save( idSaveGame *savefile ) const {
 	savefile->WriteVec3(grenadeGravity);
 	grenade.Save(savefile);
 	savefile->WriteInt(grenadeLaunchType);
+	savefile->WriteTrace(bounceSurfaceTrace);
 
 	savefile->WriteSoundShader( chat_snd );
 	savefile->WriteInt( chat_min );
@@ -645,6 +646,7 @@ void idAI::Restore( idRestoreGame *savefile ) {
 	int launchTypeTestEnum;
 	savefile->ReadInt(launchTypeTestEnum);
 	grenadeLaunchType = static_cast<launchType_t>(launchTypeTestEnum);
+	savefile->ReadTrace(bounceSurfaceTrace);
 
 	savefile->ReadSoundShader( chat_snd );
 	savefile->ReadInt( chat_min );
@@ -3993,6 +3995,14 @@ void idAI::CreateProjectileClipModel( void ) const {
 	}
 }
 
+void idAI::CreateGrenadeClipModel() const {
+	if (!grenadeClipModel) {
+		idBounds grenadeBounds(vec3_origin);
+		grenadeBounds.ExpandSelf(grenadeRadius);
+		grenadeClipModel = new idClipModel(idTraceModel(grenadeBounds));
+	}
+}
+
 /*
 =====================
 idAI::GetAimDir
@@ -4040,11 +4050,14 @@ bool idAI::GetAimDir( const idVec3 &firePos, idEntity *aimAtEnt, const idEntity 
 	return result;
 }
 
-bool idAI::GetLaunchDir(const idVec3 &launchPos, float maxHeight, float bounceCoeffcient, idEntity *target, const idEntity *ignore, idVec3 &aimDir) const {
+bool idAI::GetLaunchDir(const idVec3& launchPos, const idVec3& targetPos, float maxHeight, float bounceCoeffcient, idEntity *target, idVec3 &aimDir) const {
+	idVec2 lerped;
 	int debugDrawTime = g_debugGrenades.GetBool() ? 5 : 0; 
-	const idVec3 enemyPos = target->GetPhysics()->GetAbsBounds().GetCenter();
-	// TODO lerp the bounceCoefficient
-	if (PredictTrajectory(launchPos, enemyPos, grenadeSpeed, grenadeGravity, 
+	idVec2 launchPosR2 = idVec2(launchPos.x, launchPos.y);
+	idVec2 targetPosR2 = idVec2(targetPos.x, targetPos.y);
+	lerped.Lerp(targetPosR2, launchPosR2, bounceCoeffcient);
+	idVec3 adjustedTargetPos = idVec3(lerped.x, lerped.y, targetPos.z);
+	if (PredictTrajectory(launchPos, adjustedTargetPos, grenadeSpeed, grenadeGravity, 
 				grenadeClipModel, MASK_MONSTERSOLID, maxHeight, this, target, debugDrawTime, aimDir)) {
 		return true;	
 	}
@@ -4280,6 +4293,7 @@ idProjectile* idAI::LaunchGrenade(const char *jointname, idEntity *target) {
 		CreateGrenade(launchPoint, launchAxis[0]);
 	}
 	idProjectile* nade = grenade.GetEntity();
+	CreateGrenadeClipModel();
 
 	float bounceCoeffcient = 0.0f;
 	if (!grenadeDef->GetBool("detonate_on_world") && grenadeDef->GetFloat("bounce")) {
@@ -4292,7 +4306,7 @@ idProjectile* idAI::LaunchGrenade(const char *jointname, idEntity *target) {
 	}
 
 	idVec3 aimDir, midpointCeil;
-	trace_t surfaceTrace, targetTrace;
+	trace_t surfaceTrace;
 	const idVec3 up = -GetPhysics()->GetGravityNormal();
 	const idVec3 enemyPos = target->GetPhysics()->GetAbsBounds().GetCenter();
 	idVec3 midpoint = (enemyPos - launchPoint) / 2;
@@ -4303,16 +4317,29 @@ idProjectile* idAI::LaunchGrenade(const char *jointname, idEntity *target) {
 	float maxHeight = (midpointCeil - midpoint).Length();
 
 	switch (grenadeLaunchType) {
-		case LAUNCH_DIRECT: {
-			if (GetLaunchDir(launchPoint, maxHeight, bounceCoeffcient, target, this, aimDir)) {
+		case LAUNCH_DIRECT:
+		case LAUNCH_ABOVE: {	// idAI::PredictTrajectory will create two solutions, a flat arc and a high lob
+			if (GetLaunchDir(launchPoint, enemyPos, maxHeight, bounceCoeffcient, target, aimDir)) {
 				nade->Launch(launchPoint, aimDir, vec3_origin);
-				grenade = NULL;
 			}
 			break;
 		}
-
+		case LAUNCH_REFLECT: {
+			if (GetLaunchDir(launchPoint, bounceSurfaceTrace.endpos, maxHeight, 0.0f, target, aimDir)) {
+				nade->Launch(launchPoint, aimDir, vec3_origin);
+			}
+			break;
+		}
+		case LAUNCH_AROUND: {
+			if (GetLaunchDir(launchPoint, bounceSurfaceTrace.endpos, maxHeight, bounceCoeffcient, target, aimDir)) {
+				nade->Launch(launchPoint, aimDir, vec3_origin);
+			}
+			break;
+		}
 	}
+
 	grenadeLaunchType = LAUNCH_NONE;
+	grenade = NULL;
 	return nade;
 }
 

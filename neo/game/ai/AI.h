@@ -146,12 +146,8 @@ typedef enum {
 	LAUNCH_NONE,
 	LAUNCH_DIRECT,
 	LAUNCH_ABOVE,
-	LAUNCH_AROUND_LEFT,
-	LAUNCH_AROUND_RIGHT,
-	LAUNCH_REFLECT_BEHIND,
-	LAUNCH_REFLECT_LEFT,
-	LAUNCH_REFELCT_RIGHT,
-	LAUNCH_REFLECT_ABOVE
+	LAUNCH_REFLECT,
+	LAUNCH_AROUND
 } launchType_t;
 
 //
@@ -278,7 +274,7 @@ public:
 	talkState_t				GetTalkState( void ) const;
 
 	bool					GetAimDir( const idVec3 &firePos, idEntity *aimAtEnt, const idEntity *ignore, idVec3 &aimDir ) const;
-	bool					GetLaunchDir(const idVec3& launchPos, float maxHeight, float bounceCoeffcient, idEntity* target, const idEntity* ignore, idVec3& aimDir) const;
+	bool					GetLaunchDir(const idVec3& launchPos, const idVec3& targetPos, float maxHeight, float bounceCoeffcient, idEntity* target, idVec3& aimDir) const;
 
 	void					TouchedByFlashlight( idActor *flashlight_owner );
 	void					MovePointToNearestValidLocation(idVec3& pos);
@@ -374,6 +370,7 @@ protected:
 	idVec3					grenadeGravity;
 	idEntityPtr<idProjectile> grenade;
 	launchType_t			grenadeLaunchType;
+	trace_t					bounceSurfaceTrace;
 
 	// chatter/talking
 	const idSoundShader		*chat_snd;
@@ -540,6 +537,7 @@ protected:
 
 	// attacks
 	void					CreateProjectileClipModel( void ) const;
+	void					CreateGrenadeClipModel(void) const;
 	idProjectile			*CreateProjectile( const idVec3 &pos, const idVec3 &dir );
 	void					RemoveProjectile( void );
 	idProjectile*			CreateGrenade(const idVec3& pos, const idVec3& dir);
