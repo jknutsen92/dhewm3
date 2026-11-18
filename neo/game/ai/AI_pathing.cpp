@@ -1645,9 +1645,9 @@ bool idAI::TestGrenadeLaunchStrategies() {
 		idVec3 right	= idVec3(targetDir.y, -targetDir.x, enemyPos.z);		// Use height of the target
 		// It's a valid arc around if the furthest possible target to the left is clear to the shooter and the target
 		idVec3 leftFurthestTarget = left * blastRadius + enemyPos;
-		gameLocal.clip.TracePoint(trace, pos, leftFurthestTarget, MASK_SHOT_BOUNDINGBOX, this);
-		gameLocal.clip.TracePoint(bounceSurfaceTrace, enemyPos, leftFurthestTarget, MASK_SHOT_BOUNDINGBOX, enemyEnt);
-		if (trace.fraction < 1.0f && bounceSurfaceTrace.fraction < 1.0f) {
+		gameLocal.clip.TracePoint(trace, enemyPos, leftFurthestTarget, MASK_SHOT_BOUNDINGBOX, enemyEnt);
+		gameLocal.clip.TracePoint(bounceSurfaceTrace, pos, trace.endpos, MASK_SHOT_BOUNDINGBOX, this);
+		if (bounceSurfaceTrace.fraction == 1.0f) {
 			if (g_debugGrenades.GetBool()) {
 				common->Printf("%s: launch around left grenade test against %s passes\n", name.c_str(), enemyEnt->GetName());
 			}
@@ -1656,9 +1656,9 @@ bool idAI::TestGrenadeLaunchStrategies() {
 		}
 		// Check the furthest effective point to the right side of the 
 		idVec3 rightFurthestTarget = right * blastRadius + enemyPos;
-		gameLocal.clip.TracePoint(trace, pos, rightFurthestTarget, MASK_SHOT_BOUNDINGBOX, this);
-		gameLocal.clip.TracePoint(bounceSurfaceTrace, enemyPos, rightFurthestTarget, MASK_SHOT_BOUNDINGBOX, enemyEnt);
-		if (trace.fraction < 1.0f && bounceSurfaceTrace.fraction < 1.0f) {
+		gameLocal.clip.TracePoint(trace, enemyPos, rightFurthestTarget, MASK_SHOT_BOUNDINGBOX, enemyEnt);
+		gameLocal.clip.TracePoint(bounceSurfaceTrace, pos, trace.endpos, MASK_SHOT_BOUNDINGBOX, this);
+		if (bounceSurfaceTrace.fraction == 1.0f) {
 			if (g_debugGrenades.GetBool()) {
 				common->Printf("%s: launch around right grenade test against %s passes\n", name.c_str(), enemyEnt->GetName());
 			}

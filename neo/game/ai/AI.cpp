@@ -4052,7 +4052,7 @@ bool idAI::GetAimDir( const idVec3 &firePos, idEntity *aimAtEnt, const idEntity 
 
 bool idAI::GetLaunchDir(const idVec3& launchPos, const idVec3& targetPos, float maxHeight, float bounceCoeffcient, idEntity *target, idVec3 &aimDir) const {
 	idVec2 lerped;
-	int debugDrawTime = g_debugGrenades.GetBool() ? 5 : 0; 
+	int debugDrawTime = g_debugGrenades.GetBool() ? 5000 : 0; 
 	idVec2 launchPosR2 = idVec2(launchPos.x, launchPos.y);
 	idVec2 targetPosR2 = idVec2(targetPos.x, targetPos.y);
 	lerped.Lerp(targetPosR2, launchPosR2, bounceCoeffcient);
@@ -4301,24 +4301,23 @@ idProjectile* idAI::LaunchGrenade(const char *jointname, idEntity *target) {
 			bounceCoeffcient = grenadeDef->GetFloat("bounceCoefficient");
 		}
 		else {
-			bounceCoeffcient = pow(grenadeDef->GetFloat("bounceCoefficient"), 2);
+			bounceCoeffcient = pow(grenadeDef->GetFloat("bounce"), 2);
 		}
 	}
 
 	idVec3 aimDir, midpointCeil;
 	trace_t surfaceTrace;
 	const idVec3 up = -GetPhysics()->GetGravityNormal();
-	const idVec3 enemyPos = target->GetPhysics()->GetAbsBounds().GetCenter();
-	idVec3 midpoint = (enemyPos - launchPoint) / 2;
 	float maxKinematicHeight = grenadeSpeed * grenadeSpeed / (2.0f * grenadeGravity.Length());
-	gameLocal.clip.Translation(surfaceTrace, midpoint, up * maxKinematicHeight, grenadeClipModel, 
+	gameLocal.clip.Translation(surfaceTrace, launchPoint, up * maxKinematicHeight, grenadeClipModel, 
 		grenadeClipModel->GetAxis(), MASK_SOLID, NULL);
-	midpointCeil = surfaceTrace.endpos;
-	float maxHeight = (midpointCeil - midpoint).Length();
+	// Account for the height between the launch point and the celing, including half the clipmodel's side length
+	float maxHeight = (midpointCeil - launchPoint).Length() - grenadeClipModel->GetAbsBounds().GetRadius();
 
 	switch (grenadeLaunchType) {
 		case LAUNCH_DIRECT:
 		case LAUNCH_ABOVE: {	// idAI::PredictTrajectory will create two solutions, a flat arc and a high lob
+			const idVec3 enemyPos = target->GetPhysics()->GetAbsBounds().GetCenter();
 			if (GetLaunchDir(launchPoint, enemyPos, maxHeight, bounceCoeffcient, target, aimDir)) {
 				nade->Launch(launchPoint, aimDir, vec3_origin);
 			}
