@@ -1590,10 +1590,10 @@ bool idAI::TestGrenadeLaunchStrategies() {
 	// Case 2: Arc over obstacle - is the space over obstacle clear
 	idVec3 up = -GetPhysics()->GetGravityNormal();
 	idVec3 midpoint = (pos + enemyPos) / 2.0f;
-	midpoint.Normalize();
+	// midpoint.Normalize();
 	// Get the highest point over the midpoint between shooter and target (the ceiling)
 	trace_t ceilingTrace;
-	gameLocal.clip.TracePoint(ceilingTrace, midpoint, up * CM_MAX_TRACE_DIST, CONTENTS_SOLID, NULL);
+	gameLocal.clip.TracePoint(ceilingTrace, midpoint, up * grenadeMaxKineHeight + midpoint, CONTENTS_SOLID, NULL);
 	// Test if the LOS to the ceiling between the target and shooter is clear
 	trace_t enemyTrace;
 	gameLocal.clip.TracePoint(trace, pos, ceilingTrace.endpos, MASK_SHOT_BOUNDINGBOX, this);

@@ -335,6 +335,7 @@ idAI::idAI() {
 	grenadeGravity		= vec3_origin;
 	grenadeSpeed		= 0.0f;
 	grenadeLaunchType 	= LAUNCH_NONE;
+	grenadeMaxKineHeight= 0.0f;
 
 	chat_snd			= NULL;
 	chat_min			= 0;
@@ -488,6 +489,7 @@ void idAI::Save( idSaveGame *savefile ) const {
 	grenade.Save(savefile);
 	savefile->WriteInt(grenadeLaunchType);
 	savefile->WriteTrace(bounceSurfaceTrace);
+	savefile->WriteFloat(grenadeMaxKineHeight);
 
 	savefile->WriteSoundShader( chat_snd );
 	savefile->WriteInt( chat_min );
@@ -647,6 +649,7 @@ void idAI::Restore( idRestoreGame *savefile ) {
 	savefile->ReadInt(launchTypeTestEnum);
 	grenadeLaunchType = static_cast<launchType_t>(launchTypeTestEnum);
 	savefile->ReadTrace(bounceSurfaceTrace);
+	savefile->ReadFloat(grenadeMaxKineHeight);
 
 	savefile->ReadSoundShader( chat_snd );
 	savefile->ReadInt( chat_min );
@@ -955,6 +958,7 @@ void idAI::Spawn( void ) {
 		grenade = NULL;
 	}
 	grenadeLaunchType = LAUNCH_NONE;
+	grenadeMaxKineHeight = grenadeSpeed * grenadeSpeed / (2.0f * grenadeGravity.Length());
 
 	particles.Clear();
 	restartParticles = true;
@@ -4305,14 +4309,13 @@ idProjectile* idAI::LaunchGrenade(const char *jointname, idEntity *target) {
 		}
 	}
 
-	idVec3 aimDir, midpointCeil;
+	idVec3 aimDir;
 	trace_t surfaceTrace;
 	const idVec3 up = -GetPhysics()->GetGravityNormal();
-	float maxKinematicHeight = grenadeSpeed * grenadeSpeed / (2.0f * grenadeGravity.Length());
-	gameLocal.clip.Translation(surfaceTrace, launchPoint, up * maxKinematicHeight, grenadeClipModel, 
-		grenadeClipModel->GetAxis(), MASK_SOLID, NULL);
+	gameLocal.clip.Translation(surfaceTrace, launchPoint, up * grenadeMaxKineHeight + launchPoint, grenadeClipModel, 
+		grenadeClipModel->GetAxis(), MASK_SOLID, this);
 	// Account for the height between the launch point and the celing, including half the clipmodel's side length
-	float maxHeight = (midpointCeil - launchPoint).Length() - grenadeClipModel->GetAbsBounds().GetRadius();
+	float maxHeight = (surfaceTrace.endpos - launchPoint).Length() - grenadeClipModel->GetAbsBounds().GetRadius();
 
 	switch (grenadeLaunchType) {
 		case LAUNCH_DIRECT:

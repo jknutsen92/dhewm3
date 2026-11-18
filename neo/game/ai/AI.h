@@ -371,6 +371,7 @@ protected:
 	idEntityPtr<idProjectile> grenade;
 	launchType_t			grenadeLaunchType;
 	trace_t					bounceSurfaceTrace;
+	float					grenadeMaxKineHeight;
 
 	// chatter/talking
 	const idSoundShader		*chat_snd;
