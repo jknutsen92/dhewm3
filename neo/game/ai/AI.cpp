@@ -4321,11 +4321,17 @@ idProjectile* idAI::LaunchGrenade(const char *jointname, idEntity *target) {
 			if (GetLaunchDir(launchPoint, enemyPos, maxHeight, bounceCoeffcient, target, aimDir)) {
 				nade->Launch(launchPoint, aimDir, vec3_origin);
 			}
+			else {
+				grenade.GetEntity()->PostEventMS(&EV_Remove, 0);
+			}
 			break;
 		}
 		case LAUNCH_ABOVE: {	// idAI::PredictTrajectory will create two solutions, a flat arc and a high lob
 			if (GetLaunchDir(launchPoint, enemyPos, maxHeight, 0.0f, target, aimDir)) {
 				nade->Launch(launchPoint, aimDir, vec3_origin);
+			}
+			else {
+				grenade.GetEntity()->PostEventMS(&EV_Remove, 0);
 			}
 			break;
 		}
@@ -4333,11 +4339,17 @@ idProjectile* idAI::LaunchGrenade(const char *jointname, idEntity *target) {
 			if (GetLaunchDir(launchPoint, bounceSurfaceTrace.endpos, maxHeight, 0.0f, target, aimDir)) {
 				nade->Launch(launchPoint, aimDir, vec3_origin);
 			}
+			else {
+				grenade.GetEntity()->PostEventMS(&EV_Remove, 0);
+			}
 			break;
 		}
 		case LAUNCH_AROUND: {
 			if (GetLaunchDir(launchPoint, bounceSurfaceTrace.endpos, maxHeight, bounceCoeffcient, target, aimDir)) {
 				nade->Launch(launchPoint, aimDir, vec3_origin);
+			}
+			else {
+				grenade.GetEntity()->PostEventMS(&EV_Remove, 0);
 			}
 			break;
 		}
