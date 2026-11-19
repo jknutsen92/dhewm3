@@ -1573,34 +1573,47 @@ bool idAI::TestGrenadeLaunchStrategies() {
 		grenadeLaunchType = LAUNCH_NONE;
 		return false;
 	}
+	CreateGrenadeClipModel();
+	const idMat3 clipAxis = grenadeClipModel->GetAxis();
+
 
 	// Case 1: Direct throw + bounce - are there no obstacles occluding
 	idVec3 pos = GetPhysics()->GetOrigin();
-	idVec3 enemyPos = enemyEnt->GetPhysics()->GetOrigin();
+	// idVec3 enemyPos = enemyEnt->GetPhysics()->GetOrigin();
+	const idVec3 enemyPos = enemyEnt->GetPhysics()->GetAbsBounds().GetCenter();
 	gameLocal.clip.TracePoint(trace, pos, enemyPos, MASK_SHOT_BOUNDINGBOX, this);
 	hit = gameLocal.GetTraceEntity(trace);
 	if (trace.fraction == 1.0f || hit == enemyEnt) {
 		if (g_debugGrenades.GetBool()) {
 			common->Printf("%s: direct grenade launch test against %s passes\n", name.c_str(), enemyEnt->GetName());
+			gameRenderWorld->DebugLine(colorCyan, pos, enemyPos, 5000);
 		}
 		grenadeLaunchType = LAUNCH_DIRECT;
 		return true;
 	}
 
+	// TODO This has a case with obstacles to the ceiling where it produces a false positive AND false negatives
+	// sometimes it passes through walls and never uses the second arc which always appears to be too high, well above the ceiling
 	// Case 2: Arc over obstacle - is the space over obstacle clear
 	idVec3 up = -GetPhysics()->GetGravityNormal();
 	idVec3 midpoint = (pos + enemyPos) / 2.0f;
-	// midpoint.Normalize();
 	// Get the highest point over the midpoint between shooter and target (the ceiling)
 	trace_t ceilingTrace;
-	gameLocal.clip.TracePoint(ceilingTrace, midpoint, up * grenadeMaxKineHeight + midpoint, CONTENTS_SOLID, NULL);
+	// gameLocal.clip.TracePoint(ceilingTrace, midpoint, up * grenadeMaxKineHeight + midpoint, CONTENTS_SOLID, NULL);
+	gameLocal.clip.Translation(ceilingTrace, midpoint, up * grenadeMaxKineHeight + midpoint, grenadeClipModel, 
+			clipAxis, CONTENTS_SOLID, NULL);
 	// Test if the LOS to the ceiling between the target and shooter is clear
 	trace_t enemyTrace;
-	gameLocal.clip.TracePoint(trace, pos, ceilingTrace.endpos, MASK_SHOT_BOUNDINGBOX, this);
-	gameLocal.clip.TracePoint(enemyTrace, enemyPos, ceilingTrace.endpos, MASK_SHOT_BOUNDINGBOX, enemyEnt);
+	// gameLocal.clip.TracePoint(trace, pos, ceilingTrace.endpos, MASK_SHOT_BOUNDINGBOX, this);
+	gameLocal.clip.Translation(trace, pos, ceilingTrace.endpos, grenadeClipModel, clipAxis, MASK_SHOT_BOUNDINGBOX, this);
+	// gameLocal.clip.TracePoint(enemyTrace, enemyPos, ceilingTrace.endpos, MASK_SHOT_BOUNDINGBOX, enemyEnt);
+	gameLocal.clip.Translation(enemyTrace, enemyPos, ceilingTrace.endpos, grenadeClipModel, clipAxis, MASK_SHOT_BOUNDINGBOX, enemyEnt);
 	if (trace.fraction == 1.0f && enemyTrace.fraction == 1.0f) {
 		if (g_debugGrenades.GetBool()) {
 			common->Printf("%s: launch above grenade test against %s passes\n", name.c_str(), enemyEnt->GetName());
+			gameRenderWorld->DebugLine(colorLtGrey, midpoint, ceilingTrace.endpos, 5000);
+			gameRenderWorld->DebugLine(colorCyan, pos, ceilingTrace.endpos, 5000);
+			gameRenderWorld->DebugLine(colorCyan, enemyPos, ceilingTrace.endpos, 5000);
 		}
 		grenadeLaunchType = LAUNCH_ABOVE;
 		return true;
@@ -1611,21 +1624,30 @@ bool idAI::TestGrenadeLaunchStrategies() {
 	idVec3 targetDir = (enemyPos - pos);
 	float range = targetDir.Length();								// A simple filter heuristic for surface distance
 	float minHeight = enemyEnt->GetPhysics()->GetAbsBounds()[0].z;	// Minimum height for candidate surface is the top of the target's bounding box
+	idVec3 enemyPosAdjusted = idVec3(enemyPos.x, enemyPos.y, minHeight);
 	idVec3 directions[4];
-	directions[0] = idVec3(targetDir.x, targetDir.y, minHeight);	// behind
-	directions[1] = idVec3(-midpoint.y, midpoint.x, midpoint.z);	// left
-	directions[2] = idVec3(midpoint.y, -midpoint.x, midpoint.z);	// right
-	directions[3] = up;
+	directions[0] = idVec3(targetDir.x, targetDir.y, 0.0f) * range + enemyPosAdjusted; 	// behind
+	directions[1] = idVec3(-targetDir.y, targetDir.x, 0.0f) * range + midpoint; 			// left
+	directions[2] = idVec3(targetDir.y, -targetDir.x, 0.0f) * range + midpoint;				// right
+	directions[3] = up * range + midpoint;
 	for (int i = 0; i < 4; i++) {
-		gameLocal.clip.TracePoint(bounceSurfaceTrace, enemyPos, directions[i] * range, MASK_SHOT_BOUNDINGBOX, enemyEnt);
+		gameLocal.clip.TracePoint(bounceSurfaceTrace, enemyPos, directions[i], MASK_SHOT_BOUNDINGBOX, enemyEnt);
 		if (bounceSurfaceTrace.fraction < 1.0f) {
 			targetImage = GetPlanarReflectionImagePos(enemyPos, bounceSurfaceTrace.c.normal, bounceSurfaceTrace.endpos);
 			if (TestReflectionBouncePoint(bounceSurfaceTrace, enemyEnt, targetImage)) {
 				grenadeLaunchType = LAUNCH_REFLECT;
 				if (g_debugGrenades.GetBool()) {
 					common->Printf("%s: grenade bounce test against %s passes. BounceType=%d\n", name.c_str(), enemyEnt->GetName(), grenadeLaunchType);
+					gameRenderWorld->DebugLine(colorCyan, enemyPos, bounceSurfaceTrace.endpos, 3000);
+					gameRenderWorld->DebugLine(colorGreen, pos, bounceSurfaceTrace.endpos, 3000);
+					gameRenderWorld->DebugLine(colorLtGrey, midpoint, bounceSurfaceTrace.endpos, 3000);
 				}
 				return true;
+			}
+			if (g_debugGrenades.GetBool()) {
+				gameRenderWorld->DebugLine(colorYellow, enemyPos, bounceSurfaceTrace.endpos, 3000);
+				gameRenderWorld->DebugLine(colorRed, pos, bounceSurfaceTrace.endpos, 3000);
+				gameRenderWorld->DebugLine(colorLtGrey, midpoint, bounceSurfaceTrace.endpos);
 			}
 		}
 	}
@@ -1641,15 +1663,17 @@ bool idAI::TestGrenadeLaunchStrategies() {
 	targetDir.Normalize();
 	if (blastRadius) {
 		// 2d 90 rotation to the left and right
-		idVec3 left 	= idVec3(-targetDir.y, targetDir.x, enemyPos.z);		// Use height of the target
-		idVec3 right	= idVec3(targetDir.y, -targetDir.x, enemyPos.z);		// Use height of the target
+		idVec3 left 	= idVec3(-targetDir.y, targetDir.x, 0.0f);
+		idVec3 right	= idVec3(targetDir.y, -targetDir.x, 0.0f);
 		// It's a valid arc around if the furthest possible target to the left is clear to the shooter and the target
 		idVec3 leftFurthestTarget = left * blastRadius + enemyPos;
 		gameLocal.clip.TracePoint(trace, enemyPos, leftFurthestTarget, MASK_SHOT_BOUNDINGBOX, enemyEnt);
 		gameLocal.clip.TracePoint(bounceSurfaceTrace, pos, trace.endpos, MASK_SHOT_BOUNDINGBOX, this);
 		if (bounceSurfaceTrace.fraction == 1.0f) {
+			// TODO move the point inwards with "binary search" a few iterations
 			if (g_debugGrenades.GetBool()) {
 				common->Printf("%s: launch around left grenade test against %s passes\n", name.c_str(), enemyEnt->GetName());
+				gameRenderWorld->DebugLine(colorMagenta, pos, bounceSurfaceTrace.endpos, 5000);
 			}
 			grenadeLaunchType = LAUNCH_AROUND;
 			return true;
@@ -1659,8 +1683,10 @@ bool idAI::TestGrenadeLaunchStrategies() {
 		gameLocal.clip.TracePoint(trace, enemyPos, rightFurthestTarget, MASK_SHOT_BOUNDINGBOX, enemyEnt);
 		gameLocal.clip.TracePoint(bounceSurfaceTrace, pos, trace.endpos, MASK_SHOT_BOUNDINGBOX, this);
 		if (bounceSurfaceTrace.fraction == 1.0f) {
+			// TODO move the point inwards with "binary search" a few iterations
 			if (g_debugGrenades.GetBool()) {
 				common->Printf("%s: launch around right grenade test against %s passes\n", name.c_str(), enemyEnt->GetName());
+				gameRenderWorld->DebugLine(colorMagenta, pos, bounceSurfaceTrace.endpos, 5000);
 			}
 			grenadeLaunchType = LAUNCH_AROUND;
 			return true;

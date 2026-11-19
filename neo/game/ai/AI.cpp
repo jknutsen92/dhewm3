@@ -4297,7 +4297,6 @@ idProjectile* idAI::LaunchGrenade(const char *jointname, idEntity *target) {
 		CreateGrenade(launchPoint, launchAxis[0]);
 	}
 	idProjectile* nade = grenade.GetEntity();
-	CreateGrenadeClipModel();
 
 	float bounceCoeffcient = 0.0f;
 	if (!grenadeDef->GetBool("detonate_on_world") && grenadeDef->GetFloat("bounce")) {
@@ -4315,13 +4314,17 @@ idProjectile* idAI::LaunchGrenade(const char *jointname, idEntity *target) {
 	gameLocal.clip.Translation(surfaceTrace, launchPoint, up * grenadeMaxKineHeight + launchPoint, grenadeClipModel, 
 		grenadeClipModel->GetAxis(), MASK_SOLID, this);
 	// Account for the height between the launch point and the celing, including half the clipmodel's side length
-	float maxHeight = (surfaceTrace.endpos - launchPoint).Length() - grenadeClipModel->GetAbsBounds().GetRadius();
-
+	float maxHeight = (surfaceTrace.endpos - launchPoint).Length() * 0.8f;
+	const idVec3 enemyPos = target->GetPhysics()->GetAbsBounds().GetCenter();
 	switch (grenadeLaunchType) {
-		case LAUNCH_DIRECT:
-		case LAUNCH_ABOVE: {	// idAI::PredictTrajectory will create two solutions, a flat arc and a high lob
-			const idVec3 enemyPos = target->GetPhysics()->GetAbsBounds().GetCenter();
+		case LAUNCH_DIRECT: {		
 			if (GetLaunchDir(launchPoint, enemyPos, maxHeight, bounceCoeffcient, target, aimDir)) {
+				nade->Launch(launchPoint, aimDir, vec3_origin);
+			}
+			break;
+		}
+		case LAUNCH_ABOVE: {	// idAI::PredictTrajectory will create two solutions, a flat arc and a high lob
+			if (GetLaunchDir(launchPoint, enemyPos, maxHeight, 0.0f, target, aimDir)) {
 				nade->Launch(launchPoint, aimDir, vec3_origin);
 			}
 			break;
