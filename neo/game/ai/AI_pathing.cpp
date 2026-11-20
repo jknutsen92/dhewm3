@@ -1543,6 +1543,16 @@ bool idAI::PredictTrajectory( const idVec3 &firePos, const idVec3 &target, float
 	return false;
 }
 
+bool idAI::GrenadeTrajectory(const idVec3 &firePos, const idVec3 &target, float projectileSpeed, const idVec3 &projGravity, const idClipModel *clip, int clipmask, float max_height, const idEntity *ignore, const idEntity *targetEntity, int drawtime, idVec3 &aimDir) {
+	// TODO
+	return true;
+}
+
+bool idAI::TestGrenadeTrajectory(const idVec3 &start, const idVec3 &end, float zVel, float gravity, float time, float max_height, const idClipModel *clip, int clipmask, const idEntity *ignore, const idEntity *targetEntity, int drawtime) {
+	// TODO
+	return true;
+}
+
 bool idAI::IsClearPath(const idEntity* ent1, const idEntity* ent2, float range) {
 	const idVec3 ent1Pos = ent1->GetPhysics()->GetOrigin();
 	const idVec3 ent2Pos = ent2->GetPhysics()->GetOrigin();
@@ -1605,10 +1615,10 @@ bool idAI::TestGrenadeLaunchStrategies(const char* jointname) {
 	}
 
 	// Case 4: Arc around obstacle - can we hit with nearby blast radius?
-	// if (TestNearbyLaunchStrategy(pos, enemyPos, enemyEnt)) {
-	// 	grenadeLaunchType = LAUNCH_AROUND;
-	// 	return true;
-	// }
+	if (TestNearbyLaunchStrategy(pos, enemyPos, enemyEnt)) {
+		grenadeLaunchType = LAUNCH_AROUND;
+		return true;
+	}
 
 	if (g_debugGrenades.GetBool()) {
 		common->Printf("%s: grenade bounce test against %s fails\n", name.c_str(), enemyEnt->GetName());
@@ -1702,6 +1712,7 @@ bool idAI::TestBounceLaunchStrategy(const idVec3& shooterPos, const idVec3& enem
 
 // Get vectors at 90 degrees to the left and right of the dir (and the obstacle) point to the furthest effective point (blast radius)
 bool idAI::TestNearbyLaunchStrategy(const idVec3& shooterPos, const idVec3& enemyPos, const idEntity* enemyEnt) {
+	trace_t nearbyTrace;
 	const char* splashDamageName = grenadeDef->GetString("def_splash_damage");
 	float blastRadius = 0.0f;
 	if (splashDamageName[0]) {
@@ -1716,9 +1727,8 @@ bool idAI::TestNearbyLaunchStrategy(const idVec3& shooterPos, const idVec3& enem
 	idVec3 targetDir = (enemyPos - shooterPos);
 	targetDir.Normalize();
 	idVec3 left = idVec3(-targetDir.y, targetDir.x, 0.0f);
-	trace_t leftTrace = GetClosestValidPoint(shooterPos, enemyPos, enemyEnt, left, blastRadius);
-	if (leftTrace.fraction == 1.0f) {
-		bounceSurfaceTrace = leftTrace;
+	if (GetClosestValidPoint(shooterPos, enemyPos, enemyEnt, left, blastRadius, nearbyTrace)) {
+		bounceSurfaceTrace = nearbyTrace;
 		if (g_debugGrenades.GetBool()) {
 			common->Printf("%s: launch around left grenade test against %s passes\n", name.c_str(), enemyEnt->GetName());
 			gameRenderWorld->DebugLine(colorMagenta, shooterPos, bounceSurfaceTrace.endpos, 5000);
@@ -1728,9 +1738,8 @@ bool idAI::TestNearbyLaunchStrategy(const idVec3& shooterPos, const idVec3& enem
 
 	// Check the furthest effective point to the right side of the 
 	idVec3 right = idVec3(targetDir.y, -targetDir.x, 0.0f);
-	trace_t rightTrace = GetClosestValidPoint(shooterPos, enemyPos, enemyEnt, right, blastRadius);
-	if (rightTrace.fraction == 1.0f) {
-		bounceSurfaceTrace = leftTrace;
+	if (GetClosestValidPoint(shooterPos, enemyPos, enemyEnt, right, blastRadius, nearbyTrace)) {
+		bounceSurfaceTrace = nearbyTrace;
 		if (g_debugGrenades.GetBool()) {
 			common->Printf("%s: launch around right grenade test against %s passes\n", name.c_str(), enemyEnt->GetName());
 			gameRenderWorld->DebugLine(colorMagenta, shooterPos, bounceSurfaceTrace.endpos, 5000);
@@ -1741,20 +1750,39 @@ bool idAI::TestNearbyLaunchStrategy(const idVec3& shooterPos, const idVec3& enem
 	return false;
 }
 
-trace_t idAI::GetClosestValidPoint(const idVec3 &shooterPos, const idVec3 &enemyPos, const idEntity *enemyEnt, const idVec3& direction, const float radius, int n) {
+bool idAI::GetClosestValidPoint(const idVec3 &shooterPos, const idVec3 &enemyPos, const idEntity *enemyEnt, const idVec3& direction, const float radius, trace_t returnTrace, int depth) {
+	trace_t enemyTrace;
 	trace_t shooterTrace;
-	//TODO finish this
-	// // idVec3 leftFurthestTarget = left * blastRadius + enemyPos;
-	// gameLocal.clip.TracePoint(shooterTrace, enemyPos, closestTarget, MASK_SHOT_BOUNDINGBOX, enemyEnt);
-	// gameLocal.clip.TracePoint(bounceSurfaceTrace, shooterPos, shooterTrace.endpos, MASK_SHOT_BOUNDINGBOX, this);
+	bool validPoint;
+
+	// It's a valid arc around if the furthest possible target to the left is clear to the shooter and the target
+	gameLocal.clip.TracePoint(enemyTrace, enemyPos, direction * radius + enemyPos, MASK_SHOT_BOUNDINGBOX, enemyEnt);
+	gameLocal.clip.TracePoint(shooterTrace, shooterPos, enemyTrace.endpos, MASK_SHOT_BOUNDINGBOX, this);
+	idEntity* hit = gameLocal.GetTraceEntity(shooterTrace);
+	if ((enemyTrace.fraction == 1.0f && shooterTrace.fraction == 1.0f) || hit == enemyEnt) {
+		validPoint = true;
+	}
+	else {
+		validPoint = false;
+	}
+	if (g_debugGrenades.GetBool()) {
+		gameRenderWorld->DebugLine(validPoint ? colorPurple : colorOrange, shooterPos, shooterTrace.endpos, 5000);
+	}
 	
-	// // It's a valid arc around if the furthest possible target to the left is clear to the shooter and the target
-	// if (bounceSurfaceTrace.fraction == 1.0f) {
-	// 	// TODO move the point inwards with "binary search" a few iterations
-		
-	// 	return true;
-	// }
-	return shooterTrace;
+	// If we've recursed to the limit, return the trace regardless
+	if (depth <= 0 || hit == enemyEnt || !validPoint) {
+		returnTrace = shooterTrace;
+		return validPoint;
+	}
+
+	// If the trace is valid try half of the distance
+	if (GetClosestValidPoint(shooterPos, enemyPos, enemyEnt, direction, radius / 2.0f, returnTrace, depth - 1)) {
+		return true;
+	}
+	// If half doesn't work, try 3/4
+	else {
+		return GetClosestValidPoint(shooterPos, enemyPos, enemyEnt, direction, radius * 0.75, returnTrace, depth - 1);
+	}
 }
 
 idVec3 idAI::GetPlanarReflectionImagePos(const idVec3 &point, const idVec3 &surfaceNormal, const idVec3 &surfaceContact) {
