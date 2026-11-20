@@ -951,7 +951,7 @@ void idAI::Spawn( void ) {
 		grenadeDef = gameLocal.FindEntityDefDict(grenadeName);
 		CreateGrenade(vec3_origin, viewAxis[0]);
 		float clipRadiusOverride;
-		if (spawnArgs.GetFloat("clipRadiusOverride", "0", clipRadiusOverride)) {
+		if (grenadeDef->GetFloat("clipRadiusOverride", "0", clipRadiusOverride)) {
 			grenadeRadius = clipRadiusOverride;
 		}
 		else {
@@ -4290,7 +4290,7 @@ idProjectile *idAI::LaunchProjectile( const char *jointname, idEntity *target, b
 }
 
 idProjectile* idAI::LaunchGrenade(const char *jointname, idEntity *target) {
-	if (!grenadeDef || (grenadeLaunchType == LAUNCH_NONE && !TestGrenadeLaunchStrategies())) {
+	if (!grenadeDef || (grenadeLaunchType == LAUNCH_NONE && !TestGrenadeLaunchStrategies(jointname))) {
 		gameLocal.Warning( "%s (%s) doesn't have a grenade specified", name.c_str(), GetEntityDefName() );
 		return NULL;
 	}

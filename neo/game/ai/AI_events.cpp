@@ -1490,8 +1490,8 @@ void idAI::Event_CanHitEnemy( void ) {
 	idThread::ReturnInt( lastHitCheckResult );
 }
 
-void idAI::Event_CanHitEnemyWithGrenade() {
-	idThread::ReturnInt(TestGrenadeLaunchStrategies());
+void idAI::Event_CanHitEnemyWithGrenade(const char* jointname) {
+	idThread::ReturnInt(TestGrenadeLaunchStrategies(jointname));
 }
 
 /*

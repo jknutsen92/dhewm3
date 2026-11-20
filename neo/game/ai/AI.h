@@ -285,7 +285,7 @@ public:
 	bool					TestBounceLaunchStrategy(const idVec3& shooterPos, const idVec3& enemyPos, const idEntity* enemyEnt, const idVec3& midpoint, const idVec3& up);
 	bool 					TestNearbyLaunchStrategy(const idVec3& shooterPos, const idVec3& enemyPos, const idEntity* enemyEnt);
 	trace_t 				GetClosestValidPoint(const idVec3 &shooterPos, const idVec3 &enemyPos, const idEntity *enemyEnt, const idVec3& direction, const float radius, int n = 4);
-	bool 					TestReflectionBouncePoint(const trace_t surfaceTrace, const idEntity* target, const idVec3& targetImagePos);
+	bool 					TestReflectionBouncePoint(const trace_t bounceTrace, const idEntity* target, const idVec3& targetImagePos);
 
 							// Outputs a list of all monsters to the console.
 	static void				List_f( const idCmdArgs &args );
@@ -639,7 +639,7 @@ protected:
 	void					Event_GetEnemyEyePos( void );
 	void					Event_PredictEnemyPos( float time );
 	void					Event_CanHitEnemy( void );
-	void					Event_CanHitEnemyWithGrenade(void);
+	void					Event_CanHitEnemyWithGrenade(const char* jointname);
 	void					Event_CanHitEnemyFromAnim( const char *animname );
 	void					Event_CanHitEnemyFromJoint( const char *jointname );
 	void					Event_EnemyPositionValid( void );

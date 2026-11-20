@@ -1605,10 +1605,10 @@ bool idAI::TestGrenadeLaunchStrategies(const char* jointname) {
 	}
 
 	// Case 4: Arc around obstacle - can we hit with nearby blast radius?
-	if (TestNearbyLaunchStrategy(pos, enemyPos, enemyEnt)) {
-		grenadeLaunchType = LAUNCH_AROUND;
-		return true;
-	}
+	// if (TestNearbyLaunchStrategy(pos, enemyPos, enemyEnt)) {
+	// 	grenadeLaunchType = LAUNCH_AROUND;
+	// 	return true;
+	// }
 
 	if (g_debugGrenades.GetBool()) {
 		common->Printf("%s: grenade bounce test against %s fails\n", name.c_str(), enemyEnt->GetName());
@@ -1657,6 +1657,7 @@ bool idAI::TestOverheadLaunchStrategy(const idVec3& midpoint, const idVec3& up, 
 }
 
 bool idAI::TestBounceLaunchStrategy(const idVec3& shooterPos, const idVec3& enemyPos, const idEntity* enemyEnt, const idVec3& midpoint, const idVec3& up) {
+	trace_t imageTrace;
 	idVec3 targetImage;
 	idVec3 targetDir = (enemyPos - shooterPos);
 	float range = targetDir.Length() * 2.0f;						// A simple filter heuristic for surface distance
@@ -1675,10 +1676,11 @@ bool idAI::TestBounceLaunchStrategy(const idVec3& shooterPos, const idVec3& enem
 	directions[3] = up * range 		+ midpoint;			// above midpoint
 
 	for (int i = 0; i < 4; i++) {
-		gameLocal.clip.TracePoint(bounceSurfaceTrace, enemyPos, directions[i], MASK_SHOT_BOUNDINGBOX, enemyEnt);
-		// gameLocal.clip.Translation(bounceSurfaceTrace, enemyPos, directions[i], grenadeClipModel, clipAxis, MASK_SHOT_BOUNDINGBOX, enemyEnt);
+		gameLocal.clip.TracePoint(imageTrace, enemyPos, directions[i], MASK_SHOT_BOUNDINGBOX, enemyEnt);
 		if (bounceSurfaceTrace.fraction < 1.0f) {
-			targetImage = GetPlanarReflectionImagePos(enemyPos, bounceSurfaceTrace.c.normal, bounceSurfaceTrace.endpos);
+			targetImage = GetPlanarReflectionImagePos(enemyPos, imageTrace.c.normal, imageTrace.endpos);
+			// Get bounce point
+			gameLocal.clip.TracePoint(bounceSurfaceTrace, shooterPos, targetImage, MASK_SHOT_BOUNDINGBOX, this);
 			if (TestReflectionBouncePoint(bounceSurfaceTrace, enemyEnt, targetImage)) {
 				if (g_debugGrenades.GetBool()) {
 					common->Printf("%s: grenade bounce test against %s passes. BounceType=%d\n", name.c_str(), enemyEnt->GetName(), grenadeLaunchType);
@@ -1760,28 +1762,13 @@ idVec3 idAI::GetPlanarReflectionImagePos(const idVec3 &point, const idVec3 &surf
 	return point - 2.0f * planeDistance * surfaceNormal; 
 }
 
-bool idAI::TestReflectionBouncePoint(const trace_t surfaceTrace, const idEntity *target, const idVec3 &targetImagePos) {
+bool idAI::TestReflectionBouncePoint(const trace_t bounceTrace, const idEntity *target, const idVec3 &targetImagePos) {
 	trace_t validationTrace;
-	// const idMat3 clipAxis = grenadeClipModel->GetAxis(); 
 	const idVec3 enemyPos	= target->GetPhysics()->GetAbsBounds().GetCenter();
-	const idVec3 bouncePos 	= (enemyPos + targetImagePos) / 2.0f;
-	
-	gameLocal.clip.TracePoint(validationTrace, enemyPos, bouncePos, MASK_SHOT_BOUNDINGBOX, this);
-	// gameLocal.clip.Translation(validationTrace, enemyPos, bouncePos, grenadeClipModel, clipAxis, MASK_SHOT_BOUNDINGBOX, target);
-	// Make sure bounce point is actually on a surface
-	if (validationTrace.fraction < 1.0f || !validationTrace.endpos.Compare(bouncePos, 1.0f)) {
-		return false;
-	}
-	// Bounce point is on a valid surface, let's make sure it has the same angle for bouncing
-	if (surfaceTrace.c.normal * validationTrace.c.normal < 0.999f) {
-		return false;
-	}
 
-	// Make sure there is clear line of sight between shooter and bounce point
-	const idVec3 pos = GetPhysics()->GetAbsBounds().GetCenter();
-	gameLocal.clip.TracePoint(validationTrace, pos, bouncePos, MASK_SHOT_BOUNDINGBOX, this);
-	// gameLocal.clip.Translation(validationTrace, pos, bouncePos, grenadeClipModel, clipAxis, MASK_SHOT_BOUNDINGBOX, this);
-	if (validationTrace.fraction < 1.0f || !validationTrace.endpos.Compare(bouncePos, 1.0f)) {
+	// Make sure there is clear line of sight between enemy and bounce point
+	gameLocal.clip.TracePoint(validationTrace, enemyPos, bounceTrace.endpos, MASK_SHOT_BOUNDINGBOX, target);
+	if (validationTrace.fraction < 1.0f || !validationTrace.endpos.Compare(bounceTrace.endpos, 1.0f)) {
 		return false;
 	}
 
