@@ -279,7 +279,12 @@ public:
 	void					TouchedByFlashlight( idActor *flashlight_owner );
 	void					MovePointToNearestValidLocation(idVec3& pos);
 
-	bool 					TestGrenadeLaunchStrategies(void);
+	bool 					TestGrenadeLaunchStrategies(const char* jointname);
+	bool					TestDirectLaunchStrategy(const idVec3& shooterPos, const idVec3& enemyPos, const idEntity* enemyEnt);
+	bool					TestOverheadLaunchStrategy(const idVec3& midpoint, const idVec3& up, const idVec3& shooterPos, const idVec3& enemyPos, const idEntity* enemyEnt);
+	bool					TestBounceLaunchStrategy(const idVec3& shooterPos, const idVec3& enemyPos, const idEntity* enemyEnt, const idVec3& midpoint, const idVec3& up);
+	bool 					TestNearbyLaunchStrategy(const idVec3& shooterPos, const idVec3& enemyPos, const idEntity* enemyEnt);
+	trace_t 				GetClosestValidPoint(const idVec3 &shooterPos, const idVec3 &enemyPos, const idEntity *enemyEnt, const idVec3& direction, const float radius, int n = 4);
 	bool 					TestReflectionBouncePoint(const trace_t surfaceTrace, const idEntity* target, const idVec3& targetImagePos);
 
 							// Outputs a list of all monsters to the console.

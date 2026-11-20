@@ -950,7 +950,13 @@ void idAI::Spawn( void ) {
 	if (spawnArgs.GetString("def_grenade", "", grenadeName) && grenadeName.Length()) {
 		grenadeDef = gameLocal.FindEntityDefDict(grenadeName);
 		CreateGrenade(vec3_origin, viewAxis[0]);
-		grenadeRadius 	= grenade.GetEntity()->GetPhysics()->GetClipModel()->GetBounds().GetRadius();
+		float clipRadiusOverride;
+		if (spawnArgs.GetFloat("clipRadiusOverride", "0", clipRadiusOverride)) {
+			grenadeRadius = clipRadiusOverride;
+		}
+		else {
+			grenadeRadius 	= grenade.GetEntity()->GetPhysics()->GetClipModel()->GetBounds().GetRadius();
+		}
 		grenadeVelocity	= idProjectile::GetVelocity(grenadeDef);
 		grenadeGravity 	= idProjectile::GetGravity(grenadeDef);
 		grenadeSpeed 	= grenadeVelocity.Length();

@@ -102,7 +102,7 @@ const idEventDef AI_GetEnemyPos( "getEnemyPos", NULL, 'v' );
 const idEventDef AI_GetEnemyEyePos( "getEnemyEyePos", NULL, 'v' );
 const idEventDef AI_PredictEnemyPos( "predictEnemyPos", "f", 'v' );
 const idEventDef AI_CanHitEnemy( "canHitEnemy", NULL, 'd' );
-const idEventDef AI_CanHitEnemyWithGrenade("canHitEnemyWithGrenade", NULL, 'd');
+const idEventDef AI_CanHitEnemyWithGrenade("canHitEnemyWithGrenade", "s", 'd');
 const idEventDef AI_CanHitEnemyFromAnim( "canHitEnemyFromAnim", "s", 'd' );
 const idEventDef AI_CanHitEnemyFromJoint( "canHitEnemyFromJoint", "s", 'd' );
 const idEventDef AI_EnemyPositionValid( "enemyPositionValid", NULL, 'd' );
