@@ -4067,7 +4067,7 @@ bool idAI::GetLaunchDir(const idVec3& launchPos, const idVec3& targetPos, float 
 	idVec2 targetPosR2 = idVec2(targetPos.x, targetPos.y);
 	lerped.Lerp(targetPosR2, launchPosR2, bounceCoeffcient);
 	idVec3 adjustedTargetPos = idVec3(lerped.x, lerped.y, targetPos.z);
-	if (PredictTrajectory(launchPos, adjustedTargetPos, grenadeSpeed, grenadeGravity, 
+	if (GrenadeTrajectory(launchPos, adjustedTargetPos, grenadeSpeed, grenadeGravity, 
 				grenadeClipModel, MASK_MONSTERSOLID, maxHeight, this, target, debugDrawTime, aimDir)) {
 		return true;	
 	}
@@ -4290,6 +4290,10 @@ idProjectile *idAI::LaunchProjectile( const char *jointname, idEntity *target, b
 }
 
 idProjectile* idAI::LaunchGrenade(const char *jointname, idEntity *target) {
+	if (!target) {
+		return NULL;
+	}
+
 	if (!grenadeDef || (grenadeLaunchType == LAUNCH_NONE && !TestGrenadeLaunchStrategies(jointname))) {
 		gameLocal.Warning( "%s (%s) doesn't have a grenade specified", name.c_str(), GetEntityDefName() );
 		return NULL;
@@ -4326,36 +4330,66 @@ idProjectile* idAI::LaunchGrenade(const char *jointname, idEntity *target) {
 		case LAUNCH_DIRECT: {		
 			if (GetLaunchDir(launchPoint, enemyPos, maxHeight, bounceCoeffcient, target, aimDir)) {
 				nade->Launch(launchPoint, aimDir, vec3_origin);
+				if (g_debugGrenades.GetBool()) {
+					common->Printf("Launched grenade directly\n");
+				}
 			}
 			else {
 				grenade.GetEntity()->PostEventMS(&EV_Remove, 0);
+				if (g_debugGrenades.GetBool()) {
+					common->Printf("Failed launch\n");
+				}
 			}
 			break;
 		}
 		case LAUNCH_ABOVE: {	// idAI::PredictTrajectory will create two solutions, a flat arc and a high lob
 			if (GetLaunchDir(launchPoint, enemyPos, maxHeight, 0.0f, target, aimDir)) {
 				nade->Launch(launchPoint, aimDir, vec3_origin);
+				if (g_debugGrenades.GetBool()) {
+					common->Printf("Launched grenade above obstacle\n");
+				}
 			}
 			else {
 				grenade.GetEntity()->PostEventMS(&EV_Remove, 0);
+				if (g_debugGrenades.GetBool()) {
+					common->Printf("Failed launch\n");
+				}
 			}
 			break;
 		}
 		case LAUNCH_REFLECT: {
 			if (GetLaunchDir(launchPoint, bounceSurfaceTrace.endpos, maxHeight, 0.0f, target, aimDir)) {
 				nade->Launch(launchPoint, aimDir, vec3_origin);
+				if (g_debugGrenades.GetBool()) {
+					common->Printf("Launched grenade off bounce target\n");
+				}
 			}
 			else {
 				grenade.GetEntity()->PostEventMS(&EV_Remove, 0);
+				if (g_debugGrenades.GetBool()) {
+					common->Printf("Failed launch\n");
+				}
 			}
 			break;
 		}
 		case LAUNCH_AROUND: {
 			if (GetLaunchDir(launchPoint, bounceSurfaceTrace.endpos, maxHeight, bounceCoeffcient, target, aimDir)) {
 				nade->Launch(launchPoint, aimDir, vec3_origin);
+				if (g_debugGrenades.GetBool()) {
+					common->Printf("Launched grenade around obstacle with leading\n");
+				}
+			}
+			else if (GetLaunchDir(launchPoint, bounceSurfaceTrace.endpos, maxHeight, 0.0f, target, aimDir)) {
+				nade->Launch(launchPoint, aimDir, vec3_origin);
+				if (g_debugGrenades.GetBool()) {
+					common->Printf("Launched grenade around obstacle (couldn't lead)\n");
+				}
 			}
 			else {
 				grenade.GetEntity()->PostEventMS(&EV_Remove, 0);
+				if (g_debugGrenades.GetBool()) {
+					common->Printf("Failed launch\n");
+				}
 			}
 			break;
 		}

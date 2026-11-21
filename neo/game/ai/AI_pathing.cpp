@@ -1543,14 +1543,131 @@ bool idAI::PredictTrajectory( const idVec3 &firePos, const idVec3 &target, float
 	return false;
 }
 
-bool idAI::GrenadeTrajectory(const idVec3 &firePos, const idVec3 &target, float projectileSpeed, const idVec3 &projGravity, const idClipModel *clip, int clipmask, float max_height, const idEntity *ignore, const idEntity *targetEntity, int drawtime, idVec3 &aimDir) {
-	// TODO
-	return true;
+bool idAI::GrenadeTrajectory(const idVec3& firePos, const idVec3& target, float grenadeSpeed, const idVec3& grenadeGravity, const idClipModel *clip, int clipmask, float max_height, const idEntity *ignore, const idEntity *targetEntity, int drawtime, idVec3 &aimDir) {
+	assert(targetEntity);
+
+	ballistics_t ballistics[2];
+	int n = Ballistics(firePos, target, grenadeSpeed, grenadeGravity[2], ballistics);
+	if (n == 0) {
+		if (g_debugGrenades.GetBool()) {
+			common->Printf("No valid ballistic trajectories for target\n");
+		}
+		return false;
+	}
+
+	float angle = ballistics[0].angle;
+	float time = ballistics[0].time;
+	// We only want the flat trajectory to start with
+	if (n == 2 && ballistics[1].angle < ballistics[0].angle) {
+		angle = ballistics[1].angle;
+		time = ballistics[1].time;
+	}
+
+	// Test increasingly elevated pitches until we have a clear trajectory
+	for (float curAngle = angle; curAngle < angle + 90.0f; curAngle += 15.0f) {
+		float sin, cos;
+		float pitch = DEG2RAD(curAngle);
+		idMath::SinCos(pitch, sin, cos);
+		idVec3 dir = target - firePos;
+		dir.z = 0.0f;
+		dir *= cos * idMath::InvSqrt(dir.LengthSqr());
+		dir.z = sin;
+		float zVel = grenadeSpeed * dir.z;
+		if (g_debugGrenades.GetBool()) {
+			common->Printf("Testing trajectory (%f degrees)\n", curAngle);
+		}
+		if (TestGrenadeTrajectory(firePos, target, zVel, grenadeGravity[2], time, firePos.z + max_height, clip, clipmask, ignore, targetEntity, drawtime)) {
+			aimDir = dir;
+			return true;
+		}
+	}
+	
+	return false;
 }
 
-bool idAI::TestGrenadeTrajectory(const idVec3 &start, const idVec3 &end, float zVel, float gravity, float time, float max_height, const idClipModel *clip, int clipmask, const idEntity *ignore, const idEntity *targetEntity, int drawtime) {
-	// TODO
-	return true;
+bool idAI::TestGrenadeTrajectory(const idVec3 &start, const idVec3 &end, float zVel, float gravity, float endTime, float max_height, const idClipModel *clip, int clipmask, const idEntity *ignore, const idEntity *targetEntity, int drawtime) {
+	float dropTime = zVel / gravity;
+	float maxHeight = start.z - ((gravity * dropTime * dropTime) / 2.0f);
+	// time it takes to fall from maxHeight to to final height
+	dropTime = idMath::Sqrt((maxHeight - end.z) / (-gravity / 2.0f));
+
+	idVec3 points[5];
+	// parabola start point
+	points[0] = start;
+
+	int numSegments;
+	if (dropTime < endTime) {
+		numSegments = 4;
+		// Time to first arc end
+		float t = (endTime - dropTime) / 2.0f;
+		points[1].ToVec2() = start.ToVec2() + (end.ToVec2() - start.ToVec2()) * (t / endTime);
+		points[1].z = start.z + t * zVel + (gravity * t * t / 2.0f);
+		// Time to top
+		t = endTime - dropTime;
+		points[2].ToVec2() = start.ToVec2() + (end.ToVec2() - start.ToVec2()) * (t / endTime); 
+		points[2].z = start.z + t * zVel + (gravity * t * t / 2.0f);
+		// Time to second to last arc point
+		t = endTime - (dropTime / 2.0f);
+		points[3].ToVec2() = start.ToVec2() + (end.ToVec2() - start.ToVec2()) * (t / endTime);
+		points[3].z = start.z + t * zVel + (gravity * t * t / 2.0f);
+	}
+	else {
+		// Not parabolic
+		numSegments = 2;
+		float t = endTime * 0.5;
+		points[1].ToVec2() = start.ToVec2() + ((end.ToVec2() - start.ToVec2()) / 2.0f);
+		points[1].z = start.z + t * zVel + (gravity * t * t / 2.0f);
+	}
+	points[numSegments] = end;
+
+	if (drawtime) {
+		for (int i = 0; i < numSegments; i++) {
+			gameRenderWorld->DebugLine(colorRed, points[i], points[i+1], drawtime);
+		}
+	}
+
+	// Check that no points on the arc exceeds max height
+	for (int i = 0; i < numSegments; i++) {
+		if (points[i].z > max_height) {
+			return false;
+		}
+	}
+
+	trace_t trace;
+	bool result = true;
+	// Trace all segments to ensure the arc isn't obstructed
+	for (int i = 0; i < numSegments; i++) {
+		gameLocal.clip.Translation(trace, points[i], points[i+1], clip, mat3_identity, clipmask, ignore);
+		float boundary = (i == numSegments - 1) ? 0.85f : 1.0f;
+		if (trace.fraction < boundary) {
+			if (gameLocal.GetTraceEntity(trace) == targetEntity) {
+				result = true;		// Hit the target
+				if (g_debugGrenades.GetBool()) {
+					common->Printf("Hit target on segment %d\n", i);
+				}
+			}
+			else {
+				result = false;		// Hit an obstacle
+				if (g_debugGrenades.GetBool()) {
+					common->Printf("Hit obstacle on segment %d\n", i);
+				}
+			}
+			break;
+		}
+	}
+
+	if (drawtime) {
+		if (clip) {
+			gameRenderWorld->DebugBounds(result ? colorGreen : colorYellow, clip->GetBounds().Expand(1.0f), trace.endpos, drawtime);
+		}
+		else {
+			idBounds bounds(trace.endpos);
+			bounds.ExpandSelf(1.0f);
+			gameRenderWorld->DebugBounds(result ? colorGreen : colorYellow, bounds, vec3_zero, drawtime);
+		}
+	}
+
+	return result;
 }
 
 bool idAI::IsClearPath(const idEntity* ent1, const idEntity* ent2, float range) {
@@ -1761,9 +1878,15 @@ bool idAI::GetClosestValidPoint(const idVec3 &shooterPos, const idVec3 &enemyPos
 	idEntity* hit = gameLocal.GetTraceEntity(shooterTrace);
 	if ((enemyTrace.fraction == 1.0f && shooterTrace.fraction == 1.0f) || hit == enemyEnt) {
 		validPoint = true;
+		if (g_debugGrenades.GetBool()) {
+			common->Printf("Closest validated radius: %f\n", radius);
+		}
 	}
 	else {
 		validPoint = false;
+		if (g_debugGrenades.GetBool()) {
+			common->Printf("Invalid radius: %f\n", radius);
+		}
 	}
 	if (g_debugGrenades.GetBool()) {
 		gameRenderWorld->DebugLine(validPoint ? colorPurple : colorOrange, shooterPos, shooterTrace.endpos, 5000);
@@ -1780,8 +1903,12 @@ bool idAI::GetClosestValidPoint(const idVec3 &shooterPos, const idVec3 &enemyPos
 		return true;
 	}
 	// If half doesn't work, try 3/4
+	else if (GetClosestValidPoint(shooterPos, enemyPos, enemyEnt, direction, radius * 0.75, returnTrace, depth - 1)) {
+		return true;
+	}
 	else {
-		return GetClosestValidPoint(shooterPos, enemyPos, enemyEnt, direction, radius * 0.75, returnTrace, depth - 1);
+		returnTrace = shooterTrace;
+		return validPoint;
 	}
 }
 
