@@ -336,6 +336,7 @@ idAI::idAI() {
 	grenadeSpeed		= 0.0f;
 	grenadeLaunchType 	= LAUNCH_NONE;
 	grenadeMaxKineHeight= 0.0f;
+	grenadeMaxRange		= 0.0f;
 
 	chat_snd			= NULL;
 	chat_min			= 0;
@@ -490,6 +491,7 @@ void idAI::Save( idSaveGame *savefile ) const {
 	savefile->WriteInt(grenadeLaunchType);
 	savefile->WriteTrace(bounceSurfaceTrace);
 	savefile->WriteFloat(grenadeMaxKineHeight);
+	savefile->WriteFloat(grenadeMaxRange);
 
 	savefile->WriteSoundShader( chat_snd );
 	savefile->WriteInt( chat_min );
@@ -650,6 +652,7 @@ void idAI::Restore( idRestoreGame *savefile ) {
 	grenadeLaunchType = static_cast<launchType_t>(launchTypeTestEnum);
 	savefile->ReadTrace(bounceSurfaceTrace);
 	savefile->ReadFloat(grenadeMaxKineHeight);
+	savefile->ReadFloat(grenadeMaxRange);
 
 	savefile->ReadSoundShader( chat_snd );
 	savefile->ReadInt( chat_min );
@@ -962,9 +965,11 @@ void idAI::Spawn( void ) {
 		grenadeSpeed 	= grenadeVelocity.Length();
 		delete grenade.GetEntity();
 		grenade = NULL;
+		grenadeMaxKineHeight = grenadeSpeed * grenadeSpeed / (2.0f * grenadeGravity.Length());
+		grenadeMaxRange = grenadeDef->GetFloat("max_range");
 	}
 	grenadeLaunchType = LAUNCH_NONE;
-	grenadeMaxKineHeight = grenadeSpeed * grenadeSpeed / (2.0f * grenadeGravity.Length());
+	
 
 	particles.Clear();
 	restartParticles = true;
@@ -4328,7 +4333,7 @@ idProjectile* idAI::LaunchGrenade(const char *jointname, idEntity *target) {
 	const idVec3 enemyPos = target->GetPhysics()->GetAbsBounds().GetCenter();
 	switch (grenadeLaunchType) {
 		case LAUNCH_DIRECT: {		
-			if (GetLaunchDir(launchPoint, enemyPos, maxHeight, bounceCoeffcient, target, aimDir)) {
+			if (GetLaunchDir(launchPoint, bounceSurfaceTrace.endpos, maxHeight, bounceCoeffcient, target, aimDir)) {
 				nade->Launch(launchPoint, aimDir, vec3_origin);
 				if (g_debugGrenades.GetBool()) {
 					common->Printf("Launched grenade directly\n");

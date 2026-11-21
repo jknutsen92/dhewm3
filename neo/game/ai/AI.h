@@ -284,8 +284,8 @@ public:
 	bool					TestOverheadLaunchStrategy(const idVec3& midpoint, const idVec3& up, const idVec3& shooterPos, const idVec3& enemyPos, const idEntity* enemyEnt);
 	bool					TestBounceLaunchStrategy(const idVec3& shooterPos, const idVec3& enemyPos, const idEntity* enemyEnt, const idVec3& midpoint, const idVec3& up);
 	bool 					TestNearbyLaunchStrategy(const idVec3& shooterPos, const idVec3& enemyPos, const idEntity* enemyEnt);
-	bool 					GetClosestValidPoint(const idVec3 &shooterPos, const idVec3 &enemyPos, const idEntity *enemyEnt, const idVec3& direction, const float radius, trace_t returnTrace, int depth = 3);
-	bool 					TestReflectionBouncePoint(const trace_t bounceTrace, const idEntity* target, const idVec3& targetImagePos);
+	bool 					GetClosestValidPoint(const idVec3 &shooterPos, const idVec3 &enemyPos, const idEntity *enemyEnt, const idVec3& direction, const float radius, trace_t& returnTrace, int depth = 3);
+	bool 					TestReflectionBouncePoint(const trace_t bounceTrace, const idVec3& shooterPos, const idEntity* target, const idVec3& targetImagePos);
 
 							// Outputs a list of all monsters to the console.
 	static void				List_f( const idCmdArgs &args );
@@ -379,6 +379,7 @@ protected:
 	launchType_t			grenadeLaunchType;
 	trace_t					bounceSurfaceTrace;
 	float					grenadeMaxKineHeight;
+	float 					grenadeMaxRange;
 
 	// chatter/talking
 	const idSoundShader		*chat_snd;
