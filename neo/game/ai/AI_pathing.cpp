@@ -379,10 +379,11 @@ int GetObstacles( const idPhysics *physics, const idAAS *aas, const idEntity *ig
 			box = idBox( clipModel->GetBounds(), clipModel->GetOrigin(), clipModel->GetAxis() );
 		}
 		else if (obEnt->IsType(idProjectile::Type) && obEnt->spawnArgs.GetBool("ai_obstacle")) {
-			idBounds blastBounds = clipModel->GetBounds().Expand(100);	// TODO replace with a dynamic reference to def blast radius
+			idBounds blastBounds = clipModel->GetBounds();
+			blastBounds.ExpandSelf(((idProjectile*)obEnt)->blastRadius);
 			box = idBox(blastBounds, clipModel->GetOrigin(), clipModel->GetAxis());
 			if (g_debugGrenades.GetBool()) {
-				gameRenderWorld->DebugBounds(colorRed, blastBounds);
+				gameRenderWorld->DebugBounds(colorRed, blastBounds, clipModel->GetOrigin(), 100);
 			}
 		}
 		else {

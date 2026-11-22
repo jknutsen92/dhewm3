@@ -70,6 +70,7 @@ idProjectile::idProjectile
 ================
 */
 idProjectile::idProjectile( void ) {
+	blastRadius			= 0.0f;
 	owner				= NULL;
 	lightDefHandle		= -1;
 	thrust				= 0.0f;
@@ -98,6 +99,11 @@ idProjectile::Spawn
 ================
 */
 void idProjectile::Spawn( void ) {
+	idStr splashDamageName;
+	if (spawnArgs.GetString("def_splash_damage", "", splashDamageName)) {
+		const idDict* splashDamageDef = gameLocal.FindEntityDefDict(splashDamageName);
+		blastRadius = splashDamageDef->GetFloat("radius");
+	}
 	physicsObj.SetSelf( this );
 	physicsObj.SetClipModel( new idClipModel( GetPhysics()->GetClipModel() ), 1.0f );
 	physicsObj.SetContents( 0 );
@@ -112,6 +118,7 @@ idProjectile::Save
 ================
 */
 void idProjectile::Save( idSaveGame *savefile ) const {
+	savefile->WriteFloat(blastRadius);
 
 	owner.Save( savefile );
 
@@ -146,6 +153,7 @@ idProjectile::Restore
 ================
 */
 void idProjectile::Restore( idRestoreGame *savefile ) {
+	savefile->ReadFloat(blastRadius);
 
 	owner.Restore( savefile );
 

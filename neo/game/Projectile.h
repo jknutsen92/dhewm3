@@ -47,6 +47,8 @@ class idProjectile : public idEntity {
 public :
 	CLASS_PROTOTYPE( idProjectile );
 
+	float					blastRadius;
+
 							idProjectile();
 	virtual					~idProjectile();
 
