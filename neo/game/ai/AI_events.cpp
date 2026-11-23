@@ -164,6 +164,8 @@ const idEventDef AI_CanReachEnemy( "canReachEnemy", NULL, 'd' );
 const idEventDef AI_GetReachableEntityPosition( "getReachableEntityPosition", "e", 'v' );
 const idEventDef AI_GetTeleportPathNearTarget("getTeleportPathNearTarget", "efs", 'e');
 const idEventDef AI_TeleportNearTarget("teleportNearTarget", "ef");
+const idEventDef AI_RemoveGrenade("removeGrenade");
+const idEventDef AI_CheckImmediateObstacles("checkImmediateObstacles", NULL, 'd');
 
 CLASS_DECLARATION( idActor, idAI )
 	EVENT( EV_Activate,							idAI::Event_Activate )
@@ -296,6 +298,8 @@ CLASS_DECLARATION( idActor, idAI )
 	EVENT( AI_GetReachableEntityPosition,		idAI::Event_GetReachableEntityPosition )
 	EVENT( AI_GetTeleportPathNearTarget,		idAI::Event_GetTeleportPathNearTarget )
 	EVENT( AI_TeleportNearTarget,				idAI::Event_TeleportNearTarget )
+	EVENT( AI_RemoveGrenade,					idAI::Event_RemoveGrenade )
+	EVENT( AI_CheckImmediateObstacles, 			idAI::Event_CheckImmediateObstacles )
 END_CLASS
 
 /*
@@ -2759,5 +2763,62 @@ void idAI::Event_TeleportNearTarget(idEntity *target, float range) {
 	}
 	if (g_debugBounds.GetBool()) {
 		common->Printf("%s failed to find teleport destination after %d iterations and sampling %d random points\n", GetName(), iterations, samples);
+	}
+}
+
+void idAI::Event_RemoveGrenade() {
+	if (grenade.GetEntity()) {
+		grenade.GetEntity()->PostEventMS(&EV_Remove, 0);
+		grenade = NULL;
+	}
+}
+
+#define OBSTACLE_LEFT		-3
+#define OBSTACLE_RIGHT		-4
+#define OBSTACLE_FORWARD	-5
+
+void idAI::Event_CheckImmediateObstacles() {
+	trace_t leftTrace, forwardTrace, rightTrace;
+	const idVec3 dir = GetPhysics()->GetAxis()[0];
+	const idVec3 left = idVec3(-dir.y, dir.x, 0.0f);
+	const idVec3 right = idVec3(dir.y, -dir.x, 0.0f);
+	const idVec3 originCenter = GetPhysics()->GetAbsBounds().GetCenter();
+	const float radius = GetPhysics()->GetAbsBounds().GetRadius();
+	const idVec3 originLeft = left * radius + originCenter;
+	const idVec3 originRight = right * radius + originCenter;
+	gameLocal.clip.TracePoint(leftTrace, originLeft, dir * radius + originLeft, MASK_SHOT_BOUNDINGBOX, this);
+	gameLocal.clip.TracePoint(forwardTrace, originCenter, dir * radius + originCenter, MASK_SHOT_BOUNDINGBOX, this);
+	gameLocal.clip.TracePoint(rightTrace, originRight, dir * radius + originRight, MASK_SHOT_BOUNDINGBOX, this);
+	if (leftTrace.fraction < 1.0f && forwardTrace.fraction < 1.0f && rightTrace.fraction < 1.0f) {
+		if (g_debugGrenades.GetBool()) {
+			gameRenderWorld->DebugLine(colorWhite, originLeft, leftTrace.endpos, 3000);
+			gameRenderWorld->DebugLine(colorWhite, originCenter, forwardTrace.endpos, 3000);
+			gameRenderWorld->DebugLine(colorWhite, originRight, rightTrace.endpos, 3000);
+		}
+		return idThread::ReturnInt(OBSTACLE_FORWARD);
+	}
+	else if (leftTrace.fraction < 1.0f) {
+		if (g_debugGrenades.GetBool()) {
+			gameRenderWorld->DebugLine(colorWhite, originLeft, leftTrace.endpos, 3000);
+			gameRenderWorld->DebugLine(colorLtGrey, originCenter, dir * radius + originCenter, 3000);
+			gameRenderWorld->DebugLine(colorLtGrey, originRight, dir * radius + originRight, 3000);
+		}
+		return idThread::ReturnInt(OBSTACLE_LEFT);
+	}
+	else if (rightTrace.fraction < 1.0f) {
+		if (g_debugGrenades.GetBool()) {
+			gameRenderWorld->DebugLine(colorLtGrey, originLeft, dir * radius + originLeft, 3000);
+			gameRenderWorld->DebugLine(colorLtGrey, originCenter, dir * radius + originCenter, 3000);
+			gameRenderWorld->DebugLine(colorWhite, originRight, rightTrace.endpos, 3000);
+		}
+		return idThread::ReturnInt(OBSTACLE_RIGHT);
+	}
+	else {
+		if (g_debugGrenades.GetBool()) {
+			gameRenderWorld->DebugLine(colorLtGrey, originLeft, dir * radius + originLeft, 3000);
+			gameRenderWorld->DebugLine(colorLtGrey, originCenter, dir * radius + originCenter, 3000);
+			gameRenderWorld->DebugLine(colorLtGrey, originRight, dir * radius + originRight, 3000);
+		}
+		return idThread::ReturnInt(0);
 	}
 }

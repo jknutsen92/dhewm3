@@ -172,6 +172,8 @@ extern const idEventDef AI_TriggerParticles;
 extern const idEventDef AI_RandomPath;
 extern const idEventDef AI_GetTeleportPathNearTarget;
 extern const idEventDef AI_TeleportNearTarget;
+extern const idEventDef AI_RemoveGrenade;
+extern const idEventDef AI_CheckImmediateObstacles;
 
 class idPathCorner;
 
@@ -705,6 +707,8 @@ protected:
 	void					Event_GetReachableEntityPosition( idEntity *ent );
 	void					Event_GetTeleportPathNearTarget(idEntity* target, float range, const char* lastPath);
 	void					Event_TeleportNearTarget(idEntity* target, float range);
+	void					Event_RemoveGrenade();
+	void					Event_CheckImmediateObstacles();
 };
 
 class idCombatNode : public idEntity {
