@@ -2779,28 +2779,28 @@ void idAI::Event_RemoveGrenade() {
 
 void idAI::Event_CheckImmediateObstacles() {
 	trace_t leftTrace, forwardTrace, rightTrace;
-	const idVec3 dir = GetPhysics()->GetAxis()[0];
+	const idVec3 dir = viewAxis[0];
 	const idVec3 left = idVec3(-dir.y, dir.x, 0.0f);
 	const idVec3 right = idVec3(dir.y, -dir.x, 0.0f);
 	const idVec3 originCenter = GetPhysics()->GetAbsBounds().GetCenter();
-	const float radius = GetPhysics()->GetAbsBounds().GetRadius();
-	const idVec3 originLeft = left * radius + originCenter;
-	const idVec3 originRight = right * radius + originCenter;
+	const float radius = GetPhysics()->GetBounds().GetRadius();
+	const idVec3 originLeft = left * radius * 0.5f + originCenter;
+	const idVec3 originRight = right * radius * 0.5f + originCenter;
 	gameLocal.clip.TracePoint(leftTrace, originLeft, dir * radius + originLeft, MASK_SHOT_BOUNDINGBOX, this);
 	gameLocal.clip.TracePoint(forwardTrace, originCenter, dir * radius + originCenter, MASK_SHOT_BOUNDINGBOX, this);
 	gameLocal.clip.TracePoint(rightTrace, originRight, dir * radius + originRight, MASK_SHOT_BOUNDINGBOX, this);
 	if (leftTrace.fraction < 1.0f && forwardTrace.fraction < 1.0f && rightTrace.fraction < 1.0f) {
 		if (g_debugGrenades.GetBool()) {
-			gameRenderWorld->DebugLine(colorWhite, originLeft, leftTrace.endpos, 3000);
-			gameRenderWorld->DebugLine(colorWhite, originCenter, forwardTrace.endpos, 3000);
-			gameRenderWorld->DebugLine(colorWhite, originRight, rightTrace.endpos, 3000);
+			gameRenderWorld->DebugLine(colorOrange, originLeft, leftTrace.endpos, 3000);
+			gameRenderWorld->DebugLine(colorOrange, originCenter, forwardTrace.endpos, 3000);
+			gameRenderWorld->DebugLine(colorOrange, originRight, rightTrace.endpos, 3000);
 		}
 		return idThread::ReturnInt(OBSTACLE_FORWARD);
 	}
 	else if (leftTrace.fraction < 1.0f) {
 		if (g_debugGrenades.GetBool()) {
-			gameRenderWorld->DebugLine(colorWhite, originLeft, leftTrace.endpos, 3000);
-			gameRenderWorld->DebugLine(colorLtGrey, originCenter, dir * radius + originCenter, 3000);
+			gameRenderWorld->DebugLine(colorRed, originLeft, leftTrace.endpos, 3000);
+			gameRenderWorld->DebugLine(forwardTrace.fraction < 1.0f ? colorOrange : colorLtGrey, originCenter, dir * radius + originCenter, 3000);
 			gameRenderWorld->DebugLine(colorLtGrey, originRight, dir * radius + originRight, 3000);
 		}
 		return idThread::ReturnInt(OBSTACLE_LEFT);
@@ -2808,16 +2808,16 @@ void idAI::Event_CheckImmediateObstacles() {
 	else if (rightTrace.fraction < 1.0f) {
 		if (g_debugGrenades.GetBool()) {
 			gameRenderWorld->DebugLine(colorLtGrey, originLeft, dir * radius + originLeft, 3000);
-			gameRenderWorld->DebugLine(colorLtGrey, originCenter, dir * radius + originCenter, 3000);
-			gameRenderWorld->DebugLine(colorWhite, originRight, rightTrace.endpos, 3000);
+			gameRenderWorld->DebugLine(forwardTrace.fraction < 1.0f ? colorOrange : colorLtGrey, originCenter, dir * radius + originCenter, 3000);
+			gameRenderWorld->DebugLine(colorRed, originRight, rightTrace.endpos, 3000);
 		}
 		return idThread::ReturnInt(OBSTACLE_RIGHT);
 	}
 	else {
 		if (g_debugGrenades.GetBool()) {
-			gameRenderWorld->DebugLine(colorLtGrey, originLeft, dir * radius + originLeft, 3000);
-			gameRenderWorld->DebugLine(colorLtGrey, originCenter, dir * radius + originCenter, 3000);
-			gameRenderWorld->DebugLine(colorLtGrey, originRight, dir * radius + originRight, 3000);
+			gameRenderWorld->DebugLine(forwardTrace.fraction < 1.0f ? colorOrange : colorLtGrey, originLeft, dir * radius + originLeft, 3000);
+			gameRenderWorld->DebugLine(forwardTrace.fraction < 1.0f ? colorOrange : colorLtGrey, originCenter, dir * radius + originCenter, 3000);
+			gameRenderWorld->DebugLine(forwardTrace.fraction < 1.0f ? colorOrange : colorLtGrey, originRight, dir * radius + originRight, 3000);
 		}
 		return idThread::ReturnInt(0);
 	}
