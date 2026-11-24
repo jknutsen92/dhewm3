@@ -337,6 +337,8 @@ idAI::idAI() {
 	grenadeLaunchType 	= LAUNCH_NONE;
 	grenadeMaxKineHeight= 0.0f;
 	grenadeMaxRange		= 0.0f;
+	
+	bounceSurfaceTrace.c.material = NULL;
 
 	chat_snd			= NULL;
 	chat_min			= 0;
