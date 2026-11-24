@@ -72,6 +72,8 @@ extern const idEventDef EV_InPlayerPVS;
 extern const idEventDef EV_IsLiving;
 extern const idEventDef EV_TakeDamage;
 extern const idEventDef EV_AddTarget;
+extern const idEventDef EV_GetEntityNum;
+extern const idEventDef EV_GetClassname;
 
 // Think flags
 enum {
@@ -96,10 +98,12 @@ typedef enum {
 	SIG_DAMAGE,				// object was damaged
 	SIG_BLOCKED,			// object was blocked
 
+
 	SIG_MOVER_POS1,			// mover at position 1 (door closed)
 	SIG_MOVER_POS2,			// mover at position 2 (door open)
 	SIG_MOVER_1TO2,			// mover changing from position 1 to 2
 	SIG_MOVER_2TO1,			// mover changing from position 2 to 1
+	SIG_KILLED,				// object was killed
 
 	NUM_SIGNALS
 } signalNum_t;
@@ -487,6 +491,8 @@ private:
 	void					Event_IsLiving(void);
 	void					Event_TakeDamage(int enable);
 	void					Event_AddTarget(idEntity* ent);
+	void					Event_GetEntityNum(void);
+	void 					Event_GetClassname(void);
 };
 
 /*

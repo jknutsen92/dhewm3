@@ -115,6 +115,8 @@ idCVar g_skipFX(					"g_skipFX",				"0",			CVAR_GAME | CVAR_BOOL, "" );
 idCVar g_skipParticles(				"g_skipParticles",			"0",			CVAR_GAME | CVAR_BOOL, "" );
 
 idCVar g_disasm(					"g_disasm",				"0",			CVAR_GAME | CVAR_BOOL, "disassemble script into base/script/disasm.txt on the local drive when script is compiled" );
+idCVar g_debugGrenades(				"g_debugGrenades",			"0",			CVAR_GAME | CVAR_BOOL, "Debug logs and debug drawing for the AI grenade aim/throw system");
+idCVar g_debugSquad(				"g_debugSquad", 			"0",			CVAR_GAME | CVAR_BOOL, "Debug logs for zmarine squad logic");
 idCVar g_debugBounds(				"g_debugBounds",			"0",			CVAR_GAME | CVAR_BOOL, "checks for models with bounds > 2048" );
 idCVar g_debugAnim(					"g_debugAnim",				"-1",			CVAR_GAME | CVAR_INTEGER, "displays information on which animations are playing on the specified entity number.  set to -1 to disable." );
 idCVar g_debugMove(					"g_debugMove",				"0",			CVAR_GAME | CVAR_BOOL, "" );

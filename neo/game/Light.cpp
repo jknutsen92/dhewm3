@@ -638,6 +638,7 @@ idLight::Killed
 */
 void idLight::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat ) {
 	BecomeBroken( attacker );
+	Signal(SIG_KILLED);
 }
 
 /*

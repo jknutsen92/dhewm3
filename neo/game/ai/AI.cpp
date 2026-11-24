@@ -318,6 +318,7 @@ idAI::idAI() {
 	lastAttackTime		= 0;
 	melee_range			= 0.0f;
 	projectile_height_to_distance_ratio = 1.0f;
+
 	projectileDef		= NULL;
 	projectile			= NULL;
 	projectileClipModel	= NULL;
@@ -325,6 +326,18 @@ idAI::idAI() {
 	projectileVelocity	= vec3_origin;
 	projectileGravity	= vec3_origin;
 	projectileSpeed		= 0.0f;
+
+	grenadeDef 			= NULL;
+	grenade 			= NULL;
+	grenadeClipModel 	= NULL;
+	grenadeRadius		= 0.0f;
+	grenadeVelocity		= vec3_origin;
+	grenadeGravity		= vec3_origin;
+	grenadeSpeed		= 0.0f;
+	grenadeLaunchType 	= LAUNCH_NONE;
+	grenadeMaxKineHeight= 0.0f;
+	grenadeMaxRange		= 0.0f;
+
 	chat_snd			= NULL;
 	chat_min			= 0;
 	chat_max			= 0;
@@ -467,6 +480,19 @@ void idAI::Save( idSaveGame *savefile ) const {
 	projectile.Save( savefile );
 	savefile->WriteString( attack );
 
+	idStr grenadeName;
+	spawnArgs.GetString("def_grenade", "", grenadeName);
+	savefile->WriteString(grenadeName);
+	savefile->WriteFloat(grenadeRadius);
+	savefile->WriteFloat(grenadeSpeed);
+	savefile->WriteVec3(grenadeVelocity);
+	savefile->WriteVec3(grenadeGravity);
+	grenade.Save(savefile);
+	savefile->WriteInt(grenadeLaunchType);
+	savefile->WriteTrace(bounceSurfaceTrace);
+	savefile->WriteFloat(grenadeMaxKineHeight);
+	savefile->WriteFloat(grenadeMaxRange);
+
 	savefile->WriteSoundShader( chat_snd );
 	savefile->WriteInt( chat_min );
 	savefile->WriteInt( chat_max );
@@ -607,6 +633,26 @@ void idAI::Restore( idRestoreGame *savefile ) {
 	savefile->ReadVec3( projectileGravity );
 	projectile.Restore( savefile );
 	savefile->ReadString( attack );
+
+	idStr grenadeName;
+	savefile->ReadString(grenadeName);
+	if (grenadeName.Length()) {
+		grenadeDef = gameLocal.FindEntityDefDict(grenadeName);
+	}
+	else {
+		grenadeDef = NULL;
+	}
+	savefile->ReadFloat(grenadeRadius);
+	savefile->ReadFloat(grenadeSpeed);
+	savefile->ReadVec3(grenadeVelocity);
+	savefile->ReadVec3(grenadeGravity);
+	grenade.Restore(savefile);
+	int launchTypeTestEnum;
+	savefile->ReadInt(launchTypeTestEnum);
+	grenadeLaunchType = static_cast<launchType_t>(launchTypeTestEnum);
+	savefile->ReadTrace(bounceSurfaceTrace);
+	savefile->ReadFloat(grenadeMaxKineHeight);
+	savefile->ReadFloat(grenadeMaxRange);
 
 	savefile->ReadSoundShader( chat_snd );
 	savefile->ReadInt( chat_min );
@@ -899,6 +945,31 @@ void idAI::Spawn( void ) {
 		delete projectile.GetEntity();
 		projectile = NULL;
 	}
+
+	grenade				= NULL;
+	grenadeDef			= NULL;
+	grenadeClipModel 	= NULL;
+	idStr grenadeName;
+	if (spawnArgs.GetString("def_grenade", "", grenadeName) && grenadeName.Length()) {
+		grenadeDef = gameLocal.FindEntityDefDict(grenadeName);
+		CreateGrenade(vec3_origin, viewAxis[0]);
+		float clipRadiusOverride;
+		if (grenadeDef->GetFloat("clipRadiusOverride", "0", clipRadiusOverride)) {
+			grenadeRadius = clipRadiusOverride;
+		}
+		else {
+			grenadeRadius 	= grenade.GetEntity()->GetPhysics()->GetClipModel()->GetBounds().GetRadius();
+		}
+		grenadeVelocity	= idProjectile::GetVelocity(grenadeDef);
+		grenadeGravity 	= idProjectile::GetGravity(grenadeDef);
+		grenadeSpeed 	= grenadeVelocity.Length();
+		delete grenade.GetEntity();
+		grenade = NULL;
+		grenadeMaxKineHeight = grenadeSpeed * grenadeSpeed / (2.0f * grenadeGravity.Length());
+		grenadeMaxRange = grenadeDef->GetFloat("max_range");
+	}
+	grenadeLaunchType = LAUNCH_NONE;
+	
 
 	particles.Clear();
 	restartParticles = true;
@@ -3345,6 +3416,8 @@ void idAI::Killed( idEntity *inflictor, idEntity *attacker, int damage, const id
 
 	restartParticles = false;
 
+	Signal(SIG_KILLED);
+
 	state = GetScriptFunction( "state_Killed" );
 	SetState( state );
 	SetWaitState( "" );
@@ -3937,6 +4010,14 @@ void idAI::CreateProjectileClipModel( void ) const {
 	}
 }
 
+void idAI::CreateGrenadeClipModel() const {
+	if (!grenadeClipModel) {
+		idBounds grenadeBounds(vec3_origin);
+		grenadeBounds.ExpandSelf(grenadeRadius);
+		grenadeClipModel = new idClipModel(idTraceModel(grenadeBounds));
+	}
+}
+
 /*
 =====================
 idAI::GetAimDir
@@ -3982,6 +4063,22 @@ bool idAI::GetAimDir( const idVec3 &firePos, idEntity *aimAtEnt, const idEntity 
 	result = PredictTrajectory( firePos, targetPos2, projectileSpeed, projectileGravity, projectileClipModel, MASK_SHOT_RENDERMODEL, max_height, ignore, aimAtEnt, ai_debugTrajectory.GetBool() ? 1000 : 0, aimDir );
 
 	return result;
+}
+
+bool idAI::GetLaunchDir(const idVec3& launchPos, const idVec3& targetPos, float maxHeight, float bounceCoeffcient, idEntity *target, idVec3 &aimDir) const {
+	idVec2 lerped;
+	bool forceThrow;
+	spawnArgs.GetBool("force_throw", "0", forceThrow);
+	int debugDrawTime = g_debugGrenades.GetBool() ? 5000 : 0; 
+	idVec2 launchPosR2 = idVec2(launchPos.x, launchPos.y);
+	idVec2 targetPosR2 = idVec2(targetPos.x, targetPos.y);
+	lerped.Lerp(targetPosR2, launchPosR2, bounceCoeffcient);
+	idVec3 adjustedTargetPos = idVec3(lerped.x, lerped.y, targetPos.z);
+	if (GrenadeTrajectory(launchPos, adjustedTargetPos, grenadeSpeed, grenadeGravity, 
+				grenadeClipModel, MASK_MONSTERSOLID, maxHeight, this, target, debugDrawTime, aimDir, forceThrow)) {
+		return true;	
+	}
+	return false;
 }
 
 /*
@@ -4031,6 +4128,29 @@ idProjectile *idAI::CreateProjectile( const idVec3 &pos, const idVec3 &dir ) {
 	return projectile.GetEntity();
 }
 
+idProjectile* idAI::CreateGrenade(const idVec3 &pos, const idVec3 &dir) {
+	idEntity *ent;
+	const char *clsname;
+
+	if ( !grenade.GetEntity() ) {
+		gameLocal.SpawnEntityDef( *grenadeDef, &ent, false );
+		if ( !ent ) {
+			clsname = grenadeDef->GetString( "classname" );
+			gameLocal.Error( "Could not spawn entityDef '%s'", clsname );
+		}
+
+		if ( !ent->IsType( idProjectile::Type ) ) {
+			clsname = ent->GetClassname();
+			gameLocal.Error( "'%s' is not an idProjectile", clsname );
+		}
+		grenade = ( idProjectile * )ent;
+	}
+
+	grenade.GetEntity()->Create( this, pos, dir );
+
+	return grenade.GetEntity();
+}
+
 /*
 =====================
 idAI::RemoveProjectile
@@ -4040,6 +4160,14 @@ void idAI::RemoveProjectile( void ) {
 	if ( projectile.GetEntity() ) {
 		projectile.GetEntity()->PostEventMS( &EV_Remove, 0 );
 		projectile = NULL;
+	}
+}
+
+void idAI::RemoveGrenade(void) {
+	idProjectile* grenadeEnt = grenade.GetEntity();
+	if (grenadeEnt) {
+		grenadeEnt->PostEventMS(&EV_Remove, 0);
+		grenade = NULL;
 	}
 }
 
@@ -4166,6 +4294,117 @@ idProjectile *idAI::LaunchProjectile( const char *jointname, idEntity *target, b
 	lastAttackTime = gameLocal.time;
 
 	return lastProjectile;
+}
+
+idProjectile* idAI::LaunchGrenade(const char *jointname, idEntity *target) {
+	if (!target) {
+		return NULL;
+	}
+
+	if (!grenadeDef || (grenadeLaunchType == LAUNCH_NONE && !TestGrenadeLaunchStrategies(jointname))) {
+		gameLocal.Warning( "%s (%s) doesn't have a grenade specified", name.c_str(), GetEntityDefName() );
+		return NULL;
+	}
+
+	idVec3 launchPoint;
+	idMat3 launchAxis;
+	GetMuzzle(jointname, launchPoint, launchAxis);
+
+	if (!grenade.GetEntity()) {
+		CreateGrenade(launchPoint, launchAxis[0]);
+	}
+	idProjectile* nade = grenade.GetEntity();
+
+	float bounceCoeffcient = 0.0f;
+	if (!grenadeDef->GetBool("detonate_on_world") && grenadeDef->GetFloat("bounce")) {
+		if (grenadeDef->FindKey("bounceCoefficient")) {
+			bounceCoeffcient = grenadeDef->GetFloat("bounceCoefficient");
+		}
+		else {
+			bounceCoeffcient = pow(grenadeDef->GetFloat("bounce"), 2);
+		}
+	}
+
+	idVec3 aimDir;
+	trace_t surfaceTrace;
+	const idVec3 up = -GetPhysics()->GetGravityNormal();
+	gameLocal.clip.Translation(surfaceTrace, launchPoint, up * grenadeMaxKineHeight + launchPoint, grenadeClipModel, 
+		grenadeClipModel->GetAxis(), MASK_SOLID, this);
+	// Account for the height between the launch point and the celing, including half the clipmodel's side length
+	float maxHeight = (surfaceTrace.endpos - launchPoint).Length() * 0.8f;
+	const idVec3 enemyPos = target->GetPhysics()->GetAbsBounds().GetCenter();
+	switch (grenadeLaunchType) {
+		case LAUNCH_DIRECT: {		
+			if (GetLaunchDir(launchPoint, bounceSurfaceTrace.endpos, maxHeight, bounceCoeffcient, target, aimDir)) {
+				nade->Launch(launchPoint, aimDir, vec3_origin);
+				if (g_debugGrenades.GetBool()) {
+					common->Printf("Launched grenade directly\n");
+				}
+			}
+			else {
+				grenade.GetEntity()->PostEventMS(&EV_Remove, 0);
+				if (g_debugGrenades.GetBool()) {
+					common->Printf("Failed launch\n");
+				}
+			}
+			break;
+		}
+		case LAUNCH_ABOVE: {	// idAI::PredictTrajectory will create two solutions, a flat arc and a high lob
+			if (GetLaunchDir(launchPoint, enemyPos, maxHeight, 0.0f, target, aimDir)) {
+				nade->Launch(launchPoint, aimDir, vec3_origin);
+				if (g_debugGrenades.GetBool()) {
+					common->Printf("Launched grenade above obstacle\n");
+				}
+			}
+			else {
+				grenade.GetEntity()->PostEventMS(&EV_Remove, 0);
+				if (g_debugGrenades.GetBool()) {
+					common->Printf("Failed launch\n");
+				}
+			}
+			break;
+		}
+		case LAUNCH_REFLECT: {
+			if (GetLaunchDir(launchPoint, bounceSurfaceTrace.endpos, maxHeight, 0.0f, target, aimDir)) {
+				nade->Launch(launchPoint, aimDir, vec3_origin);
+				if (g_debugGrenades.GetBool()) {
+					common->Printf("Launched grenade off bounce target\n");
+				}
+			}
+			else {
+				grenade.GetEntity()->PostEventMS(&EV_Remove, 0);
+				if (g_debugGrenades.GetBool()) {
+					common->Printf("Failed launch\n");
+				}
+			}
+			break;
+		}
+		case LAUNCH_AROUND: {
+			if (GetLaunchDir(launchPoint, bounceSurfaceTrace.endpos, maxHeight, bounceCoeffcient, target, aimDir)) {
+				nade->Launch(launchPoint, aimDir, vec3_origin);
+				if (g_debugGrenades.GetBool()) {
+					common->Printf("Launched grenade around obstacle with leading\n");
+				}
+			}
+			else if (GetLaunchDir(launchPoint, bounceSurfaceTrace.endpos, maxHeight, 0.0f, target, aimDir)) {
+				nade->Launch(launchPoint, aimDir, vec3_origin);
+				if (g_debugGrenades.GetBool()) {
+					common->Printf("Launched grenade around obstacle (couldn't lead)\n");
+				}
+			}
+			else {
+				grenade.GetEntity()->PostEventMS(&EV_Remove, 0);
+				if (g_debugGrenades.GetBool()) {
+					common->Printf("Failed launch\n");
+				}
+			}
+			break;
+		}
+	}
+
+	grenadeLaunchType = LAUNCH_NONE;
+	grenade = NULL;
+	return nade;
 }
 
 /*

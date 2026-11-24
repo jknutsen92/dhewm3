@@ -128,6 +128,8 @@ const idEventDef EV_InPlayerPVS("inPlayerPVS", NULL, 'd');
 const idEventDef EV_IsLiving("isLiving", NULL, 'd');
 const idEventDef EV_TakeDamage("takeDamage", "d");
 const idEventDef EV_AddTarget("addTarget", "e", 'd');
+const idEventDef EV_GetEntityNum("getEntityNum", NULL, 'd');
+const idEventDef EV_GetClassname("getClassname", NULL, 's');
 
 ABSTRACT_DECLARATION( idClass, idEntity )
 	EVENT( EV_GetName,				idEntity::Event_GetName )
@@ -201,6 +203,8 @@ ABSTRACT_DECLARATION( idClass, idEntity )
 	EVENT( EV_IsLiving,				idEntity::Event_IsLiving )
 	EVENT( EV_TakeDamage,			idEntity::Event_TakeDamage )
 	EVENT( EV_AddTarget, 			idEntity::Event_AddTarget )
+	EVENT( EV_GetEntityNum,			idEntity::Event_GetEntityNum )
+	EVENT( EV_GetClassname, 		idEntity::Event_GetClassname )
 END_CLASS
 
 /*
@@ -3103,6 +3107,7 @@ This is a virtual function that subclasses are expected to implement.
 */
 void idEntity::Killed( idEntity *inflictor, idEntity *attacker, int damage, const idVec3 &dir, int location, bool isOverheat ) {
 	isAlive = false;
+	Signal(SIG_KILLED);
 }
 
 bool idEntity::IsHeated(void) {
@@ -4688,6 +4693,14 @@ void idEntity::Event_TakeDamage(int enable) {
 void idEntity::Event_AddTarget(idEntity* ent) {
 	idEntityPtr<idEntity> entPtr;
 	return idThread::ReturnInt(targets.Append(entPtr));
+}
+
+void idEntity::Event_GetEntityNum() {
+	return idThread::ReturnInt(entityNumber);
+}
+
+void idEntity::Event_GetClassname() {
+	return idThread::ReturnString(GetEntityDefName());
 }
 
 /***********************************************************************

@@ -142,6 +142,14 @@ typedef struct predictedPath_s {
 	const idEntity *	blockingEntity;				// entity that blocks the movement
 } predictedPath_t;
 
+typedef enum {
+	LAUNCH_NONE,
+	LAUNCH_DIRECT,
+	LAUNCH_ABOVE,
+	LAUNCH_REFLECT,
+	LAUNCH_AROUND
+} launchType_t;
+
 //
 // events
 //
@@ -149,7 +157,9 @@ extern const idEventDef AI_BeginAttack;
 extern const idEventDef AI_EndAttack;
 extern const idEventDef AI_MuzzleFlash;
 extern const idEventDef AI_CreateMissile;
+extern const idEventDef AI_CreateGrenade;
 extern const idEventDef AI_AttackMissile;
+extern const idEventDef AI_LaunchGrenade;
 extern const idEventDef AI_FireMissileAtTarget;
 extern const idEventDef AI_AttackMelee;
 extern const idEventDef AI_DirectDamage;
@@ -162,6 +172,8 @@ extern const idEventDef AI_TriggerParticles;
 extern const idEventDef AI_RandomPath;
 extern const idEventDef AI_GetTeleportPathNearTarget;
 extern const idEventDef AI_TeleportNearTarget;
+extern const idEventDef AI_RemoveGrenade;
+extern const idEventDef AI_CheckImmediateObstacles;
 
 class idPathCorner;
 
@@ -264,9 +276,18 @@ public:
 	talkState_t				GetTalkState( void ) const;
 
 	bool					GetAimDir( const idVec3 &firePos, idEntity *aimAtEnt, const idEntity *ignore, idVec3 &aimDir ) const;
+	bool					GetLaunchDir(const idVec3& launchPos, const idVec3& targetPos, float maxHeight, float bounceCoeffcient, idEntity* target, idVec3& aimDir) const;
 
 	void					TouchedByFlashlight( idActor *flashlight_owner );
 	void					MovePointToNearestValidLocation(idVec3& pos);
+
+	bool 					TestGrenadeLaunchStrategies(const char* jointname);
+	bool					TestDirectLaunchStrategy(const idVec3& shooterPos, const idVec3& enemyPos, const idEntity* enemyEnt);
+	bool					TestOverheadLaunchStrategy(const idVec3& midpoint, const idVec3& up, const idVec3& shooterPos, const idVec3& enemyPos, const idEntity* enemyEnt);
+	bool					TestBounceLaunchStrategy(const idVec3& shooterPos, const idVec3& enemyPos, const idEntity* enemyEnt, const idVec3& midpoint, const idVec3& up);
+	bool 					TestNearbyLaunchStrategy(const idVec3& shooterPos, const idVec3& enemyPos, const idEntity* enemyEnt);
+	bool 					GetClosestValidPoint(const idVec3 &shooterPos, const idVec3 &enemyPos, const idEntity *enemyEnt, const idVec3& direction, const float radius, trace_t& returnTrace, int depth = 3);
+	bool 					TestReflectionBouncePoint(const trace_t bounceTrace, const idVec3& shooterPos, const idEntity* target, const idVec3& targetImagePos);
 
 							// Outputs a list of all monsters to the console.
 	static void				List_f( const idCmdArgs &args );
@@ -281,8 +302,11 @@ public:
 	static bool				TestTrajectory( const idVec3 &start, const idVec3 &end, float zVel, float gravity, float time, float max_height, const idClipModel *clip, int clipmask, const idEntity *ignore, const idEntity *targetEntity, int drawtime );
 							// Finds the best collision free trajectory for a clip model.
 	static bool				PredictTrajectory( const idVec3 &firePos, const idVec3 &target, float projectileSpeed, const idVec3 &projGravity, const idClipModel *clip, int clipmask, float max_height, const idEntity *ignore, const idEntity *targetEntity, int drawtime, idVec3 &aimDir );
+	static bool 			GrenadeTrajectory(const idVec3& firePos, const idVec3& target, float grenadeSpeed, const idVec3& grenadeGravity, const idClipModel *clip, int clipmask, float max_height, const idEntity *ignore, const idEntity *targetEntity, int drawtime, idVec3 &aimDir, bool force);
+	static bool				TestGrenadeTrajectory(const idVec3 &start, const idVec3 &end, float zVel, float gravity, float endTime, float max_height, const idClipModel *clip, int clipmask, const idEntity *ignore, const idEntity *targetEntity, int drawtime);
 	static bool				IsClearPath(const idEntity* ent1, const idEntity* ent2, float range);
 	static idVec3			GetRandomPointInBounds(const idBounds& bounds);
+	static idVec3			GetPlanarReflectionImagePos(const idVec3& point, const idVec3& surfaceNormal, const idVec3& surfaceContact);
 
 protected:
 	// navigation
@@ -346,6 +370,18 @@ protected:
 	idVec3					projectileGravity;
 	idEntityPtr<idProjectile> projectile;
 	idStr					attack;
+
+	const idDict*			grenadeDef;
+	mutable idClipModel*	grenadeClipModel;
+	float					grenadeRadius;
+	float 					grenadeSpeed;
+	idVec3					grenadeVelocity;
+	idVec3					grenadeGravity;
+	idEntityPtr<idProjectile> grenade;
+	launchType_t			grenadeLaunchType;
+	trace_t					bounceSurfaceTrace;
+	float					grenadeMaxKineHeight;
+	float 					grenadeMaxRange;
 
 	// chatter/talking
 	const idSoundShader		*chat_snd;
@@ -512,9 +548,13 @@ protected:
 
 	// attacks
 	void					CreateProjectileClipModel( void ) const;
+	void					CreateGrenadeClipModel(void) const;
 	idProjectile			*CreateProjectile( const idVec3 &pos, const idVec3 &dir );
 	void					RemoveProjectile( void );
+	idProjectile*			CreateGrenade(const idVec3& pos, const idVec3& dir);
+	void					RemoveGrenade(void);
 	idProjectile			*LaunchProjectile( const char *jointname, idEntity *target, bool clampToAttackCone );
+	idProjectile*			LaunchGrenade(const char* jointname, idEntity* target);
 	virtual void			DamageFeedback( idEntity *victim, idEntity *inflictor, int &damage, float damageZoneScale = 1.0, float heatRatio = 0.0f);
 	void					DirectDamage( const char *meleeDefName, idEntity *ent );
 	bool					TestMelee( void ) const;
@@ -548,7 +588,9 @@ protected:
 	void					Event_ClearEnemy( void );
 	void					Event_MuzzleFlash( const char *jointname );
 	void					Event_CreateMissile( const char *jointname );
+	void 					Event_CreateGrenade(const char* jointname);
 	void					Event_AttackMissile( const char *jointname );
+	void 					Event_LaunchGrenade(const char* jointname);
 	void					Event_FireMissileAtTarget( const char *jointname, const char *targetname );
 	void					Event_LaunchMissile( const idVec3 &muzzle, const idAngles &ang );
 	void					Event_AttackMelee( const char *meleeDefName );
@@ -602,6 +644,7 @@ protected:
 	void					Event_GetEnemyEyePos( void );
 	void					Event_PredictEnemyPos( float time );
 	void					Event_CanHitEnemy( void );
+	void					Event_CanHitEnemyWithGrenade(const char* jointname);
 	void					Event_CanHitEnemyFromAnim( const char *animname );
 	void					Event_CanHitEnemyFromJoint( const char *jointname );
 	void					Event_EnemyPositionValid( void );
@@ -664,6 +707,8 @@ protected:
 	void					Event_GetReachableEntityPosition( idEntity *ent );
 	void					Event_GetTeleportPathNearTarget(idEntity* target, float range, const char* lastPath);
 	void					Event_TeleportNearTarget(idEntity* target, float range);
+	void					Event_RemoveGrenade();
+	void					Event_CheckImmediateObstacles();
 };
 
 class idCombatNode : public idEntity {

@@ -562,6 +562,7 @@ void idDamagable::Killed( idEntity *inflictor, idEntity *attacker, int damage, c
 	}
 
 	BecomeBroken( attacker );
+	Signal(SIG_KILLED);
 }
 
 /*

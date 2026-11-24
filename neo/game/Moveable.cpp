@@ -328,6 +328,7 @@ void idMoveable::Killed( idEntity *inflictor, idEntity *attacker, int damage, co
 	ActivateTargets( this );
 
 	fl.takedamage = false;
+	Signal(SIG_KILLED);
 }
 
 /*
@@ -1066,6 +1067,8 @@ void idExplodingBarrel::Killed( idEntity *inflictor, idEntity *attacker, int dam
 	if ( spawnArgs.GetBool( "triggerTargets" ) ) {
 		ActivateTargets( this );
 	}
+
+	Signal(SIG_KILLED);
 }
 
 /*

@@ -617,7 +617,28 @@ const char *idAnim::AddFrameCommand( const idDeclModelDef *modelDef, int framenu
 		if( src.ReadTokenOnLine( &token ) ) {
 			fc.string = new idStr( token );
 		}
-	} else {
+	} 
+	else if (token == "create_grenade") {
+		if (!src.ReadTokenOnLine(&token)) {
+			return "Unexpected end of line";
+		}
+		if (!modelDef->FindJoint(token)) {
+			return va("Joint '%s' not found", token.c_str());
+		}
+		fc.type = FC_CREATEGRENADE;
+		fc.string = new idStr(token);
+	}
+	else if (token == "launch_grenade") {
+		if (!src.ReadTokenOnLine(&token)) {
+			return "Unexpected end of line";
+		}
+		if (!modelDef->FindJoint(token)) {
+			return va("Joint '%s' not found", token.c_str());
+		}
+		fc.type = FC_LAUNCHGRENADE;
+		fc.string = new idStr(token);
+	}
+	else {
 		return va( "Unknown command '%s'", token.c_str() );
 	}
 
@@ -936,6 +957,14 @@ void idAnim::CallFrameCommands( idEntity *ent, int from, int to ) const {
 					} else {
 						cmdSystem->BufferCommandText( CMD_EXEC_NOW, "aviGame" );
 					}
+					break;
+				}
+				case FC_CREATEGRENADE: {
+					ent->ProcessEvent(&AI_CreateGrenade, command.string->c_str());
+					break;
+				}
+				case FC_LAUNCHGRENADE: {
+					ent->ProcessEvent(&AI_LaunchGrenade, command.string->c_str());
 					break;
 				}
 			}

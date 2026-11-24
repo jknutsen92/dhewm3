@@ -48,7 +48,9 @@ const idEventDef AI_SetEnemy( "setEnemy", "E" );
 const idEventDef AI_ClearEnemy( "clearEnemy" );
 const idEventDef AI_MuzzleFlash( "muzzleFlash", "s" );
 const idEventDef AI_CreateMissile( "createMissile", "s", 'e' );
+const idEventDef AI_CreateGrenade("createGrenade", "s", 'e');
 const idEventDef AI_AttackMissile( "attackMissile", "s", 'e' );
+const idEventDef AI_LaunchGrenade("lanchGrenade", "s", 'e');
 const idEventDef AI_FireMissileAtTarget( "fireMissileAtTarget", "ss", 'e' );
 const idEventDef AI_LaunchMissile( "launchMissile", "vv", 'e' );
 const idEventDef AI_AttackMelee( "attackMelee", "s", 'd' );
@@ -100,6 +102,7 @@ const idEventDef AI_GetEnemyPos( "getEnemyPos", NULL, 'v' );
 const idEventDef AI_GetEnemyEyePos( "getEnemyEyePos", NULL, 'v' );
 const idEventDef AI_PredictEnemyPos( "predictEnemyPos", "f", 'v' );
 const idEventDef AI_CanHitEnemy( "canHitEnemy", NULL, 'd' );
+const idEventDef AI_CanHitEnemyWithGrenade("canHitEnemyWithGrenade", "s", 'd');
 const idEventDef AI_CanHitEnemyFromAnim( "canHitEnemyFromAnim", "s", 'd' );
 const idEventDef AI_CanHitEnemyFromJoint( "canHitEnemyFromJoint", "s", 'd' );
 const idEventDef AI_EnemyPositionValid( "enemyPositionValid", NULL, 'd' );
@@ -161,6 +164,8 @@ const idEventDef AI_CanReachEnemy( "canReachEnemy", NULL, 'd' );
 const idEventDef AI_GetReachableEntityPosition( "getReachableEntityPosition", "e", 'v' );
 const idEventDef AI_GetTeleportPathNearTarget("getTeleportPathNearTarget", "efs", 'e');
 const idEventDef AI_TeleportNearTarget("teleportNearTarget", "ef");
+const idEventDef AI_RemoveGrenade("removeGrenade");
+const idEventDef AI_CheckImmediateObstacles("checkImmediateObstacles", NULL, 'd');
 
 CLASS_DECLARATION( idActor, idAI )
 	EVENT( EV_Activate,							idAI::Event_Activate )
@@ -174,7 +179,9 @@ CLASS_DECLARATION( idActor, idAI )
 	EVENT( AI_ClearEnemy,						idAI::Event_ClearEnemy )
 	EVENT( AI_MuzzleFlash,						idAI::Event_MuzzleFlash )
 	EVENT( AI_CreateMissile,					idAI::Event_CreateMissile )
+	EVENT( AI_CreateGrenade,					idAI::Event_CreateGrenade )
 	EVENT( AI_AttackMissile,					idAI::Event_AttackMissile )
+	EVENT( AI_LaunchGrenade,					idAI::Event_LaunchGrenade )
 	EVENT( AI_FireMissileAtTarget,				idAI::Event_FireMissileAtTarget )
 	EVENT( AI_LaunchMissile,					idAI::Event_LaunchMissile )
 	EVENT( AI_AttackMelee,						idAI::Event_AttackMelee )
@@ -228,6 +235,7 @@ CLASS_DECLARATION( idActor, idAI )
 	EVENT( AI_GetEnemyEyePos,					idAI::Event_GetEnemyEyePos )
 	EVENT( AI_PredictEnemyPos,					idAI::Event_PredictEnemyPos )
 	EVENT( AI_CanHitEnemy,						idAI::Event_CanHitEnemy )
+	EVENT( AI_CanHitEnemyWithGrenade,			idAI::Event_CanHitEnemyWithGrenade )
 	EVENT( AI_CanHitEnemyFromAnim,				idAI::Event_CanHitEnemyFromAnim )
 	EVENT( AI_CanHitEnemyFromJoint,				idAI::Event_CanHitEnemyFromJoint )
 	EVENT( AI_EnemyPositionValid,				idAI::Event_EnemyPositionValid )
@@ -290,6 +298,8 @@ CLASS_DECLARATION( idActor, idAI )
 	EVENT( AI_GetReachableEntityPosition,		idAI::Event_GetReachableEntityPosition )
 	EVENT( AI_GetTeleportPathNearTarget,		idAI::Event_GetTeleportPathNearTarget )
 	EVENT( AI_TeleportNearTarget,				idAI::Event_TeleportNearTarget )
+	EVENT( AI_RemoveGrenade,					idAI::Event_RemoveGrenade )
+	EVENT( AI_CheckImmediateObstacles, 			idAI::Event_CheckImmediateObstacles )
 END_CLASS
 
 /*
@@ -567,6 +577,27 @@ void idAI::Event_CreateMissile( const char *jointname ) {
 	idThread::ReturnEntity( projectile.GetEntity() );
 }
 
+void idAI::Event_CreateGrenade(const char* jointname) {
+	if (!grenadeDef) {
+		gameLocal.Warning("%s (%s) doesn't have a def_grenade specified", name.c_str(), GetEntityDefName());
+		return idThread::ReturnEntity(NULL);
+	}
+
+	idVec3 muzzle;
+	idMat3 axis;
+	GetMuzzle(jointname, muzzle, axis);
+	CreateGrenade(muzzle, viewAxis[0] * physicsObj.GetGravityAxis());
+	if (grenade.GetEntity()) {
+		if (!jointname || !jointname[0]) {
+			grenade.GetEntity()->Bind(this, true);
+		}
+		else {
+			grenade.GetEntity()->BindToJoint(this, jointname, true);
+		}
+	}
+	idThread::ReturnEntity(grenade.GetEntity());
+}
+
 /*
 =====================
 idAI::Event_AttackMissile
@@ -577,6 +608,10 @@ void idAI::Event_AttackMissile( const char *jointname ) {
 
 	proj = LaunchProjectile( jointname, enemy.GetEntity(), true );
 	idThread::ReturnEntity( proj );
+}
+
+void idAI::Event_LaunchGrenade(const char *jointname) {
+	idThread::ReturnEntity(LaunchGrenade(jointname, enemy.GetEntity()));
 }
 
 /*
@@ -1457,6 +1492,10 @@ void idAI::Event_CanHitEnemy( void ) {
 	}
 
 	idThread::ReturnInt( lastHitCheckResult );
+}
+
+void idAI::Event_CanHitEnemyWithGrenade(const char* jointname) {
+	idThread::ReturnInt(TestGrenadeLaunchStrategies(jointname));
 }
 
 /*
@@ -2724,5 +2763,62 @@ void idAI::Event_TeleportNearTarget(idEntity *target, float range) {
 	}
 	if (g_debugBounds.GetBool()) {
 		common->Printf("%s failed to find teleport destination after %d iterations and sampling %d random points\n", GetName(), iterations, samples);
+	}
+}
+
+void idAI::Event_RemoveGrenade() {
+	if (grenade.GetEntity()) {
+		grenade.GetEntity()->PostEventMS(&EV_Remove, 0);
+		grenade = NULL;
+	}
+}
+
+#define OBSTACLE_LEFT		-3
+#define OBSTACLE_RIGHT		-4
+#define OBSTACLE_FORWARD	-5
+
+void idAI::Event_CheckImmediateObstacles() {
+	trace_t leftTrace, forwardTrace, rightTrace;
+	const idVec3 dir = viewAxis[0];
+	const idVec3 left = idVec3(-dir.y, dir.x, 0.0f);
+	const idVec3 right = idVec3(dir.y, -dir.x, 0.0f);
+	const idVec3 originCenter = GetPhysics()->GetAbsBounds().GetCenter();
+	const float radius = GetPhysics()->GetBounds().GetRadius();
+	const idVec3 originLeft = left * radius * 0.5f + originCenter;
+	const idVec3 originRight = right * radius * 0.5f + originCenter;
+	gameLocal.clip.TracePoint(leftTrace, originLeft, dir * radius + originLeft, MASK_SHOT_BOUNDINGBOX, this);
+	gameLocal.clip.TracePoint(forwardTrace, originCenter, dir * radius + originCenter, MASK_SHOT_BOUNDINGBOX, this);
+	gameLocal.clip.TracePoint(rightTrace, originRight, dir * radius + originRight, MASK_SHOT_BOUNDINGBOX, this);
+	if (leftTrace.fraction < 1.0f && forwardTrace.fraction < 1.0f && rightTrace.fraction < 1.0f) {
+		if (g_debugGrenades.GetBool()) {
+			gameRenderWorld->DebugLine(colorOrange, originLeft, leftTrace.endpos, 3000);
+			gameRenderWorld->DebugLine(colorOrange, originCenter, forwardTrace.endpos, 3000);
+			gameRenderWorld->DebugLine(colorOrange, originRight, rightTrace.endpos, 3000);
+		}
+		return idThread::ReturnInt(OBSTACLE_FORWARD);
+	}
+	else if (leftTrace.fraction < 1.0f) {
+		if (g_debugGrenades.GetBool()) {
+			gameRenderWorld->DebugLine(colorRed, originLeft, leftTrace.endpos, 3000);
+			gameRenderWorld->DebugLine(forwardTrace.fraction < 1.0f ? colorOrange : colorLtGrey, originCenter, dir * radius + originCenter, 3000);
+			gameRenderWorld->DebugLine(colorLtGrey, originRight, dir * radius + originRight, 3000);
+		}
+		return idThread::ReturnInt(OBSTACLE_LEFT);
+	}
+	else if (rightTrace.fraction < 1.0f) {
+		if (g_debugGrenades.GetBool()) {
+			gameRenderWorld->DebugLine(colorLtGrey, originLeft, dir * radius + originLeft, 3000);
+			gameRenderWorld->DebugLine(forwardTrace.fraction < 1.0f ? colorOrange : colorLtGrey, originCenter, dir * radius + originCenter, 3000);
+			gameRenderWorld->DebugLine(colorRed, originRight, rightTrace.endpos, 3000);
+		}
+		return idThread::ReturnInt(OBSTACLE_RIGHT);
+	}
+	else {
+		if (g_debugGrenades.GetBool()) {
+			gameRenderWorld->DebugLine(forwardTrace.fraction < 1.0f ? colorOrange : colorLtGrey, originLeft, dir * radius + originLeft, 3000);
+			gameRenderWorld->DebugLine(forwardTrace.fraction < 1.0f ? colorOrange : colorLtGrey, originCenter, dir * radius + originCenter, 3000);
+			gameRenderWorld->DebugLine(forwardTrace.fraction < 1.0f ? colorOrange : colorLtGrey, originRight, dir * radius + originRight, 3000);
+		}
+		return idThread::ReturnInt(0);
 	}
 }
