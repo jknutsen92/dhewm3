@@ -373,10 +373,23 @@ int GetObstacles( const idPhysics *physics, const idAAS *aas, const idEntity *ig
 				}
 			}
 			box = idBox( clipModel->GetBounds(), clipModel->GetOrigin(), clipModel->GetAxis() );
+			// check if we can step over the object
+			clipModel->GetAbsBounds().AxisProjection( -physics->GetGravityNormal(), min, max );
+			if ( max < stepHeight || min > headHeight ) {
+				// can step over this one
+				continue;
+			}
 		} 
 		else if ( obEnt->IsType( idMoveable::Type ) ) {
 			// moveables are considered obstacles
 			box = idBox( clipModel->GetBounds(), clipModel->GetOrigin(), clipModel->GetAxis() );
+
+			// check if we can step over the object
+			clipModel->GetAbsBounds().AxisProjection( -physics->GetGravityNormal(), min, max );
+			if ( max < stepHeight || min > headHeight ) {
+				// can step over this one
+				continue;
+			}
 		}
 		else if (obEnt->IsType(idProjectile::Type) && obEnt->spawnArgs.GetBool("ai_obstacle")) {
 			idBounds blastBounds = clipModel->GetBounds();
@@ -388,13 +401,6 @@ int GetObstacles( const idPhysics *physics, const idAAS *aas, const idEntity *ig
 		}
 		else {
 			// ignore everything else
-			continue;
-		}
-
-		// check if we can step over the object
-		clipModel->GetAbsBounds().AxisProjection( -physics->GetGravityNormal(), min, max );
-		if ( max < stepHeight || min > headHeight ) {
-			// can step over this one
 			continue;
 		}
 
@@ -1554,7 +1560,7 @@ bool idAI::PredictTrajectory( const idVec3 &firePos, const idVec3 &target, float
 	return false;
 }
 
-bool idAI::GrenadeTrajectory(const idVec3& firePos, const idVec3& target, float grenadeSpeed, const idVec3& grenadeGravity, const idClipModel *clip, int clipmask, float max_height, const idEntity *ignore, const idEntity *targetEntity, int drawtime, idVec3 &aimDir) {
+bool idAI::GrenadeTrajectory(const idVec3& firePos, const idVec3& target, float grenadeSpeed, const idVec3& grenadeGravity, const idClipModel *clip, int clipmask, float max_height, const idEntity *ignore, const idEntity *targetEntity, int drawtime, idVec3 &aimDir, bool force) {
 	assert(targetEntity);
 
 	ballistics_t ballistics[2];
@@ -1587,12 +1593,15 @@ bool idAI::GrenadeTrajectory(const idVec3& firePos, const idVec3& target, float 
 		if (g_debugGrenades.GetBool()) {
 			common->Printf("Testing trajectory (%f degrees)\n", curAngle);
 		}
+		aimDir = dir;
 		if (TestGrenadeTrajectory(firePos, target, zVel, grenadeGravity[2], time, firePos.z + max_height, clip, clipmask, ignore, targetEntity, drawtime)) {
-			aimDir = dir;
 			return true;
 		}
 	}
 	
+	if (force) {
+		return true;
+	}
 	return false;
 }
 

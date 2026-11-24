@@ -4067,13 +4067,15 @@ bool idAI::GetAimDir( const idVec3 &firePos, idEntity *aimAtEnt, const idEntity 
 
 bool idAI::GetLaunchDir(const idVec3& launchPos, const idVec3& targetPos, float maxHeight, float bounceCoeffcient, idEntity *target, idVec3 &aimDir) const {
 	idVec2 lerped;
+	bool forceThrow;
+	spawnArgs.GetBool("force_throw", "0", forceThrow);
 	int debugDrawTime = g_debugGrenades.GetBool() ? 5000 : 0; 
 	idVec2 launchPosR2 = idVec2(launchPos.x, launchPos.y);
 	idVec2 targetPosR2 = idVec2(targetPos.x, targetPos.y);
 	lerped.Lerp(targetPosR2, launchPosR2, bounceCoeffcient);
 	idVec3 adjustedTargetPos = idVec3(lerped.x, lerped.y, targetPos.z);
 	if (GrenadeTrajectory(launchPos, adjustedTargetPos, grenadeSpeed, grenadeGravity, 
-				grenadeClipModel, MASK_MONSTERSOLID, maxHeight, this, target, debugDrawTime, aimDir)) {
+				grenadeClipModel, MASK_MONSTERSOLID, maxHeight, this, target, debugDrawTime, aimDir, forceThrow)) {
 		return true;	
 	}
 	return false;

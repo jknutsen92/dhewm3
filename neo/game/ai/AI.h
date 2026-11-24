@@ -302,7 +302,7 @@ public:
 	static bool				TestTrajectory( const idVec3 &start, const idVec3 &end, float zVel, float gravity, float time, float max_height, const idClipModel *clip, int clipmask, const idEntity *ignore, const idEntity *targetEntity, int drawtime );
 							// Finds the best collision free trajectory for a clip model.
 	static bool				PredictTrajectory( const idVec3 &firePos, const idVec3 &target, float projectileSpeed, const idVec3 &projGravity, const idClipModel *clip, int clipmask, float max_height, const idEntity *ignore, const idEntity *targetEntity, int drawtime, idVec3 &aimDir );
-	static bool 			GrenadeTrajectory(const idVec3& firePos, const idVec3& target, float grenadeSpeed, const idVec3& grenadeGravity, const idClipModel *clip, int clipmask, float max_height, const idEntity *ignore, const idEntity *targetEntity, int drawtime, idVec3 &aimDir);
+	static bool 			GrenadeTrajectory(const idVec3& firePos, const idVec3& target, float grenadeSpeed, const idVec3& grenadeGravity, const idClipModel *clip, int clipmask, float max_height, const idEntity *ignore, const idEntity *targetEntity, int drawtime, idVec3 &aimDir, bool force);
 	static bool				TestGrenadeTrajectory(const idVec3 &start, const idVec3 &end, float zVel, float gravity, float endTime, float max_height, const idClipModel *clip, int clipmask, const idEntity *ignore, const idEntity *targetEntity, int drawtime);
 	static bool				IsClearPath(const idEntity* ent1, const idEntity* ent2, float range);
 	static idVec3			GetRandomPointInBounds(const idBounds& bounds);
