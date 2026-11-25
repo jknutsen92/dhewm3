@@ -95,6 +95,8 @@ const idEventDef EV_Player_HideTip( "hideTip" );
 const idEventDef EV_Player_LevelTrigger( "levelTrigger" );
 const idEventDef EV_SpectatorTouch( "spectatorTouch", "et" );
 const idEventDef EV_Player_GetIdealWeapon( "getIdealWeapon", NULL, 's' );
+const idEventDef EV_Player_GetClipCount("getClipCount", "d", 'd');
+const idEventDef EV_Player_SetClipCount("setClipCount", "dd");
 
 CLASS_DECLARATION( idActor, idPlayer )
 	EVENT( EV_Player_GetButtons,			idPlayer::Event_GetButtons )
@@ -119,6 +121,8 @@ CLASS_DECLARATION( idActor, idPlayer )
 	EVENT( EV_Player_LevelTrigger,			idPlayer::Event_LevelTrigger )
 	EVENT( EV_Gibbed,						idPlayer::Event_Gibbed )
 	EVENT( EV_Player_GetIdealWeapon,		idPlayer::Event_GetIdealWeapon )
+	EVENT( EV_Player_GetClipCount,			idPlayer::Event_GetClipCount )
+	EVENT( EV_Player_SetClipCount, 			idPlayer::Event_SetClipCount )
 END_CLASS
 
 const int MAX_RESPAWN_TIME = 10000;
@@ -247,7 +251,12 @@ void idInventory::GetPersistantData( idDict &dict ) {
 	// armor
 	dict.SetInt( "armor", armor );
 
-	// don't bother with powerups, maxhealth, maxarmor, or the clip
+	// don't bother with powerups, maxhealth, or maxarmor
+
+	// clips
+	for (i = 0; i < MAX_WEAPONS; i++) {
+		dict.SetInt(va("def_weapon%d_clip", i), clip[i]);
+	}
 
 	// ammo
 	for( i = 0; i < AMMO_NUMTYPES; i++ ) {
@@ -344,7 +353,11 @@ void idInventory::RestoreInventory( idPlayer *owner, const idDict &dict ) {
 	deplete_rate	= dict.GetFloat( "deplete_rate", "2.0" );
 	deplete_ammount	= dict.GetInt( "deplete_ammount", "1" );
 
-	// the clip and powerups aren't restored
+	// powerups aren't restored
+
+	for (i = 0; i < MAX_WEAPONS; i++) {
+		clip[i] = dict.GetInt(va("def_weapon%d_clip", i));
+	}
 
 	// ammo
 	for( i = 0; i < AMMO_NUMTYPES; i++ ) {
@@ -850,6 +863,7 @@ bool idInventory::Give( idPlayer *owner, const idDict &spawnArgs, const char *st
 							owner->ShowTip(title, text, false);
 						}
 					}
+					clip[i] = weaponDecl->dict.GetInt("clipSize", "0");
 					weaponPulse = true;
 					weapons |= ( 1 << i );
 					tookWeapon = true;
@@ -8858,6 +8872,14 @@ void idPlayer::Event_GetIdealWeapon( void ) {
 	} else {
 		idThread::ReturnString( "" );
 	}
+}
+
+void idPlayer::Event_GetClipCount(const int index) {
+	return idThread::ReturnInt(inventory.clip[index]);
+}
+
+void idPlayer::Event_SetClipCount(const int index, const int amount) {
+	inventory.clip[index] = amount;
 }
 
 /*

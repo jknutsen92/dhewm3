@@ -86,6 +86,8 @@ extern const idEventDef EV_Player_AddArmor;
 extern const idEventDef EV_Player_GetArmor;
 extern const idEventDef EV_Player_GetMaxArmor;
 extern const idEventDef EV_SpectatorTouch;
+extern const idEventDef EV_GetClipCount;
+extern const idEventDef EV_SetClipCount;
 
 const float THIRD_PERSON_FOCUS_DISTANCE	= 512.0f;
 const int	LAND_DEFLECT_TIME = 150;
@@ -748,6 +750,8 @@ private:
 	void					Event_LevelTrigger( void );
 	void					Event_Gibbed( void );
 	void					Event_GetIdealWeapon( void );
+	void					Event_GetClipCount(const int index);
+	void 					Event_SetClipCount(const int index, const int amount);
 };
 
 ID_INLINE bool idPlayer::IsReady( void ) {
