@@ -338,6 +338,10 @@ void Cmd_Give_f( const idCmdArgs &args ) {
 		for ( i = 0 ; i < AMMO_NUMTYPES; i++ ) {
 			player->inventory.ammo[ i ] = player->inventory.MaxAmmoForAmmoClass( player, idWeapon::GetAmmoNameForNum( ( ammo_t )i ) );
 		}
+		for (i = 0; i < MAX_WEAPONS; i++) {
+			const idDict* weaponDef = gameLocal.FindEntityDefDict(player->spawnArgs.GetString(va("def_weapon%d", i)));
+			player->inventory.clip[i] = weaponDef->GetInt("clipSize", "0");
+		}
 		if ( !give_all ) {
 			return;
 		}
