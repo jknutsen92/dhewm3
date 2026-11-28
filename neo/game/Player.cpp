@@ -97,6 +97,7 @@ const idEventDef EV_SpectatorTouch( "spectatorTouch", "et" );
 const idEventDef EV_Player_GetIdealWeapon( "getIdealWeapon", NULL, 's' );
 const idEventDef EV_Player_GetClipCount("getClipCount", "d", 'd');
 const idEventDef EV_Player_SetClipCount("setClipCount", "dd");
+const idEventDef EV_Player_SetEnvirosuitFilter("setEnvirosuitFilter", "d");
 
 CLASS_DECLARATION( idActor, idPlayer )
 	EVENT( EV_Player_GetButtons,			idPlayer::Event_GetButtons )
@@ -123,6 +124,7 @@ CLASS_DECLARATION( idActor, idPlayer )
 	EVENT( EV_Player_GetIdealWeapon,		idPlayer::Event_GetIdealWeapon )
 	EVENT( EV_Player_GetClipCount,			idPlayer::Event_GetClipCount )
 	EVENT( EV_Player_SetClipCount, 			idPlayer::Event_SetClipCount )
+	EVENT( EV_Player_SetEnvirosuitFilter,	idPlayer::Event_SetEnvirosuitFilter )
 END_CLASS
 
 const int MAX_RESPAWN_TIME = 10000;
@@ -5403,8 +5405,8 @@ void idPlayer::UpdateAir( void ) {
 		if ( !airless ) {
 			StartSound( "snd_decompress", SND_CHANNEL_ANY, SSF_GLOBAL, false, NULL );
 			StartSound( "snd_noAir", SND_CHANNEL_BODY2, 0, false, NULL );
-			soundWorld->SetEnviroSuit(true);
-			soundWorld->FadeSoundClasses(0, -10, 3.0);
+			soundWorld->FadeSoundClasses(0, -10, 2.5);
+			PostEventMS(&EV_Player_SetEnvirosuitFilter, 2500, true);
 			if ( hud ) {
 				hud->HandleNamedEvent( "noAir" );
 			}
@@ -5425,8 +5427,8 @@ void idPlayer::UpdateAir( void ) {
 		if ( airless ) {
 			StartSound( "snd_recompress", SND_CHANNEL_ANY, SSF_GLOBAL, false, NULL );
 			StopSound( SND_CHANNEL_BODY2, false );
-			soundWorld->SetEnviroSuit(false);
-			soundWorld->FadeSoundClasses(0, 10, 3.0);
+			soundWorld->FadeSoundClasses(0, 10, 2.0);
+			PostEventMS(&EV_Player_SetEnvirosuitFilter, 2000, false);
 			if ( hud ) {
 				hud->HandleNamedEvent( "Air" );
 			}
@@ -6325,17 +6327,21 @@ void idPlayer::Move( void ) {
 	// update our last valid AAS location for the AI
 	SetAASLocation();
 
+	idBounds combatBounds = combatModel->GetBounds();
 	if ( spectating ) {
 		newEyeOffset = 0.0f;
 	} else if ( health <= 0 ) {
 		newEyeOffset = pm_deadviewheight.GetFloat();
 	} else if ( physicsObj.IsCrouching() ) {
+		combatBounds[1][2] = pm_crouchheight.GetFloat();
 		newEyeOffset = pm_crouchviewheight.GetFloat();
 	} else if ( GetBindMaster() && GetBindMaster()->IsType( idAFEntity_Vehicle::Type ) ) {
 		newEyeOffset = 0.0f;
 	} else {
+		combatBounds[1][2] = pm_normalheight.GetFloat();
 		newEyeOffset = pm_normalviewheight.GetFloat();
 	}
+	combatModel->LoadModel(idTraceModel(combatBounds));
 
 	if ( EyeHeight() != newEyeOffset ) {
 		if ( spectating ) {
@@ -8880,6 +8886,10 @@ void idPlayer::Event_GetClipCount(const int index) {
 
 void idPlayer::Event_SetClipCount(const int index, const int amount) {
 	inventory.clip[index] = amount;
+}
+
+void idPlayer::Event_SetEnvirosuitFilter(bool enable) {
+	soundSystem->GetPlayingSoundWorld()->SetEnviroSuit(enable);
 }
 
 /*
